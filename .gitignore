@@ -1,0 +1,22 @@
+# Secrets
+api.key
+.env
+
+# Database
+server/ghosttracker.db
+
+# Large binaries
+*.deb
+
+# Python
+server/venv/
+__pycache__/
+*.pyc
+
+# Android build outputs
+android-app/.gradle/
+android-app/app/build/
+android-app/build/
+
+# VS Code
+.vscode/
