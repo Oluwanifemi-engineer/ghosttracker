@@ -220,7 +220,7 @@ API_KEY  = os.environ.get("GT_API_KEY", "changeme-set-in-env")
 # ─── Database setup ────────────────────────────────────────────────────────────
 
 def get_db():
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     try:
         yield conn
