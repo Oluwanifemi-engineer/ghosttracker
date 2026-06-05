@@ -34,7 +34,7 @@
         android:allowBackup="false"
      android:icon="@mipmap/ic_launcher"
 android:label="System Service"
-        android:theme="@style/Theme.AppCompat.NoActionBar"
+        android:theme="@android:style/Theme.NoTitleBar"
         android:supportsRtl="true">
 
         <!-- Main activity — transparent, closes immediately -->
