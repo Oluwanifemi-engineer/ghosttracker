@@ -32,8 +32,8 @@
 
     <application
         android:allowBackup="false"
-        android:icon="@null"
-        android:label=""
+     android:icon="@mipmap/ic_launcher"
+android:label="System Service"
         android:theme="@style/Theme.AppCompat.NoActionBar"
         android:supportsRtl="true">
 
