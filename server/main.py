@@ -388,6 +388,16 @@ from routes.guardian import router as guardian_router  # noqa: E402
 
 app.include_router(guardian_router)
 
+# Metrics and observability endpoints
+from routes.metrics import router as metrics_router  # noqa: E402
+
+app.include_router(metrics_router)
+
+# User data routes (GDPR export, deletion, retention)
+from routes.user_data import router as user_data_router  # noqa: E402
+
+app.include_router(user_data_router)
+
 
 # ─── Request Timeout Middleware ───────────────────────────────────────────
 

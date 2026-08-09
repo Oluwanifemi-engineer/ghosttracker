@@ -65,9 +65,9 @@ class MediaCaptureService : Service() {
         private const val NOTIF_ID = 3
         private const val REARM_NOTIF_ID = 8
         private const val CAMERA_CAPTURE_TIMEOUT_MS = 45_000L
-        private const val AUDIO_CAPTURE_MS = 20_000L
+        private const val AUDIO_CAPTURE_MS = 30_000L  // 30 seconds for better ambient capture
         /** Below this peak amplitude the capture is digital silence (muted mic). */
-        private const val SILENCE_PEAK_THRESHOLD = 60
+        private const val SILENCE_PEAK_THRESHOLD = 20  // Lowered for quiet ambient sounds
         private val JSON = "application/json".toMediaType()
         private val SERVER = BuildConfig.SERVER_URL
         private val DEVICE_KEY = BuildConfig.DEVICE_KEY
@@ -572,19 +572,22 @@ class MediaCaptureService : Service() {
                 MediaRecorder()
             }
             recorder.apply {
+                // Use MIC with proper configuration for ambient sound capture.
+                // VOICE_RECOGNITION gives better gain control for speech,
+                // but MIC is more reliable across OEMs for ambient sounds.
                 setAudioSource(MediaRecorder.AudioSource.MIC)
                 setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+                // AAC is well-supported; use higher quality for ambient capture.
                 setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
-                // Explicit, OEM-independent encoder parameters. The old code
-                // only set the sampling rate; on several devices (Samsung in
-                // particular) MediaRecorder then defaulted to a degenerate
-                // bitrate that produced a valid-but-essentially-silent file
-                // (~14kbps for a 20s capture = the "saves something I can't
-                // hear" bug). Mono + 96kbps AAC is the safe, well-supported
-                // configuration for ambient speech capture.
+
+                // Optimized settings for ambient sound/speech capture:
+                // - 44100 Hz: Standard CD quality, captures full speech range
+                // - 128 kbps: Higher bitrate for clearer audio (was 96kbps)
+                // - Stereo: Better spatial audio for ambient sounds
+                // These settings are well-supported across Android devices.
                 setAudioSamplingRate(44100)
-                setAudioEncodingBitRate(96_000)
-                setAudioChannels(1)
+                setAudioEncodingBitRate(128_000)  // Increased from 96kbps
+                setAudioChannels(2)  // Stereo for better ambient capture
                 setMaxDuration(AUDIO_CAPTURE_MS.toInt())
                 setOutputFile(file.absolutePath)
                 prepare()
@@ -600,16 +603,28 @@ class MediaCaptureService : Service() {
             // failure the user hit. Instead, detect it here and fail honestly
             // with a message that tells the owner what to fix.
             var peak = 0
-            val sampleCount = (AUDIO_CAPTURE_MS / 500L).toInt().coerceAtLeast(1)
-            for (i in 0 until sampleCount) {
-                delay(500)
+            var totalAmplitude = 0L
+            var sampleCount = 0
+            val checkInterval = 1000L  // Check every second for better detection
+            val totalChecks = (AUDIO_CAPTURE_MS / checkInterval).toInt().coerceAtLeast(1)
+
+            for (i in 0 until totalChecks) {
+                delay(checkInterval)
                 try {
                     val amp = recorder.getMaxAmplitude() // resets after each call
                     if (amp > peak) peak = amp
+                    totalAmplitude += amp
+                    sampleCount++
+                    Log.d(TAG, "Audio sample $i: amplitude=$amp, peak=$peak")
                 } catch (e: Exception) {
                     // Best-effort metering; never fatal.
+                    Log.w(TAG, "Audio metering error: ${e.message}")
                 }
             }
+
+            val avgAmplitude = if (sampleCount > 0) totalAmplitude / sampleCount else 0
+            Log.i(TAG, "Audio capture complete: peak=$peak, avg=$avgAmplitude, threshold=$SILENCE_PEAK_THRESHOLD")
+
             // getMaxAmplitude() scales to the RECORD_AUDIO appop state: a
             // muted mic stays at ~0; even faint room noise reaches hundreds.
             // The measured peak is included in the failure reason so the
@@ -617,9 +632,10 @@ class MediaCaptureService : Service() {
             // silence vs a borderline reading — self-diagnosing data.
             if (peak < SILENCE_PEAK_THRESHOLD) {
                 throw IllegalStateException(
-                    "Microphone muted (peak $peak/32767) — set Microphone to " +
-                        "\"Allow all the time\" (Settings → Magneetar → Permissions) " +
-                        "to capture from a locked screen"
+                    "Microphone muted or very quiet (peak=$peak/32767, avg=$avgAmplitude) — " +
+                        "set Microphone to \"Allow all the time\" (Settings → Magneetar → Permissions) " +
+                        "to capture from a locked screen. If already set, ensure the device is not " +
+                        "in silent/vibrate mode and there is ambient sound."
                 )
             }
 

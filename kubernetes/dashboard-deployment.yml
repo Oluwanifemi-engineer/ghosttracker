@@ -1,0 +1,69 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# MAGNEETAR — Dashboard Deployment
+# Next.js dashboard with Nginx reverse proxy
+# ═══════════════════════════════════════════════════════════════════════════════
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dashboard
+  namespace: magneetar
+  labels:
+    app: dashboard
+    version: v1.4.0
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: dashboard
+  template:
+    metadata:
+      labels:
+        app: dashboard
+    spec:
+      containers:
+        - name: dashboard
+          image: magneetar/dashboard:latest
+          ports:
+            - containerPort: 80
+              protocol: TCP
+          env:
+            - name: NEXT_PUBLIC_API_URL
+              value: "https://api.magneetar.me"
+            - name: NEXT_PUBLIC_APP_VERSION
+              value: "1.4.0"
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dashboard
+  namespace: magneetar
+spec:
+  selector:
+    app: dashboard
+  ports:
+    - port: 80
+      targetPort: 80
+      protocol: TCP
+  type: ClusterIP

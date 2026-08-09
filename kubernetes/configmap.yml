@@ -1,0 +1,47 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: magneetar-config
+  namespace: magneetar
+data:
+  # Environment
+  MT_ENVIRONMENT: "production"
+  MT_LOG_LEVEL: "info"
+
+  # Server
+  MT_HOST: "0.0.0.0"
+  MT_PORT: "8000"
+
+  # Database
+  MT_DB_PATH: "/app/data/magneetar.db"
+  MT_MEDIA_DIR: "/app/media"
+
+  # Redis (service name in Kubernetes)
+  redis-url: "redis://redis:6379/0"
+
+  # WebSocket
+  MT_MAX_WS_CONNECTIONS: "250"
+
+  # Write Queue (batched writes)
+  MT_WRITE_BATCH_MS: "250"
+
+  # Device Limits
+  MT_MAX_DEVICES: "1"
+  MT_MAX_UNOWNED_DEVICES: "250"
+
+  # Rate Limiting
+  MT_RATE_LOGIN_ATTEMPTS: "10"
+  MT_RATE_LOGIN_WINDOW_MINUTES: "15"
+  MT_RATE_REGISTER_ATTEMPTS: "10"
+  MT_RATE_REGISTER_WINDOW_MINUTES: "10"
+
+  # Retention
+  MT_RETENTION_DAYS: "90"
+  MT_OFFLINE_ALERT_MINUTES: "30"
+  MT_ARCHIVE_AFTER_DAYS: "30"
+
+  # Phone
+  MT_COUNTRY_CODE: "234"
+
+  # Dashboard URL
+  MT_DASHBOARD_URL: "https://app.magneetar.me"

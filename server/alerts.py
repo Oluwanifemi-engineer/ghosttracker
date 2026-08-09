@@ -15,6 +15,14 @@ from datetime import datetime, timezone
 import httpx
 from config import settings
 
+# Import circuit breaker for external services
+try:
+    from circuit_breaker import get_sendgrid_breaker
+
+    CIRCUIT_BREAKER_ENABLED = True
+except ImportError:
+    CIRCUIT_BREAKER_ENABLED = False
+
 # Alert types that MUST always deliver — theft, SIM swap, and factory-reset
 # attempts are emergencies; quiet hours and per-device type toggles must never
 # silence them.
@@ -109,7 +117,7 @@ class AlertEngine:
         # Circuit is open — check if cooldown has elapsed (half-open probe)
         disabled_at = self._channel_disabled_at.get(channel, 0.0)
         if time.time() - disabled_at > self.CIRCUIT_BREAKER_COOLDOWN:
-            logger.info(f"Channel '{channel}' circuit breaker cooldown elapsed — allowing probe attempt")
+            logger.info("Channel '%s' circuit breaker cooldown elapsed — allowing probe attempt", channel)
             return False
 
         return True
@@ -124,16 +132,19 @@ class AlertEngine:
         if failures >= self.MAX_CONSECUTIVE_FAILURES:
             self._channel_disabled_at[channel] = time.time()
             logger.error(
-                f"Channel '{channel}' circuit opened after {failures} consecutive failures. "
-                f"Will re-try in {self.CIRCUIT_BREAKER_COOLDOWN}s."
+                "Channel '%s' circuit opened after %d consecutive failures. " "Will re-try in %ds.",
+                channel,
+                failures,
+                self.CIRCUIT_BREAKER_COOLDOWN,
             )
 
     async def _send_with_retry(self, channel: str, send_fn, *args, **kwargs) -> bool:
         """Send with one retry using exponential backoff + jitter."""
         if self._should_skip_channel(channel):
             logger.warning(
-                f"Skipping channel '{channel}' — circuit breaker open for "
-                f"{int(time.time() - self._channel_disabled_at.get(channel, 0))}s"
+                "Skipping channel '%s' — circuit breaker open for %ds",
+                channel,
+                int(time.time() - self._channel_disabled_at.get(channel, 0)),
             )
             return False
 
@@ -146,10 +157,10 @@ class AlertEngine:
                 # send_fn returned False (e.g., API returned non-200)
                 if attempt == 0:
                     wait = 1.0 + random.random()  # 1–2s jitter
-                    logger.info(f"Retrying {channel} in {wait:.1f}s (attempt {attempt + 1})")
+                    logger.info("Retrying %s in %.1fs (attempt %d)", channel, wait, attempt + 1)
                     await asyncio.sleep(wait)
             except Exception as e:
-                logger.warning(f"{channel} attempt {attempt + 1} failed: {e}")
+                logger.warning("%s attempt %d failed: %s", channel, attempt + 1, e)
                 if attempt == 0:
                     wait = 1.0 + random.random()
                     await asyncio.sleep(wait)
@@ -218,9 +229,16 @@ class AlertEngine:
     }
 
     async def send_email(self, to: str, template: str, data: dict) -> bool:
-        """Send email via SendGrid API."""
+        """Send email via SendGrid API with circuit breaker protection."""
         if not settings.SENDGRID_API_KEY:
             return False
+
+        # Check circuit breaker
+        if CIRCUIT_BREAKER_ENABLED:
+            breaker = get_sendgrid_breaker()
+            if not breaker.can_execute():
+                logger.warning("SendGrid circuit breaker is OPEN - skipping email")
+                return False
 
         tmpl = self.ALERT_TEMPLATES.get(template, {})
         subject = tmpl.get("subject", f"MAGNEETAR Alert: {template}")
@@ -242,9 +260,17 @@ class AlertEngine:
                     },
                     timeout=10,
                 )
-                return response.status_code in (200, 202)
+                success = response.status_code in (200, 202)
+                if CIRCUIT_BREAKER_ENABLED:
+                    if success:
+                        breaker.record_success()
+                    else:
+                        breaker.record_failure()
+                return success
         except Exception as e:
-            logger.warning(f"Email send failed: {e}")
+            logger.warning("Email send failed: %s", e)
+            if CIRCUIT_BREAKER_ENABLED:
+                breaker.record_failure()
             return False
 
     async def send_sms(self, to: str, template: str, data: dict) -> bool:
@@ -269,9 +295,9 @@ class AlertEngine:
                     )
                     if response.status_code in (200, 201):
                         return True
-                    logger.warning(f"Twilio SMS returned {response.status_code}: {response.text[:300]}")
+                    logger.warning("Twilio SMS returned %d: %s", response.status_code, response.text[:300])
             except Exception as e:
-                logger.warning(f"Twilio SMS send failed: {e}")
+                logger.warning("Twilio SMS send failed: %s", e)
                 # fall through to Termii fallback below
 
         # ── Fallback: Termii API (Nigerian provider) ──────────────────────
@@ -293,7 +319,7 @@ class AlertEngine:
                 )
                 return response.status_code == 200
         except Exception as e:
-            logger.warning(f"SMS send failed: {e}")
+            logger.warning("SMS send failed: %s", e)
             return False
 
     async def send_push(self, device_token: str, template: str, data: dict) -> bool:
@@ -353,14 +379,14 @@ class AlertEngine:
 
             # Send in thread to avoid blocking the async event loop
             response = await asyncio.to_thread(messaging.send, message)
-            logger.info(f"Push notification sent: {response}")
+            logger.info("Push notification sent: %s", response)
             return True
 
         except ImportError:
             logger.warning("firebase-admin not installed. Run: pip install firebase-admin")
             return False
         except Exception as e:
-            logger.error(f"Push notification failed: {e}")
+            logger.error("Push notification failed: %s", e)
             return False
 
     async def send_whatsapp(self, to: str, template: str, data: dict) -> bool:
@@ -414,7 +440,7 @@ class AlertEngine:
                 if response.status_code in (200, 201):
                     return True
                 body = response.text[:300]
-                logger.warning(f"Twilio WhatsApp returned {response.status_code}: {body}")
+                logger.warning("Twilio WhatsApp returned %d: %s", response.status_code, body)
                 if any(code in body for code in ("63010", "63016", "63017", "63018")):
                     logger.warning(
                         "WhatsApp message rejected — template problem. Set "
@@ -426,7 +452,7 @@ class AlertEngine:
                     )
                 return False
         except Exception as e:
-            logger.warning(f"WhatsApp send failed: {e}")
+            logger.warning("WhatsApp send failed: %s", e)
             return False
 
     def _load_device_alert_prefs(self, device_id: str) -> dict:
@@ -480,7 +506,7 @@ class AlertEngine:
                     if val is not None and str(val).lstrip("-").isdigit():
                         prefs[field] = int(val)
         except Exception as e:
-            logger.warning(f"Could not load alert preferences for {device_id}: {e}")
+            logger.warning("Could not load alert preferences for %s: %s", device_id, e)
         return prefs
 
     def _in_quiet_hours(self, start: int, end: int) -> bool:
@@ -525,7 +551,7 @@ class AlertEngine:
                 )
                 conn.commit()
         except Exception as e:
-            logger.warning(f"Failed to log alert row for {device_id}/{alert_type}/{channel}: {e}")
+            logger.warning("Failed to log alert row for %s/%s/%s: %s", device_id, alert_type, channel, e)
 
     async def send_all(
         self, device_id: str, alert_type: str, data: dict, channels: list[str] = None
@@ -554,7 +580,7 @@ class AlertEngine:
             and alert_type not in ALWAYS_DELIVER_TYPES
             and alert_type not in prefs["enabled_types"]
         ):
-            logger.info(f"Alert '{alert_type}' suppressed for {device_id} — type disabled per-device")
+            logger.info("Alert '%s' suppressed for %s — type disabled per-device", alert_type, device_id)
             for ch in channels or ALL_CHANNELS:
                 self._log_alert(device_id, alert_type, ch, data, delivered=False)
             return {c: False for c in (channels or ALL_CHANNELS)}
@@ -563,7 +589,7 @@ class AlertEngine:
         if alert_type not in ALWAYS_DELIVER_TYPES and self._in_quiet_hours(
             prefs["quiet_hours_start"], prefs["quiet_hours_end"]
         ):
-            logger.info(f"Alert '{alert_type}' suppressed for {device_id} — inside quiet hours")
+            logger.info("Alert '%s' suppressed for %s — inside quiet hours", alert_type, device_id)
             for ch in channels or ALL_CHANNELS:
                 self._log_alert(device_id, alert_type, ch, data, delivered=False)
             return {c: False for c in (channels or ALL_CHANNELS)}

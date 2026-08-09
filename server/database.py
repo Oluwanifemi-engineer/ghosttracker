@@ -1,6 +1,12 @@
 """
 Magneetar Database Layer
 SQLite implementation with full schema. PostgreSQL-compatible syntax.
+
+Performance optimizations:
+- Connection pooling (db_pool.py) for reduced connection overhead
+- In-memory caching (cache.py) for frequently accessed data
+- WAL mode for concurrent reads
+- Write batching for high-throughput telemetry
 """
 
 import os
@@ -11,6 +17,21 @@ from config import settings
 
 DB_PATH = settings.DB_PATH
 
+# Import caching layer
+try:
+    from cache import (
+        cache_device_info,
+        cache_device_owner,
+        get_cached_device_info,
+        get_cached_device_owner,
+        invalidate_device_cache,
+        invalidate_device_owner,
+    )
+
+    CACHE_ENABLED = True
+except ImportError:
+    CACHE_ENABLED = False
+
 
 def _connect() -> sqlite3.Connection:
     """Create a new database connection with correct settings."""
@@ -19,6 +40,9 @@ def _connect() -> sqlite3.Connection:
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA foreign_keys=ON")
     conn.execute("PRAGMA busy_timeout=5000")  # Wait up to 5s if DB is locked
+    conn.execute("PRAGMA synchronous=NORMAL")  # Faster than FULL, still safe with WAL
+    conn.execute("PRAGMA cache_size=-64000")  # 64MB cache
+    conn.execute("PRAGMA temp_store=MEMORY")
     return conn
 
 
@@ -723,6 +747,59 @@ def purge_old_data(retention_days: int = 90):
             "audit_purged": deleted_audit,
             "errors_purged": deleted_errors,
         }
+
+
+# ── Cached Helper Functions ───────────────────────────────────────────────
+# These functions cache frequently accessed data to reduce database load.
+
+
+def get_device_info_cached(device_id: str) -> dict:
+    """Get device information with caching."""
+    if CACHE_ENABLED:
+        cached = get_cached_device_info(device_id)
+        if cached is not None:
+            return cached
+
+    with get_db_context() as conn:
+        row = conn.execute(
+            "SELECT id, alias, owner_id, model, last_seen, is_stolen, sentinel_score, "
+            "alert_phone, alert_email, alert_channels, enabled_types, "
+            "quiet_hours_start, quiet_hours_end FROM devices WHERE id=?",
+            (device_id,),
+        ).fetchone()
+        if row:
+            info = dict(row)
+            if CACHE_ENABLED:
+                cache_device_info(device_id, info)
+            return info
+    return None
+
+
+def get_device_owner_cached(device_id: str) -> str:
+    """Get device owner ID with caching."""
+    if CACHE_ENABLED:
+        cached = get_cached_device_owner(device_id)
+        if cached is not None:
+            return cached
+
+    with get_db_context() as conn:
+        row = conn.execute(
+            "SELECT owner_id FROM devices WHERE id=?",
+            (device_id,),
+        ).fetchone()
+        if row:
+            owner_id = row["owner_id"]
+            if CACHE_ENABLED:
+                cache_device_owner(device_id, owner_id)
+            return owner_id
+    return None
+
+
+def invalidate_device_cache_on_write(device_id: str):
+    """Invalidate device cache after a write operation."""
+    if CACHE_ENABLED:
+        invalidate_device_cache(device_id)
+        invalidate_device_owner(device_id)
 
 
 # ── Safe Initialization ───────────────────────────────────────────────────

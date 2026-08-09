@@ -49,8 +49,24 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="application-name" content="MAGNEETAR" />
+        <link rel="manifest" href="/manifest.json" />
       </head>
       <body className="bg-mag-bg text-mag-text min-h-screen antialiased">
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                  navigator.serviceWorker.register('/sw.js').then((registration) => {
+                    console.log('SW registered:', registration.scope);
+                  }).catch((error) => {
+                    console.log('SW registration failed:', error);
+                  });
+                });
+              }
+            `,
+          }}
+        />
         {children}
       </body>
     </html>

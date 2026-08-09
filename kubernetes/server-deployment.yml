@@ -1,0 +1,143 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: magneetar-server
+  namespace: magneetar
+  labels:
+    app: magneetar-server
+    version: v1.4.0
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: magneetar-server
+  template:
+    metadata:
+      labels:
+        app: magneetar-server
+    spec:
+      containers:
+        - name: server
+          image: magneetar/server:latest
+          ports:
+            - containerPort: 8000
+              protocol: TCP
+          env:
+            - name: MT_ENVIRONMENT
+              value: "production"
+            - name: MT_DB_PATH
+              value: "/app/data/magneetar.db"
+            - name: MT_MEDIA_DIR
+              value: "/app/media"
+            - name: MT_REDIS_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: magneetar-config
+                  key: redis-url
+            - name: MT_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: magneetar-secrets
+                  key: database-url
+            - name: MT_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: magneetar-secrets
+                  key: api-key
+            - name: MT_DEVICE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: magneetar-secrets
+                  key: device-key
+            - name: MT_JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: magneetar-secrets
+                  key: jwt-secret
+            - name: MT_ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: magneetar-secrets
+                  key: encryption-key
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+            - name: media
+              mountPath: /app/media
+            - name: firebase-key
+              mountPath: /app/firebase-service-account.json
+              subPath: firebase-service-account.json
+              readOnly: true
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: magneetar-data-pvc
+        - name: media
+          persistentVolumeClaim:
+            claimName: magneetar-media-pvc
+        - name: firebase-key
+          secret:
+            secretName: magneetar-firebase-key
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: magneetar-server
+  namespace: magneetar
+spec:
+  selector:
+    app: magneetar-server
+  ports:
+    - port: 8000
+      targetPort: 8000
+      protocol: TCP
+  type: ClusterIP
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: magneetar-server-hpa
+  namespace: magneetar
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: magneetar-server
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80
