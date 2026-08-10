@@ -34,6 +34,7 @@ from database import get_db, log_audit
 from evidence import evidence_builder
 from fastapi import APIRouter, Depends, Header, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials
+from location_validator import validate_location_report
 from logging_config import get_logger
 from models import (
     CommandAck,
@@ -478,11 +479,32 @@ async def post_location(
     if not check_location_rate_limit(device_id):
         raise HTTPException(status_code=429, detail="Rate limit exceeded")
 
+    now = datetime.now(timezone.utc).isoformat()
+
+    # Validate GPS coordinates before processing - reject obviously invalid
+    # fixes (ocean, Antarctica, garbage values) but log them for diagnostics.
+    loc_valid, loc_reason, loc_warning = validate_location_report(
+        report.lat, report.lng, report.accuracy_horizontal, report.provider
+    )
+    if not loc_valid:
+        logger.warning(
+            "Rejecting invalid location report",
+            extra={"extra_data": {"device_id": device_id, "reason": loc_reason}},
+        )
+        log_audit("invalid_location", actor=device_id, details=loc_reason)
+        # Still return success to avoid tipping off the device, but don't
+        # persist the garbage coordinates.
+        commands = db.execute(
+            "SELECT id, command, params, priority FROM commands"
+            " WHERE device_id=? AND status='pending'"
+            " ORDER BY priority",
+            (device_id,),
+        ).fetchall()
+        return {"status": "ok", "commands_pending": len(commands), "server_time": now}
+
     is_valid, reason = sentinel.validate_report(report, None)
     if not is_valid:
         log_audit("invalid_location_report", actor=device_id, details=reason)
-
-    now = datetime.now(timezone.utc).isoformat()
     ts = report.device_timestamp or now
 
     history = db.execute(
