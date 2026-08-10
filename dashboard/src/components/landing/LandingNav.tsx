@@ -35,16 +35,16 @@ export function LandingNav({ authed }: { authed: boolean }) {
       )}
     >
       <nav className="max-w-7xl mx-auto px-5 sm:px-8 h-16 flex items-center justify-between gap-4">
-        {/* Brand — magenta M tile (same mark as dashboard/login + launcher icon) */}
+        {/* Brand — aqua M tile */}
         <Link href="/" className="flex items-center gap-2.5 group shrink-0">
           <img
             src="/m-logo.svg"
             alt="Magneetar"
-            className="w-8 h-8 rounded-lg drop-shadow-[0_0_12px_rgba(233,30,140,0.35)] transition-transform duration-200 group-hover:scale-105"
+            className="w-8 h-8 rounded-lg drop-shadow-[0_0_12px_rgba(6,182,212,0.35)] transition-transform duration-200 group-hover:scale-105"
           />
           <div className="leading-none">
             <div className="text-white text-sm font-bold tracking-[0.25em]">MAGNEETAR</div>
-            <div className="text-[8px] font-mono text-white/30 tracking-[0.3em] mt-1">TRACK · PROTECT · RECOVER</div>
+            <div className="text-[8px] font-mono text-white/50 tracking-[0.3em] mt-1">TRACK · PROTECT · RECOVER</div>
           </div>
         </Link>
 
@@ -54,7 +54,7 @@ export function LandingNav({ authed }: { authed: boolean }) {
             <a
               key={link.href}
               href={link.href}
-              className="px-4 py-2 text-[12px] font-semibold text-white/50 hover:text-white transition-colors rounded-lg hover:bg-white/[0.03]"
+              className="px-4 py-2 text-[12px] font-semibold text-white/70 hover:text-white transition-colors rounded-lg hover:bg-white/[0.03]"
             >
               {link.label}
             </a>
@@ -65,7 +65,7 @@ export function LandingNav({ authed }: { authed: boolean }) {
         <div className="hidden md:flex items-center gap-3">
           <Link
             href="/download"
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[12px] font-bold uppercase tracking-wider border border-emerald-400/25 text-emerald-300 hover:bg-emerald-400/[0.06] hover:border-emerald-400/40 hover:shadow-[0_0_20px_rgba(34,197,94,0.12)] transition-all duration-200 active:scale-[0.97]"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[12px] font-bold uppercase tracking-wider border border-emerald-400/25 text-emerald-300 hover:bg-emerald-400/[0.06] hover:border-emerald-400/40 hover:shadow-[0_0_20px_rgba(16,185,129,0.12)] transition-all duration-200 active:scale-[0.97]"
           >
             <Download size={13} />
             Download APK
@@ -73,7 +73,7 @@ export function LandingNav({ authed }: { authed: boolean }) {
           {authed ? (
             <Link
               href="/dashboard"
-              className="group inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-[12px] font-bold uppercase tracking-wider bg-gradient-to-r from-[#E91E8C] to-[#06B6D4] text-white shadow-lg shadow-[#E91E8C]/20 hover:shadow-[#E91E8C]/40 hover:brightness-110 transition-all duration-200 active:scale-[0.97]"
+              className="group inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-[12px] font-bold uppercase tracking-wider bg-gradient-to-r from-mag-primary to-mag-secondary text-white shadow-lg shadow-mag-primary/20 hover:shadow-mag-primary/40 hover:brightness-110 transition-all duration-200 active:scale-[0.97]"
             >
               <ShieldCheck size={14} />
               Launch Dashboard
@@ -88,7 +88,7 @@ export function LandingNav({ authed }: { authed: boolean }) {
               </Link>
               <Link
                 href="/signup"
-                className="group inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-[12px] font-bold uppercase tracking-wider bg-gradient-to-r from-[#E91E8C] to-[#06B6D4] text-white shadow-lg shadow-[#E91E8C]/20 hover:shadow-[#E91E8C]/40 hover:brightness-110 transition-all duration-200 active:scale-[0.97]"
+                className="group inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-[12px] font-bold uppercase tracking-wider bg-gradient-to-r from-mag-primary to-mag-secondary text-white shadow-lg shadow-mag-primary/20 hover:shadow-mag-primary/40 hover:brightness-110 transition-all duration-200 active:scale-[0.97]"
               >
                 Get Started
                 <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" />
@@ -140,7 +140,7 @@ export function LandingNav({ authed }: { authed: boolean }) {
               <Link
                 href="/dashboard"
                 onClick={() => setOpen(false)}
-                className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-[12px] font-bold uppercase tracking-wider bg-gradient-to-r from-[#E91E8C] to-[#06B6D4] text-white"
+                className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-[12px] font-bold uppercase tracking-wider bg-gradient-to-r from-mag-primary to-mag-secondary text-white"
               >
                 <ShieldCheck size={14} /> Launch Dashboard
               </Link>
@@ -156,7 +156,7 @@ export function LandingNav({ authed }: { authed: boolean }) {
                 <Link
                   href="/signup"
                   onClick={() => setOpen(false)}
-                  className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-[12px] font-bold uppercase tracking-wider bg-gradient-to-r from-[#E91E8C] to-[#06B6D4] text-white"
+                  className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-[12px] font-bold uppercase tracking-wider bg-gradient-to-r from-mag-primary to-mag-secondary text-white"
                 >
                   Get Started <ArrowRight size={14} />
                 </Link>

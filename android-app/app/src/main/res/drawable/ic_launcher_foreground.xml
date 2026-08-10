@@ -1,20 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="108dp"
-    android:height="108dp"
+    android:width="120dp"
+    android:height="120dp"
     android:viewportWidth="120"
     android:viewportHeight="120">
 
-    <!-- Squircle background -->
-    <path
-        android:pathData="M0,0 L120,0 L120,120 L0,120 Z"
-        android:fillColor="#E91E8C"/>
+    <!-- Premium Aqua Gradient Background -->
+    <group>
+        <clip-path android:pathData="M0,0 L120,0 L120,120 L0,120 Z"/>
+        <path
+            android:pathData="M0,0 L120,0 L120,120 L0,120 Z"
+            android:fillColor="#06B6D4"/>
+        <path
+            android:pathData="M0,0 L120,0 L120,120 L0,120 Z"
+            android:fillColor="#0891B2"
+            android:fillAlpha="0.5"/>
+        <path
+            android:pathData="M0,0 L120,0 L120,120 L0,120 Z"
+            android:fillColor="#14B8A6"
+            android:fillAlpha="0.3"/>
+    </group>
 
-    <!-- Simple capital M — stroke-based like Moniepoint -->
+    <!-- Ultra-bold capital M — straight edges, no curves -->
     <path
-        android:pathData="M 28 88 L 28 32 L 60 66 L 92 32 L 92 88"
-        android:strokeWidth="14"
-        android:strokeColor="#FFFFFF"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:fillColor="#00000000"/>
+        android:pathData="M 28 92 L 28 28 L 48 28 L 60 58 L 72 28 L 92 28 L 92 92 L 76 92 L 76 52 L 60 82 L 44 52 L 44 92 Z"
+        android:fillColor="#FFFFFF"
+        android:strokeWidth="0"
+        android:strokeColor="#00000000"/>
 </vector>

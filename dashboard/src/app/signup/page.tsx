@@ -99,17 +99,17 @@ export default function SignupPage() {
 
   const inputClass =
     'w-full pl-10 pr-4 py-3 bg-white/[0.02] border border-white/[0.07] rounded-xl text-white/85 text-sm ' +
-    'placeholder:text-white/15 focus:outline-none focus:border-[#E91E8C]/40 focus:bg-white/[0.03] ' +
-    'focus:ring-1 focus:ring-[#E91E8C]/15 transition-all duration-200';
+    'placeholder:text-white/15 focus:outline-none focus:border-mag-primary/40 focus:bg-white/[0.03] ' +
+    'focus:ring-1 focus:ring-mag-primary/15 transition-all duration-200';
 
   return (
     <div className="min-h-screen bg-mag-bg text-white relative overflow-hidden">
       {/* Ambient background */}
       <div className="absolute inset-0 landing-vignette pointer-events-none" />
       <div className="absolute inset-0 landing-grid opacity-40 pointer-events-none" />
-      <div className="absolute -top-40 left-1/3 w-[600px] h-[400px] rounded-full bg-[#E91E8C]/10 blur-[130px] animate-aurora pointer-events-none" aria-hidden="true" />
-      <div className="absolute top-1/3 -right-32 w-[480px] h-[480px] rounded-full bg-[#06B6D4]/8 blur-[120px] animate-aurora pointer-events-none" style={{ animationDelay: '-6s' }} aria-hidden="true" />
-      <div className="absolute -bottom-40 -left-24 w-[520px] h-[380px] rounded-full bg-[#7C3AED]/8 blur-[130px] animate-aurora pointer-events-none" style={{ animationDelay: '-11s' }} aria-hidden="true" />
+      <div className="absolute -top-40 left-1/3 w-[600px] h-[400px] rounded-full bg-mag-primary/10 blur-[130px] animate-aurora pointer-events-none" aria-hidden="true" />
+      <div className="absolute top-1/3 -right-32 w-[480px] h-[480px] rounded-full bg-mag-secondary/8 blur-[120px] animate-aurora pointer-events-none" style={{ animationDelay: '-6s' }} aria-hidden="true" />
+      <div className="absolute -bottom-40 -left-24 w-[520px] h-[380px] rounded-full bg-mag-primary/8 blur-[130px] animate-aurora pointer-events-none" style={{ animationDelay: '-11s' }} aria-hidden="true" />
 
       {/* ─── Split Layout ─────────────────────────────────────────────────── */}
       <div className="relative min-h-screen grid lg:grid-cols-2">
@@ -124,12 +124,8 @@ export default function SignupPage() {
               <div className="w-9 h-9 rounded-lg border border-white/10 bg-white/[0.03] flex items-center justify-center overflow-hidden">
                 <svg viewBox="0 0 120 120" className="w-5 h-5" fill="none" aria-label="Magneetar logo">
                   <path
-                    d="M 28 88 L 28 32 L 60 66 L 92 32 L 92 88"
-                    fill="none"
-                    stroke="white"
-                    strokeWidth="14"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
+                    d="M 28 92 L 28 28 L 48 28 L 60 58 L 72 28 L 92 28 L 92 92 L 76 92 L 76 52 L 60 82 L 44 52 L 44 92 Z"
+                    fill="white"
                   />
                 </svg>
               </div>
@@ -154,8 +150,8 @@ export default function SignupPage() {
           <div className="relative my-10 space-y-4 animate-fade-slide" style={{ animationDelay: '0.15s' }}>
             {PERKS.map((perk) => (
               <div key={perk} className="flex items-start gap-3.5">
-                <div className="w-6 h-6 rounded-full border border-[#22C55E]/25 bg-[#22C55E]/10 flex items-center justify-center shrink-0 mt-0.5">
-                  <Check size={12} className="text-[#22C55E]" />
+                <div className="w-6 h-6 rounded-full border border-mag-accent/25 bg-mag-accent/10 flex items-center justify-center shrink-0 mt-0.5">
+                  <Check size={12} className="text-mag-accent" />
                 </div>
                 <span className="text-white/55 text-[13.5px] leading-relaxed">{perk}</span>
               </div>
@@ -181,8 +177,8 @@ export default function SignupPage() {
           {/* Footer strip */}
           <div className="mt-10 flex items-center gap-3 animate-fade-slide" style={{ animationDelay: '0.25s' }}>
             <span className="relative flex w-2 h-2">
-              <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60 animate-ping" />
-              <span className="relative inline-flex rounded-full w-2 h-2 bg-emerald-400" />
+              <span className="absolute inline-flex h-full w-full rounded-full bg-mag-accent opacity-60 animate-ping" />
+              <span className="relative inline-flex rounded-full w-2 h-2 bg-mag-accent" />
             </span>
             <span className="text-[11px] font-mono font-bold tracking-wider text-white/40">
               FREE TO START · NO CARD REQUIRED
@@ -198,12 +194,8 @@ export default function SignupPage() {
               <div className="w-9 h-9 rounded-lg border border-white/10 bg-white/[0.03] flex items-center justify-center overflow-hidden">
                 <svg viewBox="0 0 120 120" className="w-5 h-5" fill="none" aria-label="Magneetar logo">
                   <path
-                    d="M 28 88 L 28 32 L 60 66 L 92 32 L 92 88"
-                    fill="none"
-                    stroke="white"
-                    strokeWidth="14"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
+                    d="M 28 92 L 28 28 L 48 28 L 60 58 L 72 28 L 92 28 L 92 92 L 76 92 L 76 52 L 60 82 L 44 52 L 44 92 Z"
+                    fill="white"
                   />
                 </svg>
               </div>
@@ -216,7 +208,7 @@ export default function SignupPage() {
             {/* Heading */}
             <div className="mb-8">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/[0.03] mb-4">
-                <ShieldCheck size={11} className="text-[#06B6D4]" />
+                <ShieldCheck size={11} className="text-mag-primary" />
                 <span className="text-[10px] font-mono font-bold tracking-[0.2em] text-white/50">FREE · NO CARD REQUIRED</span>
               </div>
               <h2 className="text-2xl font-display font-extrabold tracking-tight text-white">Create your account</h2>
@@ -229,7 +221,7 @@ export default function SignupPage() {
             <div
               ref={cardRef}
               onMouseMove={handleCardMove}
-              className="spotlight-card relative rounded-2xl border border-white/[0.08] bg-[#0d0d14]/85 backdrop-blur-xl p-7 sm:p-8 shadow-2xl shadow-black/50"
+              className="spotlight-card relative rounded-2xl border border-white/[0.08] bg-mag-panel/85 backdrop-blur-xl p-7 sm:p-8 shadow-2xl shadow-black/50"
             >
               <div className="relative z-10">
                 <form onSubmit={handleSignup} noValidate>
@@ -361,7 +353,7 @@ export default function SignupPage() {
                     <button
                       type="submit"
                       disabled={loading}
-                      className="group relative w-full py-3.5 rounded-xl text-[12px] font-bold uppercase tracking-[0.2em] font-mono bg-gradient-to-r from-[#E91E8C] to-[#06B6D4] text-white shadow-lg shadow-[#E91E8C]/20 hover:shadow-[#E91E8C]/35 hover:brightness-110 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] overflow-hidden"
+                      className="group relative w-full py-3.5 rounded-xl text-[12px] font-bold uppercase tracking-[0.2em] font-mono bg-gradient-to-r from-mag-primary to-mag-secondary text-white shadow-lg shadow-mag-primary/20 hover:shadow-mag-primary/35 hover:brightness-110 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] overflow-hidden"
                     >
                       <span className="absolute inset-y-0 -left-full w-1/2 bg-white/15 blur-md animate-shimmer" />
                       <span className="relative flex items-center justify-center gap-2.5">
@@ -386,7 +378,7 @@ export default function SignupPage() {
             {/* Login prompt */}
             <p className="mt-7 text-center text-[13px] text-white/40">
               Already have an account?{' '}
-              <Link href="/login" className="text-[#06B6D4] hover:text-[#22D3EE] font-semibold transition-colors">
+              <Link href="/login" className="text-mag-primary hover:text-mag-primary-bright font-semibold transition-colors">
                 Sign in
               </Link>
             </p>

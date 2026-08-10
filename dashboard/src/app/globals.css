@@ -91,7 +91,7 @@
     @apply w-2 h-2 rounded-full;
   }
   .mag-status-dot.online {
-    @apply bg-mag-accent shadow-[0_0_10px_rgba(34,197,94,0.5)] animate-pulse-slow;
+    @apply bg-mag-accent shadow-[0_0_10px_rgba(16,185,129,0.5)] animate-pulse-slow;
   }
   .mag-status-dot.offline {
     @apply bg-mag-text-dim/40;
@@ -255,8 +255,8 @@
 
 /* ─── Path Animation ────────────────────────────────────────────────────────── */
 @keyframes pathGlow {
-  0%, 100% { filter: drop-shadow(0 0 3px rgba(233, 30, 140, 0.4)); }
-  50% { filter: drop-shadow(0 0 8px rgba(233, 30, 140, 0.8)); }
+  0%, 100% { filter: drop-shadow(0 0 3px rgba(6, 182, 212, 0.4)); }
+  50% { filter: drop-shadow(0 0 8px rgba(6, 182, 212, 0.8)); }
 }
 
 .animate-path-glow {
@@ -342,14 +342,14 @@
 }
 
 .animate-data-flow {
-  background-image: linear-gradient(90deg, transparent, rgba(233,30,140,0.15), transparent);
+  background-image: linear-gradient(90deg, transparent, rgba(6,182,212,0.15), transparent);
   background-size: 200% 100%;
   background-position: 0% 0;
   animation: data-flow 2s linear infinite;
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
-   Premium Design System — Inspired by Stripe, Linear, Vercel
+   Premium Design System — Aqua/Cyan Security Theme
    ════════════════════════════════════════════════════════════════════════════ */
 
 /* Premium gradient border effect */
@@ -365,7 +365,7 @@
   inset: 0;
   border-radius: inherit;
   padding: 1px;
-  background: linear-gradient(135deg, rgba(233, 30, 140, 0.5), rgba(6, 182, 212, 0.5), rgba(233, 30, 140, 0.3));
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.5), rgba(16, 185, 129, 0.5), rgba(6, 182, 212, 0.3));
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
@@ -390,29 +390,29 @@
 
 /* Premium card with layered shadows */
 .premium-card {
-  background: linear-gradient(180deg, #111118 0%, #0d0d12 100%);
+  background: linear-gradient(180deg, #111827 0%, #0B1120 100%);
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 16px;
   box-shadow:
-    0 1px 1px hsl(220deg 60% 50% / 0.03),
-    0 2px 2px hsl(220deg 60% 50% / 0.03),
-    0 4px 4px hsl(220deg 60% 50% / 0.03),
-    0 8px 8px hsl(220deg 60% 50% / 0.03),
-    0 16px 16px hsl(220deg 60% 50% / 0.03),
-    0 32px 32px hsl(220deg 60% 50% / 0.03);
+    0 1px 1px hsl(200deg 60% 50% / 0.03),
+    0 2px 2px hsl(200deg 60% 50% / 0.03),
+    0 4px 4px hsl(200deg 60% 50% / 0.03),
+    0 8px 8px hsl(200deg 60% 50% / 0.03),
+    0 16px 16px hsl(200deg 60% 50% / 0.03),
+    0 32px 32px hsl(200deg 60% 50% / 0.03);
   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .premium-card:hover {
-  border-color: rgba(233, 30, 140, 0.2);
+  border-color: rgba(6, 182, 212, 0.2);
   box-shadow:
-    0 1px 1px hsl(220deg 60% 50% / 0.04),
-    0 2px 2px hsl(220deg 60% 50% / 0.04),
-    0 4px 4px hsl(220deg 60% 50% / 0.04),
-    0 8px 8px hsl(220deg 60% 50% / 0.04),
-    0 16px 16px hsl(220deg 60% 50% / 0.04),
-    0 32px 32px hsl(220deg 60% 50% / 0.04),
-    0 0 80px -20px rgba(233, 30, 140, 0.15);
+    0 1px 1px hsl(200deg 60% 50% / 0.04),
+    0 2px 2px hsl(200deg 60% 50% / 0.04),
+    0 4px 4px hsl(200deg 60% 50% / 0.04),
+    0 8px 8px hsl(200deg 60% 50% / 0.04),
+    0 16px 16px hsl(200deg 60% 50% / 0.04),
+    0 32px 32px hsl(200deg 60% 50% / 0.04),
+    0 0 80px -20px rgba(6, 182, 212, 0.15);
   transform: translateY(-4px);
 }
 
@@ -420,7 +420,7 @@
 .btn-premium {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(135deg, #E91E8C 0%, #06B6D4 100%);
+  background: linear-gradient(135deg, #06B6D4 0%, #14B8A6 100%);
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -441,7 +441,7 @@
 
 .btn-premium:hover {
   transform: translateY(-2px) scale(1.02);
-  box-shadow: 0 10px 40px -10px rgba(233, 30, 140, 0.5);
+  box-shadow: 0 10px 40px -10px rgba(6, 182, 212, 0.5);
 }
 
 .btn-premium:active {
@@ -461,7 +461,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(233, 30, 140, 0.1) 0%, transparent 50%);
+  background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(6, 182, 212, 0.1) 0%, transparent 50%);
   opacity: 0;
   transition: opacity 0.3s ease;
   pointer-events: none;
@@ -483,22 +483,22 @@
   letter-spacing: 0.1em;
   text-transform: uppercase;
   border-radius: 9999px;
-  background: linear-gradient(135deg, rgba(233, 30, 140, 0.15) 0%, rgba(6, 182, 212, 0.15) 100%);
-  border: 1px solid rgba(233, 30, 140, 0.3);
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(16, 185, 129, 0.15) 100%);
+  border: 1px solid rgba(6, 182, 212, 0.3);
   color: rgba(255, 255, 255, 0.8);
 }
 
 /* Premium divider */
 .divider-premium {
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(233, 30, 140, 0.3), rgba(6, 182, 212, 0.3), transparent);
+  background: linear-gradient(90deg, transparent, rgba(6, 182, 212, 0.3), rgba(16, 185, 129, 0.3), transparent);
 }
 
-/* ─── Landing Page — Premium SaaS Effects ─────────────────────────────────── */
+/* ─── Landing Page — Premium Security SaaS Effects ─────────────────────────── */
 
-/* Gradient text — primary (magenta → cyan) and cyan-only */
+/* Gradient text — primary (aqua → teal) */
 .text-gradient-primary {
-  background: linear-gradient(120deg, #E91E8C 0%, #EC4899 35%, #06B6D4 100%);
+  background: linear-gradient(120deg, #06B6D4 0%, #22D3EE 35%, #14B8A6 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -527,16 +527,16 @@
 /* Subtle tactical grid for landing sections */
 .landing-grid {
   background-image:
-    linear-gradient(rgba(233, 30, 140, 0.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(233, 30, 140, 0.025) 1px, transparent 1px);
+    linear-gradient(rgba(6, 182, 212, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(6, 182, 212, 0.025) 1px, transparent 1px);
   background-size: 44px 44px;
 }
 
 /* Ambient color wash for hero/footer */
 .landing-vignette {
   background:
-    radial-gradient(ellipse 80% 60% at 50% 0%, rgba(233, 30, 140, 0.08) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 50% at 90% 100%, rgba(6, 182, 212, 0.06) 0%, transparent 60%);
+    radial-gradient(ellipse 80% 60% at 50% 0%, rgba(6, 182, 212, 0.08) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 90% 100%, rgba(16, 185, 129, 0.06) 0%, transparent 60%);
 }
 
 /* Radar ping for hero mockup */
@@ -644,8 +644,8 @@
   transition: opacity 0.35s ease;
   background: radial-gradient(
     360px circle at var(--mx, 50%) var(--my, 50%),
-    rgba(233, 30, 140, 0.13),
-    rgba(6, 182, 212, 0.07) 45%,
+    rgba(6, 182, 212, 0.13),
+    rgba(16, 185, 129, 0.07) 45%,
     transparent 65%
   );
   z-index: 1;
@@ -676,7 +676,7 @@ input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus {
   -webkit-text-fill-color: rgba(255, 255, 255, 0.85);
-  -webkit-box-shadow: 0 0 0 1000px #0d0d14 inset;
+  -webkit-box-shadow: 0 0 0 1000px #111827 inset;
   transition: background-color 9999s ease-in-out 0s;
 }
 
@@ -708,7 +708,43 @@ input:-webkit-autofill:focus {
 }
 
 .card-glow:hover {
-  border-color: rgba(233, 30, 140, 0.3);
-  box-shadow: 0 0 40px rgba(233, 30, 140, 0.08), 0 12px 48px rgba(0, 0, 0, 0.5);
+  border-color: rgba(6, 182, 212, 0.3);
+  box-shadow: 0 0 40px rgba(6, 182, 212, 0.08), 0 12px 48px rgba(0, 0, 0, 0.5);
   transform: translateY(-4px);
+}
+
+/* ═══ Premium Action Panel (Prey-style) ════════════════════════════════════════ */
+.action-item {
+  @apply flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 cursor-pointer;
+  @apply border border-transparent hover:border-mag-primary/20 hover:bg-mag-primary/[0.04];
+}
+
+.action-item:hover {
+  @apply shadow-[0_0_20px_rgba(6,182,212,0.08)];
+}
+
+.action-icon {
+  @apply w-10 h-10 rounded-xl flex items-center justify-center;
+  @apply bg-mag-surface/60 border border-mag-border/40;
+  @apply transition-all duration-200;
+}
+
+.action-item:hover .action-icon {
+  @apply bg-mag-primary/10 border-mag-primary/30;
+}
+
+/* ═══ Premium Sidebar (Prey-style) ════════════════════════════════════════════ */
+.sidebar-item {
+  @apply flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 cursor-pointer;
+  @apply border border-transparent hover:bg-mag-surface/40 hover:border-mag-border/30;
+}
+
+.sidebar-item.active {
+  @apply bg-mag-primary/[0.06] border-mag-primary/20;
+}
+
+/* ═══ Premium Map Overlay ════════════════════════════════════════════════════════ */
+.map-overlay {
+  background: linear-gradient(180deg, rgba(11, 17, 32, 0.8) 0%, transparent 30%, transparent 70%, rgba(11, 17, 32, 0.8) 100%);
+  pointer-events: none;
 }

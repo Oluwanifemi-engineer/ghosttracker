@@ -9,24 +9,25 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Premium Dark Tactical Palette
+        // Premium Dark Security Palette — Aqua/Cyan Focus
         mag: {
-          // Background layers
-          bg: '#0a0a0f',
-          panel: '#111118',
-          surface: '#1a1a24',
-          border: '#2a2a38',
-          'border-bright': '#3a3a50',
+          // Background layers — deep navy-charcoal
+          bg: '#0B1120',
+          panel: '#111827',
+          surface: '#1F2937',
+          border: '#374151',
+          'border-bright': '#4B5563',
 
-          // Primary — Magenta / Hot Pink (tactical accent)
-          primary: '#E91E8C',
-          'primary-dim': '#C4176E',
-          'primary-glow': 'rgba(233, 30, 140, 0.15)',
+          // Primary — Premium Aqua/Cyan (bluish-greenish-whitish)
+          primary: '#06B6D4',
+          'primary-dim': '#0891B2',
+          'primary-glow': 'rgba(6, 182, 212, 0.15)',
+          'primary-bright': '#22D3EE',
 
           // Accent — Bright Green for positive states
-          accent: '#22C55E',
-          'accent-dim': '#16A34A',
-          'accent-glow': 'rgba(34, 197, 94, 0.15)',
+          accent: '#10B981',
+          'accent-dim': '#059669',
+          'accent-glow': 'rgba(16, 185, 129, 0.15)',
 
           // Danger — Vivid Red
           danger: '#EF4444',
@@ -38,14 +39,14 @@ const config: Config = {
           'warning-dim': '#D97706',
           'warning-glow': 'rgba(245, 158, 11, 0.15)',
 
-          // Secondary — Electric Cyan
-          secondary: '#06B6D4',
-          'secondary-dim': '#0891B2',
-          'secondary-glow': 'rgba(6, 182, 212, 0.15)',
+          // Secondary — Teal/Seafoam
+          secondary: '#14B8A6',
+          'secondary-dim': '#0D9488',
+          'secondary-glow': 'rgba(20, 184, 166, 0.15)',
 
-          // Text — bright & crisp
-          text: '#FFFFFF',
-          'text-dim': '#C0C4D0',
+          // Text — crisp white to soft gray
+          text: '#F9FAFB',
+          'text-dim': '#9CA3AF',
           'text-bright': '#FFFFFF',
         },
       },
@@ -55,9 +56,9 @@ const config: Config = {
         display: ['"Inter"', '"SF Pro"', 'system-ui', 'sans-serif'],
       },
       boxShadow: {
-        'mag-glow': '0 0 24px rgba(233, 30, 140, 0.12)',
-        'mag-glow-strong': '0 0 36px rgba(233, 30, 140, 0.2)',
-        'mag-accent': '0 0 20px rgba(34, 197, 94, 0.1)',
+        'mag-glow': '0 0 24px rgba(6, 182, 212, 0.12)',
+        'mag-glow-strong': '0 0 36px rgba(6, 182, 212, 0.2)',
+        'mag-accent': '0 0 20px rgba(16, 185, 129, 0.1)',
         'mag-danger': '0 0 20px rgba(239, 68, 68, 0.1)',
         'mag-panel': '0 4px 32px rgba(0, 0, 0, 0.4)',
         'mag-card': '0 2px 16px rgba(0, 0, 0, 0.3)',
@@ -143,9 +144,9 @@ const config: Config = {
         },
       },
       backgroundImage: {
-        'grid-pattern': `linear-gradient(rgba(233, 30, 140, 0.02) 1px, transparent 1px),
-                         linear-gradient(90deg, rgba(233, 30, 140, 0.02) 1px, transparent 1px)`,
-        'radial-glow': 'radial-gradient(ellipse at center, rgba(233, 30, 140, 0.04) 0%, transparent 70%)',
+        'grid-pattern': `linear-gradient(rgba(6, 182, 212, 0.02) 1px, transparent 1px),
+                         linear-gradient(90deg, rgba(6, 182, 212, 0.02) 1px, transparent 1px)`,
+        'radial-glow': 'radial-gradient(ellipse at center, rgba(6, 182, 212, 0.04) 0%, transparent 70%)',
       },
       backgroundSize: {
         'grid-20': '20px 20px',

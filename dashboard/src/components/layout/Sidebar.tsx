@@ -96,7 +96,7 @@ export function Sidebar() {
       'bg-mag-panel/90 backdrop-blur-xl border-r border-mag-border/60 flex flex-col transition-all duration-300 ease-out relative overflow-hidden',
       sidebarOpen ? 'w-72' : 'w-12'
     )}>
-      {/* Left gradient accent rail */}
+      {/* Left gradient accent rail — aqua */}
       <div className="absolute left-0 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-mag-primary/25 to-transparent pointer-events-none" />
       {/* ─── Toggle ──────────────────────────────────────────────────────── */}
       <button
@@ -115,14 +115,14 @@ export function Sidebar() {
         <>
           {/* ─── M Brand Bar ──────────────────────────────────────────────── */}
           <div className="px-4 py-3 border-b border-mag-border/30 flex items-center gap-3 shrink-0 relative">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-mag-primary/15 via-transparent to-cyan-500/10 border border-white/[0.08] flex items-center justify-center shrink-0 overflow-hidden shadow-[0_0_14px_rgba(233,30,140,0.12)]">
-              <img src="/m-logo.svg" alt="M" className="w-4 h-4 drop-shadow-[0_0_5px_rgba(233,30,140,0.45)]" />
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-mag-primary/15 via-transparent to-mag-secondary/10 border border-white/[0.08] flex items-center justify-center shrink-0 overflow-hidden shadow-[0_0_14px_rgba(6,182,212,0.12)]">
+              <img src="/m-logo.svg" alt="M" className="w-4 h-4 drop-shadow-[0_0_5px_rgba(6,182,212,0.45)]" />
             </div>
             <div>
               <div className="text-[11px] font-bold tracking-[0.2em] text-gradient-primary">MAGNEETAR</div>
               <div className="text-[8px] font-mono text-mag-text-dim/30 tracking-[0.2em] font-bold">COMMAND CENTER</div>
             </div>
-            <div className="ml-auto w-1 h-1 rounded-full bg-mag-accent shadow-[0_0_6px_rgba(34,197,94,0.5)]" />
+            <div className="ml-auto w-1 h-1 rounded-full bg-mag-accent shadow-[0_0_6px_rgba(16,185,129,0.5)]" />
           </div>
 
           {/* ─── Stats Overview ────────────────────────────────────────────── */}
@@ -135,11 +135,11 @@ export function Sidebar() {
                 </span>
               </div>
               <div className="grid grid-cols-3 gap-1.5">
-                <div className="bg-mag-surface/20 border border-mag-border/25 rounded-lg p-2 text-center transition-all duration-200 hover:border-mag-primary/25 hover:shadow-[0_0_12px_rgba(233,30,140,0.06)]">
+                <div className="bg-mag-surface/20 border border-mag-border/25 rounded-lg p-2 text-center transition-all duration-200 hover:border-mag-primary/25 hover:shadow-[0_0_12px_rgba(6,182,212,0.06)]">
                   <div className="font-mono text-sm font-bold text-gradient-primary tabular-nums">{stats.total_devices}</div>
                   <div className="text-[7px] font-mono text-mag-text-dim/40 font-bold uppercase tracking-wider">Total</div>
                 </div>
-                <div className="bg-mag-accent/[0.04] border border-mag-accent/15 rounded-lg p-2 text-center transition-all duration-200 hover:border-mag-accent/35 hover:shadow-[0_0_12px_rgba(34,197,94,0.08)]">
+                <div className="bg-mag-accent/[0.04] border border-mag-accent/15 rounded-lg p-2 text-center transition-all duration-200 hover:border-mag-accent/35 hover:shadow-[0_0_12px_rgba(16,185,129,0.08)]">
                   <div className="font-mono text-sm font-bold text-mag-accent tabular-nums">{stats.active_devices}</div>
                   <div className="text-[7px] font-mono text-mag-text-dim/40 font-bold uppercase tracking-wider">Active</div>
                 </div>
@@ -262,7 +262,7 @@ export function Sidebar() {
                     <div className="flex items-center gap-2">
                       <span className={cn(
                         'w-1.5 h-1.5 rounded-full',
-                        online ? 'bg-mag-accent shadow-[0_0_6px_rgba(34,197,94,0.4)]' : 'bg-mag-text-dim/20'
+                        online ? 'bg-mag-accent shadow-[0_0_6px_rgba(16,185,129,0.4)]' : 'bg-mag-text-dim/20'
                       )} />
                       <span className="font-mono text-[9px] text-mag-text-dim/35 font-bold">
                         {relativeTime(device.last_seen)}
@@ -326,7 +326,7 @@ export function Sidebar() {
             {/* Online/Offline counts */}
             <div className="flex items-center justify-between text-[10px] font-mono font-bold mb-2.5">
               <span className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-mag-accent shadow-[0_0_6px_rgba(34,197,94,0.3)]" />
+                <span className="w-1.5 h-1.5 rounded-full bg-mag-accent shadow-[0_0_6px_rgba(16,185,129,0.3)]" />
                 <span className="text-mag-accent/70 tabular-nums">{onlineCount}</span>
                 <span className="text-mag-text-dim/30">online</span>
               </span>
@@ -397,7 +397,7 @@ export function Sidebar() {
                   confirmPurgeArchived();
                 }
               }}
-              className="w-full bg-mag-bg/60 border border-mag-border/40 rounded-lg px-3 py-2 text-xs font-mono text-mag-text placeholder:text-mag-text-dim/30 focus:outline-none focus:border-amber-500/60 transition-colors"
+              className="w-full bg-mag-bg/60 border border-mag-border/40 rounded-lg px-3 py-2 text-xs font-mono text-mag-text placeholder:text-mag-text-dim/30 focus:outline-none focus:border-mag-primary/60 transition-colors"
             />
             {purgeError && <div className="text-[10px] font-mono text-red-400">{purgeError}</div>}
             <div className="text-[10px] font-mono text-mag-text-dim/50 leading-relaxed">

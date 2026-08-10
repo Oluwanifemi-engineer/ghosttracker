@@ -200,17 +200,17 @@ export default function LoginPage() {
 
   const inputClass =
     'w-full pl-10 pr-4 py-3 bg-white/[0.02] border border-white/[0.07] rounded-xl text-white/85 text-sm ' +
-    'placeholder:text-white/15 focus:outline-none focus:border-[#E91E8C]/40 focus:bg-white/[0.03] ' +
-    'focus:ring-1 focus:ring-[#E91E8C]/15 transition-all duration-200';
+    'placeholder:text-white/15 focus:outline-none focus:border-mag-primary/40 focus:bg-white/[0.03] ' +
+    'focus:ring-1 focus:ring-mag-primary/15 transition-all duration-200';
 
   return (
     <div className="min-h-screen bg-mag-bg text-white relative overflow-hidden">
       {/* Ambient background */}
       <div className="absolute inset-0 landing-vignette pointer-events-none" />
       <div className="absolute inset-0 landing-grid opacity-40 pointer-events-none" />
-      <div className="absolute -top-40 left-1/3 w-[600px] h-[400px] rounded-full bg-[#E91E8C]/10 blur-[130px] animate-aurora pointer-events-none" aria-hidden="true" />
-      <div className="absolute top-1/3 -right-32 w-[480px] h-[480px] rounded-full bg-[#06B6D4]/8 blur-[120px] animate-aurora pointer-events-none" style={{ animationDelay: '-6s' }} aria-hidden="true" />
-      <div className="absolute -bottom-40 -left-24 w-[520px] h-[380px] rounded-full bg-[#7C3AED]/8 blur-[130px] animate-aurora pointer-events-none" style={{ animationDelay: '-11s' }} aria-hidden="true" />
+      <div className="absolute -top-40 left-1/3 w-[600px] h-[400px] rounded-full bg-mag-primary/10 blur-[130px] animate-aurora pointer-events-none" aria-hidden="true" />
+      <div className="absolute top-1/3 -right-32 w-[480px] h-[480px] rounded-full bg-mag-secondary/8 blur-[120px] animate-aurora pointer-events-none" style={{ animationDelay: '-6s' }} aria-hidden="true" />
+      <div className="absolute -bottom-40 -left-24 w-[520px] h-[380px] rounded-full bg-mag-primary/8 blur-[130px] animate-aurora pointer-events-none" style={{ animationDelay: '-11s' }} aria-hidden="true" />
       {/* Floating particles */}
       {[0, 1, 2, 3, 4].map((i) => (
         <div
@@ -233,12 +233,8 @@ export default function LoginPage() {
             <Link href="/" className="inline-flex items-center gap-2.5 group">
               <div className="w-9 h-9 rounded-lg border border-white/10 bg-white/[0.03] flex items-center justify-center overflow-hidden"><svg viewBox="0 0 120 120" className="w-5 h-5" fill="none" aria-label="Magneetar logo">
                   <path
-                    d="M 28 88 L 28 32 L 60 66 L 92 32 L 92 88"
-                    fill="none"
-                    stroke="white"
-                    strokeWidth="14"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
+                    d="M 28 92 L 28 28 L 48 28 L 60 58 L 72 28 L 92 28 L 92 92 L 76 92 L 76 52 L 60 82 L 44 52 L 44 92 Z"
+                    fill="white"
                   />
                 </svg>
               </div>
@@ -262,7 +258,7 @@ export default function LoginPage() {
 
           {/* ─── Live Command-Center Telemetry ──────────────────────────── */}
           <div className="relative my-10 animate-fade-slide" style={{ animationDelay: '0.15s' }}>
-            <div className="relative rounded-2xl border border-white/10 bg-[#0d0d14]/90 backdrop-blur-xl shadow-2xl shadow-black/60 overflow-hidden">
+            <div className="relative rounded-2xl border border-white/10 bg-mag-panel/90 backdrop-blur-xl shadow-2xl shadow-black/60 overflow-hidden">
               {/* Window chrome */}
               <div className="flex items-center gap-2 px-4 py-3 border-b border-white/[0.06] bg-white/[0.02]">
                 <span className="w-2.5 h-2.5 rounded-full bg-[#FF5F57]" />
@@ -271,38 +267,37 @@ export default function LoginPage() {
                 <span className="ml-3 text-[9px] font-mono text-white/30 tracking-widest font-bold">
                   MAGNEETAR — COMMAND CENTER
                 </span>
-                <span className="ml-auto flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20">
-                  <Radar size={9} className="text-emerald-400" />
-                  <span className="text-[8px] font-mono font-bold tracking-wider text-emerald-300">LIVE</span>
+                <span className="ml-auto flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-mag-accent/10 border border-mag-accent/20">
+                  <Radar size={9} className="text-mag-accent" />
+                  <span className="text-[8px] font-mono font-bold tracking-wider text-mag-accent">LIVE</span>
                 </span>
               </div>
 
               {/* Map area */}
               <div className="relative h-44 overflow-hidden">
                 <div className="absolute inset-0 landing-grid opacity-80" />
-                {/* Scan line */}
-                <div className="absolute left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#22D3EE]/50 to-transparent animate-scan-line" aria-hidden="true" />
-                {/* Radar ping */}
+                {/* Scan line — aqua */}
+                <div className="absolute left-0 right-0 h-px bg-gradient-to-r from-transparent via-mag-primary/50 to-transparent animate-scan-line" aria-hidden="true" />
+                {/* Radar ping — emerald */}
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-14 h-14" aria-hidden="true">
-                  <span className="absolute inset-0 rounded-full border border-[#22C55E]/40 animate-radar-ping" />
-                  <span className="absolute inset-0 rounded-full border border-[#22C55E]/25 animate-radar-ping" style={{ animationDelay: '1.2s' }} />
-                  <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-[#22C55E] shadow-[0_0_16px_rgba(34,197,94,0.8)]" />
+                  <span className="absolute inset-0 rounded-full border border-mag-accent/40 animate-radar-ping" />
+                  <span className="absolute inset-0 rounded-full border border-mag-accent/25 animate-radar-ping" style={{ animationDelay: '1.2s' }} />
+                  <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-mag-accent shadow-[0_0_16px_rgba(16,185,129,0.8)]" />
                 </div>
-                {/* Decorative route */}
+                {/* Decorative route — aqua gradient */}
                 <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 220" fill="none" preserveAspectRatio="none" aria-hidden="true">
                   <path
                     d="M40 180 C 120 150, 160 90, 240 110 S 360 60, 380 50"
                     stroke="url(#route-grad)"
                     strokeWidth="1.5"
-
                     className="dash-flow"
                   />
-                  <circle cx="40" cy="180" r="3" fill="#E91E8C" />
-                  <circle cx="380" cy="50" r="3" fill="#06B6D4" />
+                  <circle cx="40" cy="180" r="3" fill="#06B6D4" />
+                  <circle cx="380" cy="50" r="3" fill="#14B8A6" />
                   <defs>
                     <linearGradient id="route-grad" x1="40" y1="180" x2="380" y2="50">
-                      <stop offset="0%" stopColor="#E91E8C" />
-                      <stop offset="100%" stopColor="#06B6D4" />
+                      <stop offset="0%" stopColor="#06B6D4" />
+                      <stop offset="100%" stopColor="#14B8A6" />
                     </linearGradient>
                   </defs>
                 </svg>
@@ -313,33 +308,33 @@ export default function LoginPage() {
                   </span>
                 </div>
                 <div className="absolute bottom-3 right-3 px-2.5 py-1.5 rounded-lg bg-black/50 border border-white/10 backdrop-blur-md flex items-center gap-1.5">
-                  <MapPin size={10} className="text-[#06B6D4]" />
+                  <MapPin size={10} className="text-mag-primary" />
                   <span className="text-[9px] font-mono font-bold tracking-wider text-white/60">12 m · 38 km/h</span>
                 </div>
               </div>
 
-              {/* Readouts */}
+              {/* Readouts — aqua accents */}
               <div className="grid grid-cols-3 gap-px bg-white/[0.05] border-t border-white/[0.06]">
-                <div className="bg-[#0d0d14]/95 px-4 py-3">
+                <div className="bg-mag-panel/95 px-4 py-3">
                   <div className="text-[8px] font-mono text-white/30 tracking-widest font-bold mb-1.5">THREAT</div>
                   <div className="flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(34,197,94,0.7)]" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-mag-accent shadow-[0_0_8px_rgba(16,185,129,0.7)]" />
                     <span className="text-white text-sm font-bold font-mono">SAFE</span>
                   </div>
                 </div>
-                <div className="bg-[#0d0d14]/95 px-4 py-3">
+                <div className="bg-mag-panel/95 px-4 py-3">
                   <div className="text-[8px] font-mono text-white/30 tracking-widest font-bold mb-1.5">SENTINEL</div>
                   <div className="flex items-center gap-2">
                     <span className="text-white text-sm font-bold font-mono">12</span>
                     <div className="flex-1 h-1 rounded-full bg-white/10 overflow-hidden">
-                      <div className="bar-sweep h-full rounded-full bg-gradient-to-r from-[#E91E8C] to-[#06B6D4]" />
+                      <div className="bar-sweep h-full rounded-full bg-gradient-to-r from-mag-primary to-mag-secondary" />
                     </div>
                   </div>
                 </div>
-                <div className="bg-[#0d0d14]/95 px-4 py-3">
+                <div className="bg-mag-panel/95 px-4 py-3">
                   <div className="text-[8px] font-mono text-white/30 tracking-widest font-bold mb-1.5">EVIDENCE</div>
                   <div className="flex items-center gap-1.5">
-                    <Camera size={12} className="text-[#06B6D4]" />
+                    <Camera size={12} className="text-mag-secondary" />
                     <span className="text-white text-sm font-bold font-mono">3 files</span>
                   </div>
                 </div>
@@ -352,7 +347,7 @@ export default function LoginPage() {
                     <div key={copy}>
                       {TICKER_LINES.map((line) => (
                         <div key={`${copy}-${line}`} className="px-4 py-1 text-[9px] font-mono text-white/35 tracking-wider whitespace-nowrap leading-[18px]">
-                          <span className="text-[#E91E8C]/70 mr-1.5">▸</span>
+                          <span className="text-mag-primary/70 mr-1.5">▸</span>
                           {line}
                         </div>
                       ))}
@@ -363,28 +358,28 @@ export default function LoginPage() {
             </div>
 
             {/* Floating chips */}
-            <div className="absolute -top-4 -right-3 sm:-right-6 px-3.5 py-2 rounded-xl border border-white/10 bg-[#111118]/95 backdrop-blur-xl shadow-xl shadow-black/50 animate-float-slow flex items-center gap-2">
+            <div className="absolute -top-4 -right-3 sm:-right-6 px-3.5 py-2 rounded-xl border border-white/10 bg-mag-panel/95 backdrop-blur-xl shadow-xl shadow-black/50 animate-float-slow flex items-center gap-2">
               <span className="relative flex w-2 h-2">
-                <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60 animate-ping" />
-                <span className="relative inline-flex rounded-full w-2 h-2 bg-emerald-400" />
+                <span className="absolute inline-flex h-full w-full rounded-full bg-mag-accent opacity-60 animate-ping" />
+                <span className="relative inline-flex rounded-full w-2 h-2 bg-mag-accent" />
               </span>
               <span className="text-[10px] font-mono font-bold text-white/70">Pixel 8 · Online</span>
             </div>
-            <div className="absolute -bottom-4 -left-3 sm:-left-6 px-3.5 py-2 rounded-xl border border-white/10 bg-[#111118]/95 backdrop-blur-xl shadow-xl shadow-black/50 animate-float-slow flex items-center gap-2" style={{ animationDelay: '-2.5s' }}>
-              <span className="w-4 h-4 rounded-full bg-[#22C55E]/15 border border-[#22C55E]/30 flex items-center justify-center">
-                <Check size={9} className="text-[#22C55E]" />
+            <div className="absolute -bottom-4 -left-3 sm:-left-6 px-3.5 py-2 rounded-xl border border-white/10 bg-mag-panel/95 backdrop-blur-xl shadow-xl shadow-black/50 animate-float-slow flex items-center gap-2" style={{ animationDelay: '-2.5s' }}>
+              <span className="w-4 h-4 rounded-full bg-mag-accent/15 border border-mag-accent/30 flex items-center justify-center">
+                <Check size={9} className="text-mag-accent" />
               </span>
               <span className="text-[10px] font-mono font-bold text-white/70">Recovery enabled</span>
             </div>
           </div>
 
-          {/* ─── Social proof ───────────────────────────────────────────── */}
+          {/* ─── Social proof */}
           <div className="flex items-center gap-4 animate-fade-slide" style={{ animationDelay: '0.2s' }}>
             <div className="flex -space-x-2.5">
               {AVATARS.map((initials, i) => (
                 <div
                   key={initials}
-                  className="w-8 h-8 rounded-full border-2 border-[#0d0d14] bg-gradient-to-br from-[#E91E8C]/35 to-[#06B6D4]/35 flex items-center justify-center text-[9px] font-mono font-bold text-white/80"
+                  className="w-8 h-8 rounded-full border-2 border-mag-bg bg-gradient-to-br from-mag-primary/35 to-mag-secondary/35 flex items-center justify-center text-[9px] font-mono font-bold text-white/80"
                   style={{ zIndex: AVATARS.length - i }}
                 >
                   {initials}
@@ -407,8 +402,8 @@ export default function LoginPage() {
           {/* Footer strip */}
           <div className="mt-10 flex items-center gap-3 animate-fade-slide" style={{ animationDelay: '0.25s' }}>
             <span className="relative flex w-2 h-2">
-              <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60 animate-ping" />
-              <span className="relative inline-flex rounded-full w-2 h-2 bg-emerald-400" />
+              <span className="absolute inline-flex h-full w-full rounded-full bg-mag-accent opacity-60 animate-ping" />
+              <span className="relative inline-flex rounded-full w-2 h-2 bg-mag-accent" />
             </span>
             <span className="text-[11px] font-mono font-bold tracking-wider text-white/40">
               ALL SYSTEMS OPERATIONAL
@@ -425,12 +420,8 @@ export default function LoginPage() {
               <div className="w-9 h-9 rounded-lg border border-white/10 bg-white/[0.03] flex items-center justify-center overflow-hidden">
                 <svg viewBox="0 0 120 120" className="w-5 h-5" fill="none" aria-label="Magneetar logo">
                   <path
-                    d="M 28 88 L 28 32 L 60 66 L 92 32 L 92 88"
-                    fill="none"
-                    stroke="white"
-                    strokeWidth="14"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
+                    d="M 28 92 L 28 28 L 48 28 L 60 58 L 72 28 L 92 28 L 92 92 L 76 92 L 76 52 L 60 82 L 44 52 L 44 92 Z"
+                    fill="white"
                   />
                 </svg>
               </div>
@@ -444,8 +435,8 @@ export default function LoginPage() {
             <div className="mb-8">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/[0.03] mb-4">
                 <span className="relative flex w-1.5 h-1.5">
-                  <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60 animate-ping" />
-                  <span className="relative inline-flex rounded-full w-1.5 h-1.5 bg-emerald-400" />
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-mag-accent opacity-60 animate-ping" />
+                  <span className="relative inline-flex rounded-full w-1.5 h-1.5 bg-mag-accent" />
                 </span>
                 <span className="text-[10px] font-mono font-bold tracking-[0.2em] text-white/50">SECURE ACCESS</span>
               </div>
@@ -459,15 +450,15 @@ export default function LoginPage() {
             <div
               ref={cardRef}
               onMouseMove={handleCardMove}
-              className="spotlight-card relative rounded-2xl border border-white/[0.08] bg-[#0d0d14]/85 backdrop-blur-xl p-7 sm:p-8 shadow-2xl shadow-black/50"
+              className="spotlight-card relative rounded-2xl border border-white/[0.08] bg-mag-panel/85 backdrop-blur-xl p-7 sm:p-8 shadow-2xl shadow-black/50"
             >
               <div className="relative z-10">
                 {/* ── 2FA second-factor step ─────────────────────────────── */}
                 {step2fa ? (
                   <div className="animate-fade-in">
                     <div className="flex items-center gap-3 mb-2">
-                      <div className="w-10 h-10 rounded-xl bg-[#E91E8C]/10 border border-[#E91E8C]/25 flex items-center justify-center">
-                        <ShieldCheck size={17} className="text-[#E91E8C]" />
+                      <div className="w-10 h-10 rounded-xl bg-mag-primary/10 border border-mag-primary/25 flex items-center justify-center">
+                        <ShieldCheck size={17} className="text-mag-primary" />
                       </div>
                       <div>
                         <h3 className="text-[15px] font-display font-extrabold tracking-tight text-white">Two-factor authentication</h3>
@@ -491,7 +482,7 @@ export default function LoginPage() {
                             inputMode="numeric"
                             autoComplete="one-time-code"
                             value={code}
-                            onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                            onChange={(e) => setCode(e.target.value.replace(/\\D/g, '').slice(0, 6))}
                             placeholder="000000"
                             className={cn(inputClass, 'pl-4 text-center tracking-[0.5em] font-mono text-lg')}
                             autoFocus
@@ -514,7 +505,7 @@ export default function LoginPage() {
                         <button
                           type="submit"
                           disabled={loading}
-                          className="group relative w-full py-3.5 rounded-xl text-[12px] font-bold uppercase tracking-[0.2em] font-mono bg-gradient-to-r from-[#E91E8C] to-[#06B6D4] text-white shadow-lg shadow-[#E91E8C]/20 hover:shadow-[#E91E8C]/35 hover:brightness-110 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] overflow-hidden"
+                          className="group relative w-full py-3.5 rounded-xl text-[12px] font-bold uppercase tracking-[0.2em] font-mono bg-gradient-to-r from-mag-primary to-mag-secondary text-white shadow-lg shadow-mag-primary/20 hover:shadow-mag-primary/35 hover:brightness-110 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] overflow-hidden"
                         >
                           {loading ? (
                             <span className="flex items-center justify-center gap-2.5">
@@ -547,7 +538,7 @@ export default function LoginPage() {
                   <div
                     aria-hidden="true"
                     className={cn(
-                      'absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] rounded-lg bg-gradient-to-r from-[#E91E8C]/20 to-[#06B6D4]/15 border border-white/[0.08] shadow-sm transition-transform duration-300 ease-out',
+                      'absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] rounded-lg bg-gradient-to-r from-mag-primary/20 to-mag-secondary/15 border border-white/[0.08] shadow-sm transition-transform duration-300 ease-out',
                       mode === 'apikey' ? 'translate-x-full' : 'translate-x-0'
                     )}
                   />
@@ -624,7 +615,7 @@ export default function LoginPage() {
                             <label htmlFor="login-password" className="text-[10px] font-mono text-white/40 uppercase tracking-[0.2em] font-bold">
                               Password
                             </label>
-                            <Link href="/forgot-password" className="text-[10px] font-mono text-[#06B6D4]/70 hover:text-[#22D3EE] font-bold transition-colors">
+                            <Link href="/forgot-password" className="text-[10px] font-mono text-mag-primary/70 hover:text-mag-primary-bright font-bold transition-colors">
                               Forgot password?
                             </Link>
                           </div>
@@ -690,7 +681,7 @@ export default function LoginPage() {
                     <button
                       type="submit"
                       disabled={loading}
-                      className="group relative w-full py-3.5 rounded-xl text-[12px] font-bold uppercase tracking-[0.2em] font-mono bg-gradient-to-r from-[#E91E8C] to-[#06B6D4] text-white shadow-lg shadow-[#E91E8C]/20 hover:shadow-[#E91E8C]/35 hover:brightness-110 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] overflow-hidden"
+                      className="group relative w-full py-3.5 rounded-xl text-[12px] font-bold uppercase tracking-[0.2em] font-mono bg-gradient-to-r from-mag-primary to-mag-secondary text-white shadow-lg shadow-mag-primary/20 hover:shadow-mag-primary/35 hover:brightness-110 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] overflow-hidden"
                     >
                       <span className="absolute inset-y-0 -left-full w-1/2 bg-white/15 blur-md animate-shimmer" />
                       <span className="relative flex items-center justify-center gap-2.5">
@@ -717,7 +708,7 @@ export default function LoginPage() {
             {/* Signup prompt */}
             <p className="mt-7 text-center text-[13px] text-white/40">
               New to Magneetar?{' '}
-              <Link href="/signup" className="text-[#06B6D4] hover:text-[#22D3EE] font-semibold transition-colors">
+              <Link href="/signup" className="text-mag-primary hover:text-mag-primary-bright font-semibold transition-colors">
                 Create an account
               </Link>
             </p>

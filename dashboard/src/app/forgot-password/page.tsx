@@ -45,14 +45,14 @@ export default function ForgotPasswordPage() {
 
   const inputClass =
     'w-full pl-10 pr-4 py-3 bg-white/[0.02] border border-white/[0.07] rounded-xl text-white/85 text-sm ' +
-    'placeholder:text-white/15 focus:outline-none focus:border-[#E91E8C]/40 focus:bg-white/[0.03] ' +
-    'focus:ring-1 focus:ring-[#E91E8C]/15 transition-all duration-200';
+    'placeholder:text-white/15 focus:outline-none focus:border-mag-primary/40 focus:bg-white/[0.03] ' +
+    'focus:ring-1 focus:ring-mag-primary/15 transition-all duration-200';
 
   return (
     <div className="min-h-screen bg-mag-bg text-white relative overflow-hidden">
       <div className="absolute inset-0 landing-vignette pointer-events-none" />
       <div className="absolute inset-0 landing-grid opacity-40 pointer-events-none" />
-      <div className="absolute -top-40 left-1/3 w-[600px] h-[400px] rounded-full bg-[#E91E8C]/10 blur-[130px] animate-aurora pointer-events-none" aria-hidden="true" />
+      <div className="absolute -top-40 left-1/3 w-[600px] h-[400px] rounded-full bg-mag-primary/10 blur-[130px] animate-aurora pointer-events-none" aria-hidden="true" />
 
       <div className="relative min-h-screen flex items-center justify-center px-5 sm:px-8 py-14">
         <div className="w-full max-w-md">
@@ -61,12 +61,8 @@ export default function ForgotPasswordPage() {
             <div className="w-9 h-9 rounded-lg border border-white/10 bg-white/[0.03] flex items-center justify-center overflow-hidden">
               <svg viewBox="0 0 120 120" className="w-5 h-5" fill="none" aria-label="Magneetar logo">
                 <path
-                  d="M 28 88 L 28 32 L 60 66 L 92 32 L 92 88"
-                  fill="none"
-                  stroke="white"
-                  strokeWidth="14"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+                  d="M 28 92 L 28 28 L 48 28 L 60 58 L 72 28 L 92 28 L 92 92 L 76 92 L 76 52 L 60 82 L 44 52 L 44 92 Z"
+                  fill="white"
                 />
               </svg>
             </div>
@@ -76,7 +72,7 @@ export default function ForgotPasswordPage() {
             </div>
           </Link>
 
-          <div className="relative rounded-2xl border border-white/[0.08] bg-[#0d0d14]/85 backdrop-blur-xl p-7 sm:p-8 shadow-2xl shadow-black/50 spotlight-card">
+          <div className="relative rounded-2xl border border-white/[0.08] bg-mag-panel/85 backdrop-blur-xl p-7 sm:p-8 shadow-2xl shadow-black/50 spotlight-card">
             {sent ? (
               <div className="animate-fade-in">
                 <div className="flex items-center gap-3 mb-4">
@@ -92,7 +88,7 @@ export default function ForgotPasswordPage() {
                 </p>
                 <Link
                   href="/login"
-                  className="inline-flex items-center gap-2 py-2 text-[11px] font-mono font-bold uppercase tracking-wider text-[#06B6D4] hover:text-[#22D3EE] transition-colors"
+                  className="inline-flex items-center gap-2 py-2 text-[11px] font-mono font-bold uppercase tracking-wider text-mag-primary hover:text-mag-primary-bright transition-colors"
                 >
                   <ArrowLeft size={13} />
                   Back to sign in
@@ -101,8 +97,8 @@ export default function ForgotPasswordPage() {
             ) : (
               <>
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 rounded-xl bg-[#06B6D4]/10 border border-[#06B6D4]/25 flex items-center justify-center">
-                    <ShieldCheck size={17} className="text-[#06B6D4]" />
+                  <div className="w-10 h-10 rounded-xl bg-mag-primary/10 border border-mag-primary/25 flex items-center justify-center">
+                    <ShieldCheck size={17} className="text-mag-primary" />
                   </div>
                   <div>
                     <h2 className="text-lg font-display font-extrabold tracking-tight text-white">Reset your password</h2>
@@ -148,7 +144,7 @@ export default function ForgotPasswordPage() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="group relative w-full py-3.5 rounded-xl text-[12px] font-bold uppercase tracking-[0.2em] font-mono bg-gradient-to-r from-[#E91E8C] to-[#06B6D4] text-white shadow-lg shadow-[#E91E8C]/20 hover:shadow-[#E91E8C]/35 hover:brightness-110 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] overflow-hidden"
+                    className="group relative w-full py-3.5 rounded-xl text-[12px] font-bold uppercase tracking-[0.2em] font-mono bg-gradient-to-r from-mag-primary to-mag-secondary text-white shadow-lg shadow-mag-primary/20 hover:shadow-mag-primary/35 hover:brightness-110 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] overflow-hidden"
                   >
                     {loading ? (
                       <span className="flex items-center justify-center gap-2.5">

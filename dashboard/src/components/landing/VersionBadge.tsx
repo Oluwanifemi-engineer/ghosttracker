@@ -67,12 +67,12 @@ export function statusDotClass(status: ServerStatus): string {
   }
 }
 
-/** Hero badge: `v1.4.0 · PRODUCTION READY` with a live status pulse. */
+/** Hero badge: version number with a live status pulse. */
 export function VersionBadge() {
   const { version, status } = useLiveServerInfo();
   const label =
     status === 'online'
-      ? `v${version} · PRODUCTION READY`
+      ? `v${version} · ACTIVE`
       : status === 'offline'
         ? `v${version} · STATUS UNKNOWN`
         : `v${version} · CHECKING…`;

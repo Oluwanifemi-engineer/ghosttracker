@@ -42,16 +42,16 @@ export function Header() {
 
   return (
     <header className="h-14 bg-mag-panel/95 backdrop-blur-xl border-b border-mag-border/60 flex items-center px-5 gap-4 z-50 shadow-mag-panel relative overflow-hidden">
-      {/* Top gradient hairline */}
+      {/* Top gradient hairline — aqua */}
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-mag-primary/40 to-transparent pointer-events-none" />
 
-      {/* Ambient aurora hint (right side) */}
+      {/* Ambient aurora hint (right side) — aqua */}
       <div className="absolute -right-20 top-1/2 -translate-y-1/2 w-64 h-24 rounded-full bg-mag-primary/[0.05] blur-3xl pointer-events-none" />
 
       {/* ─── Brand — M Logo ──────────────────────────────────────────────── */}
       <div className="flex items-center gap-3 shrink-0 relative">
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-mag-primary/15 via-transparent to-cyan-500/10 border border-white/[0.08] flex items-center justify-center overflow-hidden shadow-[0_0_16px_rgba(233,30,140,0.12)]">
-          <img src="/m-logo.svg" alt="M" className="w-5 h-5 drop-shadow-[0_0_6px_rgba(233,30,140,0.5)]" />
+        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-mag-primary/15 via-transparent to-mag-secondary/10 border border-white/[0.08] flex items-center justify-center overflow-hidden shadow-[0_0_16px_rgba(6,182,212,0.12)]">
+          <img src="/m-logo.svg" alt="M" className="w-5 h-5 drop-shadow-[0_0_6px_rgba(6,182,212,0.5)]" />
         </div>
         <div className="flex flex-col leading-none">
           <span className="text-sm font-display font-bold tracking-[0.25em] text-gradient-primary">
@@ -67,7 +67,7 @@ export function Header() {
       <div className="flex items-center gap-2.5">
         <div className={cn(
           'w-2 h-2 rounded-full transition-all duration-300',
-          isConnected ? 'bg-mag-accent shadow-[0_0_12px_rgba(34,197,94,0.5)] animate-pulse-slow' : 'bg-mag-text-dim/30'
+          isConnected ? 'bg-mag-accent shadow-[0_0_12px_rgba(16,185,129,0.5)] animate-pulse-slow' : 'bg-mag-text-dim/30'
         )} />
         <span className={cn(
           'text-[10px] font-mono uppercase tracking-widest font-bold transition-colors',
