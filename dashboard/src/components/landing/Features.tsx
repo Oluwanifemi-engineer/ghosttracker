@@ -21,7 +21,7 @@ const FEATURES = [
     title: 'Sentinel AI',
     description:
       'Intelligent theft detection with false-positive prevention — scores movement, battery drops, and SIM changes in real time.',
-    accent: '#E91E8C',
+    accent: '#06B6D4',
   },
   {
     icon: MapPin,
@@ -35,21 +35,21 @@ const FEATURES = [
     title: 'Family & Team Circles',
     description:
       'Keep in touch with the people who matter — share live locations with family, coworkers, and trusted circles, all under one account.',
-    accent: '#22C55E',
+    accent: '#14B8A6',
   },
   {
     icon: Camera,
     title: 'Remote Evidence Capture',
     description:
       'Trigger front/rear camera photos and 20-second audio captures remotely, sealed with a SHA-256 chain of custody.',
-    accent: '#E91E8C',
+    accent: '#06B6D4',
   },
   {
     icon: Radar,
     title: 'Geofencing',
     description:
       'Define safe zones and receive instant exit alerts. Perfect for campuses, homes, and vehicle perimeters.',
-    accent: '#22C55E',
+    accent: '#14B8A6',
   },
   {
     icon: Zap,
@@ -63,7 +63,7 @@ const FEATURES = [
     title: 'Phantom Mode',
     description:
       'Hidden operation for stealth tracking. The app runs invisibly with 3-layer background persistence.',
-    accent: '#E91E8C',
+    accent: '#06B6D4',
   },
   {
     icon: Smartphone,
@@ -76,22 +76,22 @@ const FEATURES = [
     icon: BellRing,
     title: 'Guardian Network',
     description:
-      'Community-powered recovery — trusted guardians opt in, get blurred nearby scans, and report sightings to help you find what’s lost.',
-    accent: '#22C55E',
+      'Community-powered recovery — trusted guardians opt in, get blurred nearby scans, and report sightings to help you find what\'s lost.',
+    accent: '#14B8A6',
   },
   {
     icon: Lock,
     title: 'Device Admin',
     description:
       'Remote lock and wipe via Android Device Policy Manager, plus SIM-change detection that arms theft mode.',
-    accent: '#22C55E',
+    accent: '#14B8A6',
   },
   {
     icon: Eye,
     title: 'Stealth Persistence',
     description:
       'OEM-aware survival layers for Huawei, Xiaomi, Oppo, and Vivo — watchdog alarms, health checks, and wakelock management.',
-    accent: '#E91E8C',
+    accent: '#06B6D4',
   },
   {
     icon: FileText,
@@ -114,7 +114,7 @@ export function Features() {
           <h2 className="text-3xl sm:text-4xl font-display font-extrabold tracking-tight text-white">
             One command center for <span className="text-gradient-cyan">what matters</span>
           </h2>
-          <p className="mt-4 text-white/40 leading-relaxed">
+          <p className="mt-4 text-white/60 leading-relaxed">
             Protect the devices you own and stay close to the people you love — from silent background
             tracking and forensic-grade evidence to live circles that keep everyone in sync.
           </p>
@@ -138,7 +138,7 @@ export function Features() {
                 <feature.icon size={22} style={{ color: feature.accent }} />
               </div>
               <h3 className="text-white font-bold text-[15px] tracking-tight">{feature.title}</h3>
-              <p className="mt-2.5 text-[13px] leading-relaxed text-white/40">{feature.description}</p>
+              <p className="mt-2.5 text-[13px] leading-relaxed text-white/55">{feature.description}</p>
             </div>
           ))}
         </div>

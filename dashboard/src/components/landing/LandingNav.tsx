@@ -37,11 +37,14 @@ export function LandingNav({ authed }: { authed: boolean }) {
       <nav className="max-w-7xl mx-auto px-5 sm:px-8 h-16 flex items-center justify-between gap-4">
         {/* Brand — aqua M tile */}
         <Link href="/" className="flex items-center gap-2.5 group shrink-0">
-          <img
-            src="/m-logo.svg"
-            alt="Magneetar"
-            className="w-8 h-8 rounded-lg drop-shadow-[0_0_12px_rgba(6,182,212,0.35)] transition-transform duration-200 group-hover:scale-105"
-          />
+          <div className="relative">
+            <img
+              src="/m-logo.svg"
+              alt="Magneetar"
+              className="w-8 h-8 rounded-lg transition-all duration-300 group-hover:scale-110 group-hover:rotate-3 drop-shadow-[0_0_12px_rgba(6,182,212,0.35)] group-hover:drop-shadow-[0_0_20px_rgba(6,182,212,0.6)]"
+            />
+            <div className="absolute inset-0 rounded-lg bg-mag-primary/0 group-hover:bg-mag-primary/10 transition-all duration-300" />
+          </div>
           <div className="leading-none">
             <div className="text-white text-sm font-bold tracking-[0.25em]">MAGNEETAR</div>
             <div className="text-[8px] font-mono text-white/50 tracking-[0.3em] mt-1">TRACK · PROTECT · RECOVER</div>
