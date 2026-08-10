@@ -3,15 +3,14 @@
 import Link from 'next/link';
 import { ArrowRight, ShieldCheck, Radar, MapPin, Camera, ChevronRight, Download, Check } from 'lucide-react';
 import { VersionBadge } from './VersionBadge';
+import { AnimatedCounter } from '@/components/ui/AnimatedCounter';
 
-// Test count mirrors the server suite (pytest --collect-only) — kept in sync
-// on release; the version badge itself is live-fetched from /health so it can
-// never drift stale again.
+// Stats with numeric values for animation
 const HERO_STATS = [
-  { value: '381', label: 'automated tests' },
-  { value: '24/7', label: 'stealth tracking' },
-  { value: 'AES-256', label: 'encrypted at rest' },
-  { value: '3-layer', label: 'background persistence' },
+  { value: 381, label: 'automated tests', suffix: '' },
+  { value: 24, label: 'stealth tracking', suffix: '/7' },
+  { value: 256, label: 'encrypted at rest', prefix: 'AES-', suffix: '-bit' },
+  { value: 3, label: 'background persistence', suffix: '-layer' },
 ];
 
 export function Hero({ authed }: { authed: boolean }) {
@@ -89,11 +88,18 @@ export function Hero({ authed }: { authed: boolean }) {
             </span>
           </div>
 
-          {/* Stats */}
+          {/* Animated Stats */}
           <div className="mt-12 grid grid-cols-2 sm:grid-cols-4 gap-6 max-w-xl">
             {HERO_STATS.map((stat) => (
               <div key={stat.label}>
-                <div className="text-white text-xl font-bold font-mono tabular-nums">{stat.value}</div>
+                <div className="text-white text-xl font-bold font-mono">
+                  <AnimatedCounter
+                    value={stat.value}
+                    prefix={stat.prefix}
+                    suffix={stat.suffix}
+                    className="text-xl"
+                  />
+                </div>
                 <div className="text-[10px] font-mono text-white/50 uppercase tracking-wider mt-1 font-semibold">
                   {stat.label}
                 </div>

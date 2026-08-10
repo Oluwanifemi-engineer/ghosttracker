@@ -7,6 +7,9 @@ import { Sidebar } from '@/components/layout/Sidebar';
 import { useDevices } from '@/hooks/useDevices';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { ToastProvider } from '@/components/ui/Toast';
+import { KeyboardShortcutsHelp } from '@/components/ui/KeyboardShortcuts';
+import { OnboardingFlow, useOnboarding } from '@/components/onboarding/OnboardingFlow';
+import { useRouter } from 'next/navigation';
 
 function PremiumLoadingScreen() {
   const [progress, setProgress] = useState(0);
@@ -97,6 +100,8 @@ export default function DashboardLayout({
 }) {
   const { isAuthenticated } = useStore();
   const [mounted, setMounted] = useState(false);
+  const { showOnboarding, completeOnboarding, skipOnboarding } = useOnboarding();
+  const router = useRouter();
 
   // Mount the data layer ONCE for the whole dashboard: device list polling,
   // locations/commands/media refresh, and the real-time WebSocket stream.
@@ -147,6 +152,17 @@ export default function DashboardLayout({
           {children}
         </main>
       </div>
+
+      {/* Keyboard shortcuts help */}
+      <KeyboardShortcutsHelp />
+
+      {/* Onboarding flow for new users */}
+      {showOnboarding && (
+        <OnboardingFlow
+          onComplete={completeOnboarding}
+          onSkip={skipOnboarding}
+        />
+      )}
     </div>
     </ToastProvider>
   );
