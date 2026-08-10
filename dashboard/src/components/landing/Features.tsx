@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import {
   Brain,
   MapPin,
@@ -102,6 +103,73 @@ const FEATURES = [
   },
 ];
 
+function FeatureCard({ feature, index }: { feature: typeof FEATURES[0]; index: number }) {
+  const [isHovered, setIsHovered] = useState(false);
+
+  return (
+    <div
+      className="premium-card spotlight relative p-7 overflow-hidden cursor-default group"
+      onMouseMove={(e) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        e.currentTarget.style.setProperty('--mouse-x', `${((e.clientX - rect.left) / rect.width) * 100}%`);
+        e.currentTarget.style.setProperty('--mouse-y', `${((e.clientY - rect.top) / rect.height) * 100}%`);
+      }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      style={{ animationDelay: `${index * 50}ms` }}
+    >
+      {/* Hover glow effect */}
+      <div
+        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+        style={{
+          background: `radial-gradient(circle at 50% 50%, ${feature.accent}15 0%, transparent 70%)`,
+        }}
+      />
+
+      {/* Icon with micro-interaction */}
+      <div className="relative mb-5">
+        <div
+          className="w-12 h-12 rounded-xl border border-white/[0.08] bg-white/[0.03] flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:rotate-3 group-hover:border-white/[0.15]"
+          style={{
+            boxShadow: isHovered ? `0 0 20px ${feature.accent}30` : 'none',
+          }}
+        >
+          <feature.icon
+            size={22}
+            className="transition-all duration-300 group-hover:scale-110"
+            style={{ color: feature.accent }}
+          />
+        </div>
+        {/* Pulse effect on hover */}
+        {isHovered && (
+          <div
+            className="absolute inset-0 rounded-xl animate-ping opacity-20"
+            style={{ backgroundColor: feature.accent }}
+          />
+        )}
+      </div>
+
+      {/* Title with slide effect */}
+      <h3 className="text-white font-bold text-[15px] tracking-tight transition-all duration-300 group-hover:translate-x-1">
+        {feature.title}
+      </h3>
+
+      {/* Description with fade effect */}
+      <p className="mt-2.5 text-[13px] leading-relaxed text-white/55 transition-all duration-300 group-hover:text-white/70">
+        {feature.description}
+      </p>
+
+      {/* Bottom accent line */}
+      <div
+        className="absolute bottom-0 left-0 right-0 h-0.5 transition-all duration-300 opacity-0 group-hover:opacity-100"
+        style={{
+          background: `linear-gradient(90deg, transparent, ${feature.accent}, transparent)`,
+        }}
+      />
+    </div>
+  );
+}
+
 export function Features() {
   return (
     <section id="features" className="relative py-24 sm:py-32 scroll-mt-20">
@@ -122,24 +190,8 @@ export function Features() {
 
         {/* Feature grid */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {FEATURES.map((feature) => (
-            <div
-              key={feature.title}
-              className="premium-card spotlight relative p-7 overflow-hidden cursor-default"
-              onMouseMove={(e) => {
-                const rect = e.currentTarget.getBoundingClientRect();
-                e.currentTarget.style.setProperty('--mouse-x', `${((e.clientX - rect.left) / rect.width) * 100}%`);
-                e.currentTarget.style.setProperty('--mouse-y', `${((e.clientY - rect.top) / rect.height) * 100}%`);
-              }}
-            >
-              <div
-                className="w-12 h-12 rounded-xl border border-white/[0.08] bg-white/[0.03] flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300"
-              >
-                <feature.icon size={22} style={{ color: feature.accent }} />
-              </div>
-              <h3 className="text-white font-bold text-[15px] tracking-tight">{feature.title}</h3>
-              <p className="mt-2.5 text-[13px] leading-relaxed text-white/55">{feature.description}</p>
-            </div>
+          {FEATURES.map((feature, index) => (
+            <FeatureCard key={feature.title} feature={feature} index={index} />
           ))}
         </div>
       </div>

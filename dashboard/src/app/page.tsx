@@ -11,6 +11,7 @@ import { Security } from '@/components/landing/Security';
 import { Pricing } from '@/components/landing/Pricing';
 import { CTA } from '@/components/landing/CTA';
 import { Footer } from '@/components/landing/Footer';
+import { Reveal } from '@/hooks/useScrollReveal';
 
 export default function HomePage() {
   const [authed, setAuthed] = useState(false);
@@ -26,13 +27,27 @@ export default function HomePage() {
       <LandingNav authed={authed} />
       <main>
         <Hero authed={authed} />
-        <Features />
-        <HowItWorks />
-        <Africa />
-        <Provenance />
-        <Security />
-        <Pricing authed={authed} />
-        <CTA authed={authed} />
+        <Reveal delay={0}>
+          <Features />
+        </Reveal>
+        <Reveal delay={100}>
+          <HowItWorks />
+        </Reveal>
+        <Reveal delay={100}>
+          <Africa />
+        </Reveal>
+        <Reveal delay={100}>
+          <Provenance />
+        </Reveal>
+        <Reveal delay={100}>
+          <Security />
+        </Reveal>
+        <Reveal delay={100}>
+          <Pricing authed={authed} />
+        </Reveal>
+        <Reveal delay={100}>
+          <CTA authed={authed} />
+        </Reveal>
       </main>
       <Footer />
     </div>
