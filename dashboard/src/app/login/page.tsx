@@ -231,21 +231,15 @@ export default function LoginPage() {
           <div className="relative">
             {/* Brand */}
             <Link href="/" className="inline-flex items-center gap-2.5 group">
-              <div className="w-9 h-9 rounded-lg border border-white/10 bg-white/[0.03] flex items-center justify-center overflow-hidden">
-                <svg viewBox="0 0 120 120" className="w-5 h-5" fill="none" aria-label="Magneetar logo">
+              <div className="w-9 h-9 rounded-lg border border-white/10 bg-white/[0.03] flex items-center justify-center overflow-hidden"><svg viewBox="0 0 120 120" className="w-5 h-5" fill="none" aria-label="Magneetar logo">
                   <path
-                    d="M24,80 L24,28 L38,28 L38,64 L54,40 L70,64 L70,28 L84,28 L84,80 L70,80 L70,54 L54,80 L38,54 L38,80 Z"
-                    fill="white"
-
-
-
+                    d="M 28 88 L 28 32 L 60 66 L 92 32 L 92 88"
+                    fill="none"
+                    stroke="white"
+                    strokeWidth="14"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
                   />
-                  <defs>
-                    <linearGradient id="login-grad" x1="27" y1="38" x2="93" y2="88">
-                      <stop offset="0%" stopColor="#FFFFFF" />
-                      <stop offset="100%" stopColor="#F3D3E6" />
-                    </linearGradient>
-                  </defs>
                 </svg>
               </div>
               <div className="leading-none">
@@ -430,13 +424,14 @@ export default function LoginPage() {
             <Link href="/" className="lg:hidden inline-flex items-center gap-2.5 mb-10">
               <div className="w-9 h-9 rounded-lg border border-white/10 bg-white/[0.03] flex items-center justify-center overflow-hidden">
                 <svg viewBox="0 0 120 120" className="w-5 h-5" fill="none" aria-label="Magneetar logo">
-                  <path d="M24,80 L24,28 L38,28 L38,64 L54,40 L70,64 L70,28 L84,28 L84,80 L70,80 L70,54 L54,80 L38,54 L38,80 Z" fill="white"  />
-                  <defs>
-                    <linearGradient id="mob-grad" x1="27" y1="38" x2="93" y2="88">
-                      <stop offset="0%" stopColor="#FFFFFF" />
-                      <stop offset="100%" stopColor="#F3D3E6" />
-                    </linearGradient>
-                  </defs>
+                  <path
+                    d="M 28 88 L 28 32 L 60 66 L 92 32 L 92 88"
+                    fill="none"
+                    stroke="white"
+                    strokeWidth="14"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
                 </svg>
               </div>
               <div className="leading-none">

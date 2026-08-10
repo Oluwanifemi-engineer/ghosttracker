@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!--
+      STRAIGHT-EDGE CAPITAL M — Modern fintech aesthetic.
+
+      Design: Thick white M on magenta gradient background.
+      Pure geometric design with clean straight lines.
+      No curves, no rounded corners — authoritative and clean.
+    -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="
+            M 26,82
+            L 26,30
+            L 40,30
+            L 40,66
+            L 60,42
+            L 80,66
+            L 80,30
+            L 94,30
+            L 94,82
+            L 80,82
+            L 80,58
+            L 60,82
+            L 40,58
+            L 40,82
+            Z
+        " />
+</vector>

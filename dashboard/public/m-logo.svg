@@ -1,16 +1,22 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
   <defs>
     <linearGradient id="mg-bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#F85AAE"/>
-      <stop offset="45%" stop-color="#E91E8C"/>
-      <stop offset="100%" stop-color="#8B0A5E"/>
+      <stop offset="0%" stop-color="#FF6B9D"/>
+      <stop offset="50%" stop-color="#E91E8C"/>
+      <stop offset="100%" stop-color="#9C0A58"/>
     </linearGradient>
   </defs>
 
-  <!-- Magenta gradient tile with rounded corners (squircle) -->
-  <rect width="120" height="120" rx="27" fill="url(#mg-bg)"/>
+  <!-- Squircle background -->
+  <rect width="120" height="120" rx="28" fill="url(#mg-bg)"/>
 
-  <!-- Bold capital M — Moniepoint-style fintech aesthetic -->
-  <path d="M 24,80 L 24,28 L 38,28 L 38,64 L 54,40 L 70,64 L 70,28 L 84,28 L 84,80 L 70,80 L 70,54 L 54,80 L 38,54 L 38,80 Z"
-        fill="#FFFFFF"/>
+  <!-- Simple capital M — stroke-based like Moniepoint -->
+  <path
+    d="M 28 88 L 28 32 L 60 66 L 92 32 L 92 88"
+    fill="none"
+    stroke="#FFFFFF"
+    stroke-width="14"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
 </svg>
