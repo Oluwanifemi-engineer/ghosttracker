@@ -482,6 +482,13 @@ class TestNearbyAndSightings:
         # globals — the limit the app actually enforces is the one we shrink.
         sighting_globals = None
         for route in client.app.routes:
+            # Flat APIRoute shape (plain include_router)…
+            if getattr(route, "path", None) == "/api/recovery/sightings" and "POST" in (
+                getattr(route, "methods", None) or ()
+            ):
+                sighting_globals = route.endpoint.__globals__
+                break
+            # …or the app's current _IncludedRouter wrapping.
             original_router = getattr(route, "original_router", None)
             if original_router is None:
                 continue

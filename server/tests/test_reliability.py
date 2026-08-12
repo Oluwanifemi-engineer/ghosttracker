@@ -940,11 +940,10 @@ class TestAlertEngineChannels:
         """
         engine = AlertEngine()
 
-        # ChannelPermanentError is imported at MODULE level (same statement
-        # as AlertEngine), so it comes from the same alerts module instance
-        # as the engine regardless of the test_e2e / sim_change sys.modules
-        # eviction order — the class the engine raises is always the one
-        # pytest.raises checks.
+        # ChannelPermanentError is rebound by the module-scoped
+        # _align_to_current_modules fixture together with AlertEngine, so it
+        # always comes from the same alerts module instance as the engine —
+        # the class the engine raises is the one pytest.raises checks.
         config.settings.TWILIO_SID = "AC" + "1" * 32
         config.settings.TWILIO_AUTH_TOKEN = "2" * 32
         config.settings.TWILIO_SMS_FROM = "+15551234567"
