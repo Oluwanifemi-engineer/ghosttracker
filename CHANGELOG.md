@@ -9,6 +9,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased] — 2026-08-12
 
+### Distribution
+
+- **`docs/DISTRIBUTION_PLAN.md` added**: channel strategy (Play primary,
+  download page interim then fallback), phased submission timeline
+  (pre-flight → app content → closed testing → production access → staged
+  rollout), rollback plan, 30-day post-launch monitoring, and risk
+  mitigations. Key research input: **new developer accounts must complete 14
+  days of closed testing with ≥12 active testers before production access**,
+  so the plan front-loads tester recruitment.
+
+### Verified (this session)
+
+- **Signature chain proven**: `release.keystore` (alias `magneetar`) →
+  `app-play-release.aab` (v1.4.1, versionCode 7) → sideload APK all carry the
+  same cert (SHA-256 `02:4C:BB:34…0A:7F`), via `keytool`/`jarsigner`/
+  `apksigner`.
+- **Play flavor is Play-clean**: merged `playRelease` manifest has ZERO
+  accessibility matches and no `UninstallGuard`; device-admin receiver
+  present for the declared Permissions Declaration path.
+- **Keystore backed up off-machine**: `~/Documents/
+  magneetar-keystore-backup-2026-08-12/` with `release.keystore` (SHA-256
+  `f70481129f…2a7a5`, byte-identical to source) + `RECOVERY.md` (identity,
+  hashes, restore procedure, hard rules).
+- **All public URLs live**: magneetar.me, /privacy, /terms, /download,
+  /login = 200; api.magneetar.me/api/config reports 1.4.1.
+- Full suites re-verified: backend **454 passed / 4 skipped**, dashboard
+  **177 passed + tsc clean**.
+
 ### Fixed (test suite — full-suite order hazard closed)
 
 - **Backend full suite is green again in one process (454 passed, 4 skipped)**: CI runs every

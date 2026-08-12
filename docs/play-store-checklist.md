@@ -281,10 +281,10 @@ Console flow (one-time, ~45 min):
    device-admin + background-location declarations; answer any questions
    referencing this checklist and the security docs (`docs/security.md`).
 
-**Still to capture/produce before step 3:** prominent-disclosure screenshots;
-confirm `https://magneetar.me/privacy` is live; keystore backup off-machine
-(`android-app/release.keystore` + `local.properties` — both are required
-together and must live in a password manager/vault).
+**Still to capture/produce before step 3:** prominent-disclosure screenshots.
+✅ Privacy policy confirmed live (200, 2026-08-12). ✅ Keystore backed up
+off-machine (`~/Documents/magneetar-keystore-backup-2026-08-12/` with
+RECOVERY.md — see `docs/DISTRIBUTION_PLAN.md` for the full rollout plan).
 
 ---
 
@@ -311,7 +311,7 @@ cd android-app && ./gradlew assembleRelease
 ## 📋 Final Gate Checklist (before hitting Upload)
 
 - [ ] Recovery drill 12/12 PASS (user-verified)
-- [x] Backend 400 tests + Dashboard 173 tests + tsc clean
+- [x] Backend 454 tests + Dashboard 177 tests + tsc clean (re-verified 2026-08-12)
 - [x] compileSdk/targetSdk = 36 (API 36, AGP 8.10.1, Gradle 8.12) — meets the Aug 31 2026 Play deadline
 - [x] Cleartext restricted to local hosts only (release strict, debug override)
 - [x] Device Admin decision made (permissions declaration, no EMM claim)
@@ -319,6 +319,7 @@ cd android-app && ./gradlew assembleRelease
 - [x] `USE_EXACT_ALARM` removed; exact-alarm runtime flow implemented (`canScheduleExactAlarms()` + inexact fallback)
 - [x] In-app prominent disclosure implemented (background location) — screenshots still to capture
 - [ ] Prominent disclosure screenshots captured (background location, overlay)
-- [ ] Privacy policy live at public URL (not localhost)
+- [x] Privacy policy live at public URL (not localhost) — https://magneetar.me/privacy returns 200 (verified 2026-08-12)
 - [ ] Data Safety Form + Permissions Declaration + IARC submitted
-- [ ] Signing: release keystore backed up off-machine (current fallback password `magneetar123` MUST be rotated)
+- [x] Signing: release keystore backed up off-machine — `~/Documents/magneetar-keystore-backup-2026-08-12/` (keystore + RECOVERY.md, byte-identical hashes; fallback password already rotated to a 64-char value)
+- [ ] Move a 2nd keystore copy to a separate physical location (encrypted USB / password-managed vault)
