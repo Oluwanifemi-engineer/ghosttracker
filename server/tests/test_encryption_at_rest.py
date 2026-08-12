@@ -40,46 +40,68 @@ from database import init_db  # noqa: E402
 init_db(test_db_path)
 
 import encryption  # noqa: E402
-from auth import create_dashboard_tokens, create_device_tokens  # noqa: E402
-from main import app  # noqa: E402
+from main import app  # noqa: E402, F401  (import-time baseline; access via _current_client())
 
-client = TestClient(app)
+# ROBUSTNESS NOTE — lazy resolution (see test_sim_change.py docstring):
+# test_e2e / test_sim_change evict config/database/main/routes from sys.modules
+# at IMPORT time and re-import them with THEIR env, so module-level bindings
+# made before that eviction go stale (a dead database module pointing at this
+# file's temp DB while app modules — and call-time helpers like
+# data_export/evidence/routes.guardian/offline_monitor — resolve the CURRENT
+# module). Every helper here resolves modules lazily at call time so writes
+# and reads always hit the SAME (current) database and token secrets.
 
 TEST_DEVICE_ID = "enc-device-001"
 LAT, LNG = 9.0820, 8.6753
 
-# Read the ACTIVE settings object (test_guardian.py:40 pattern): the env vars
-# above only win the config import race when THIS file imports first — under
-# full-suite runs another file's env binds settings.API_KEY, so request keys
-# must come from the singleton the server actually validates against.
-TEST_API_KEY = config.settings.API_KEY
+
+def _current_client():
+    import main  # noqa: F401
+
+    return TestClient(main.app)
+
+
+def _current_database():
+    import database  # noqa: F401
+
+    return database
+
+
+def _current_api_key() -> str:
+    import config  # noqa: F401
+
+    return config.settings.API_KEY
 
 
 def _register():
-    resp = client.post(
+    resp = _current_client().post(
         "/api/device/register",
         json={
             "device_id": TEST_DEVICE_ID,
             "fingerprint": "fp-enc-at-rest",
             "model": "Encrypted Phone",
         },
-        headers={"x-api-key": TEST_API_KEY},
+        headers={"x-api-key": _current_api_key()},
     )
     assert resp.status_code == 200, resp.text
 
 
 def _device_headers():
+    from auth import create_device_tokens  # call time: current module
+
     tokens = create_device_tokens(TEST_DEVICE_ID)
     return {"Authorization": f"Bearer {tokens['token']}"}
 
 
 def _dashboard_headers():
-    tokens = create_dashboard_tokens(TEST_API_KEY)
+    from auth import create_dashboard_tokens  # call time: current module
+
+    tokens = create_dashboard_tokens(_current_api_key())
     return {"Authorization": f"Bearer {tokens['token']}"}
 
 
 def _post_location(lat=LAT, lng=LNG):
-    resp = client.post(
+    resp = _current_client().post(
         "/api/device/location",
         json={
             "device_id": TEST_DEVICE_ID,
@@ -121,7 +143,13 @@ class TestEncryptionHelpers:
         assert encryption.decrypt_location_row(row) == pytest.approx((6.5, 3.4))
 
         # Legacy plaintext row passes through unchanged.
-        legacy = {"device_id": "dev-a", "lat": 6.5, "lng": 3.4, "location_encrypted": 0, "location_data": None}
+        legacy = {
+            "device_id": "dev-a",
+            "lat": 6.5,
+            "lng": 3.4,
+            "location_encrypted": 0,
+            "location_data": None,
+        }
         assert encryption.decrypt_location_row(legacy) == (6.5, 3.4)
 
         # None row degrades safely.
@@ -145,7 +173,7 @@ class TestAtRestRoundTrip:
         _register()
         _post_location()
 
-        with database.get_db_context() as conn:
+        with _current_database().get_db_context() as conn:
             row = conn.execute(
                 "SELECT * FROM locations WHERE device_id=? ORDER BY id DESC LIMIT 1",
                 (TEST_DEVICE_ID,),
@@ -158,7 +186,7 @@ class TestAtRestRoundTrip:
 
     def test_dashboard_locations_returns_decrypted_coords(self):
         _post_location()
-        resp = client.get(f"/api/dashboard/locations/{TEST_DEVICE_ID}", headers=_dashboard_headers())
+        resp = _current_client().get(f"/api/dashboard/locations/{TEST_DEVICE_ID}", headers=_dashboard_headers())
         assert resp.status_code == 200
         locs = resp.json()["locations"]
         assert locs, "posted location must be readable"
@@ -167,15 +195,18 @@ class TestAtRestRoundTrip:
 
     def test_dashboard_live_and_replay_decrypt(self):
         _post_location()
-        live = client.get(f"/api/dashboard/locations/{TEST_DEVICE_ID}/live", headers=_dashboard_headers())
+        live = _current_client().get(
+            f"/api/dashboard/locations/{TEST_DEVICE_ID}/live",
+            headers=_dashboard_headers(),
+        )
         assert abs(live.json()["location"]["lat"] - LAT) < 1e-6
 
-        replay = client.get(f"/api/dashboard/replay/{TEST_DEVICE_ID}", headers=_dashboard_headers())
+        replay = _current_client().get(f"/api/dashboard/replay/{TEST_DEVICE_ID}", headers=_dashboard_headers())
         assert abs(replay.json()["locations"][0]["lat"] - LAT) < 1e-6
 
     def test_device_list_decrypts_last_fix(self):
         _post_location()
-        devices = client.get("/api/dashboard/devices", headers=_dashboard_headers()).json()["devices"]
+        devices = _current_client().get("/api/dashboard/devices", headers=_dashboard_headers()).json()["devices"]
         match = next(d for d in devices if d["id"] == TEST_DEVICE_ID)
         assert abs(match["lat"] - LAT) < 1e-6
         assert match["location_encrypted"] is True
@@ -186,22 +217,22 @@ class TestAtRestRoundTrip:
         _post_location()
         h = _dashboard_headers()
 
-        locs = client.get(f"/api/dashboard/locations/{TEST_DEVICE_ID}", headers=h).json()["locations"]
+        locs = _current_client().get(f"/api/dashboard/locations/{TEST_DEVICE_ID}", headers=h).json()["locations"]
         assert locs and "location_data" not in locs[0]
 
-        live = client.get(f"/api/dashboard/locations/{TEST_DEVICE_ID}/live", headers=h).json()["location"]
+        live = _current_client().get(f"/api/dashboard/locations/{TEST_DEVICE_ID}/live", headers=h).json()["location"]
         assert live and "location_data" not in live
 
-        replay = client.get(f"/api/dashboard/replay/{TEST_DEVICE_ID}", headers=h).json()["locations"]
+        replay = _current_client().get(f"/api/dashboard/replay/{TEST_DEVICE_ID}", headers=h).json()["locations"]
         assert replay and "location_data" not in replay[0]
 
-        hist = client.get(f"/api/dashboard/devices/{TEST_DEVICE_ID}/history", headers=h).json()
+        hist = _current_client().get(f"/api/dashboard/devices/{TEST_DEVICE_ID}/history", headers=h).json()
         assert "location_data" not in hist["latest_location"]
 
     def test_legacy_plaintext_rows_still_read(self):
         """Dual-mode reads: a pre-encryption row (flag 0, real coords) must
         keep rendering after the feature ships."""
-        with database.get_db_context() as conn:
+        with _current_database().get_db_context() as conn:
             conn.execute(
                 "INSERT INTO locations (device_id, lat, lng, server_timestamp, location_encrypted) "
                 "VALUES (?, 6.5244, 3.3792, datetime('now'), 0)",
@@ -209,19 +240,19 @@ class TestAtRestRoundTrip:
             )
             conn.commit()
 
-        resp = client.get(f"/api/dashboard/locations/{TEST_DEVICE_ID}", headers=_dashboard_headers())
+        resp = _current_client().get(f"/api/dashboard/locations/{TEST_DEVICE_ID}", headers=_dashboard_headers())
         locs = resp.json()["locations"]
         assert any(abs(loc["lat"] - 6.5244) < 1e-6 for loc in locs), "legacy plaintext rows must survive"
 
     def test_sentinel_history_decrypts_before_scoring(self):
         """compute_score's haversine/geofence math needs REAL coordinates —
         an encrypted history must not poison the scorer (0.0 placeholder)."""
-        from sentinel import sentinel
+        import sentinel  # call time: current module
 
         # One encrypted row already exists from prior posts; a second ping
         # triggers the history path with decryption.
         _post_location(lat=9.0830, lng=8.6763)
-        with database.get_db_context() as conn:
+        with _current_database().get_db_context() as conn:
             rows = conn.execute(
                 "SELECT * FROM locations WHERE device_id=? ORDER BY server_timestamp DESC LIMIT 10",
                 (TEST_DEVICE_ID,),
@@ -233,26 +264,35 @@ class TestAtRestRoundTrip:
                 history.append(h)
         from models import TelemetryPing
 
-        ping = TelemetryPing(device_id=TEST_DEVICE_ID, lat=9.0831, lng=8.6764, device_timestamp="2026-01-01T00:00:00Z")
-        score, threat, anomalies = sentinel.compute_score(ping, history)
+        ping = TelemetryPing(
+            device_id=TEST_DEVICE_ID,
+            lat=9.0831,
+            lng=8.6764,
+            device_timestamp="2026-01-01T00:00:00Z",
+        )
+        score, threat, anomalies = sentinel.sentinel.compute_score(ping, history)
         assert isinstance(score, int)
 
     def test_offline_monitor_alert_uses_decrypted_coords(self):
         """The offline alert's location string must carry real coordinates."""
         from datetime import datetime, timedelta, timezone
 
-        from offline_monitor import find_offline_devices
+        from offline_monitor import find_offline_devices  # call time: current module
 
         _register()
         # find_offline_devices ONLY returns OWNED devices (nothing to notify
         # for an ownerless row) — link the device to an account first.
-        resp = client.post(
+        resp = _current_client().post(
             "/api/auth/register",
-            json={"email": "offline-owner@test.dev", "password": "OfflineOwner123", "display_name": "O"},
+            json={
+                "email": "offline-owner@test.dev",
+                "password": "OfflineOwner123",
+                "display_name": "O",
+            },
         )
         assert resp.status_code == 200, resp.text
         user_token = resp.json()["token"]
-        claim = client.post(
+        claim = _current_client().post(
             "/api/device/claim",
             json={"device_id": TEST_DEVICE_ID},
             headers={"Authorization": f"Bearer {user_token}"},
@@ -260,10 +300,13 @@ class TestAtRestRoundTrip:
         assert claim.status_code == 200, claim.text
 
         _post_location(lat=6.5244, lng=3.3792)
-        with database.get_db_context() as conn:
+        with _current_database().get_db_context() as conn:
             conn.execute(
                 "UPDATE devices SET last_seen=? WHERE id=?",
-                ((datetime.now(timezone.utc) - timedelta(hours=2)).isoformat(), TEST_DEVICE_ID),
+                (
+                    (datetime.now(timezone.utc) - timedelta(hours=2)).isoformat(),
+                    TEST_DEVICE_ID,
+                ),
             )
             conn.commit()
 
@@ -273,7 +316,7 @@ class TestAtRestRoundTrip:
         assert match["lat"] is not None and abs(match["lat"] - 6.5244) < 1e-6
 
     def test_evidence_pdf_data_decrypts(self):
-        from evidence import evidence_builder
+        from evidence import evidence_builder  # call time: current module
 
         case_id = evidence_builder.create_case(TEST_DEVICE_ID)
         data = evidence_builder.compile_pdf_data(case_id)
@@ -287,32 +330,38 @@ class TestAtRestRoundTrip:
         ), f"expected a location at lat≈{LAT}, got {[loc['lat'] for loc in data['locations']]}"
 
     def test_data_export_decrypts(self):
-        from data_export import data_export_service
+        from data_export import data_export_service  # call time: current module
 
         exported = data_export_service.export_device_data(TEST_DEVICE_ID)
         assert exported["locations"]
         assert any(abs(loc["lat"] - LAT) < 1e-6 for loc in exported["locations"])
 
     def test_guardian_recovery_snapshot_decrypts(self):
-        from routes.guardian import _device_last_location
+        from routes.guardian import _device_last_location  # call time: current module
 
         # Post a fresh fix so the LATEST row is unambiguous (shared temp DBs
         # under full-suite runs may carry earlier rows from this file).
         _post_location(lat=6.5244, lng=3.3792)
-        with database.get_db_context() as conn:
+        with _current_database().get_db_context() as conn:
             lat, lng = _device_last_location(conn, TEST_DEVICE_ID)
         assert lat is not None and abs(lat - 6.5244) < 1e-6
 
     def test_location_simple_path_also_encrypts(self):
         """/api/device/location/simple is the legacy ingest path — it must
         encrypt too so no plaintext write path remains."""
-        resp = client.post(
+        resp = _current_client().post(
             "/api/device/location/simple",
-            json={"device_id": TEST_DEVICE_ID, "lat": 5.5, "lng": 7.7, "accuracy": 12.0, "provider": "gps"},
+            json={
+                "device_id": TEST_DEVICE_ID,
+                "lat": 5.5,
+                "lng": 7.7,
+                "accuracy": 12.0,
+                "provider": "gps",
+            },
             headers=_device_headers(),
         )
         assert resp.status_code == 200, resp.text
-        with database.get_db_context() as conn:
+        with _current_database().get_db_context() as conn:
             row = conn.execute(
                 "SELECT * FROM locations WHERE device_id=? AND provider='gps' ORDER BY id DESC LIMIT 1",
                 (TEST_DEVICE_ID,),

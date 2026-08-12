@@ -44,7 +44,11 @@ TEST_USER_PASSWORD = "StrongPass1"
 def register_user(email: str) -> dict:
     resp = client.post(
         "/api/auth/register",
-        json={"email": email, "password": TEST_USER_PASSWORD, "display_name": "Test User"},
+        json={
+            "email": email,
+            "password": TEST_USER_PASSWORD,
+            "display_name": "Test User",
+        },
     )
     assert resp.status_code == 200, f"register_user failed: {resp.text}"
     return resp.json()
@@ -245,7 +249,10 @@ class TestRecoveryRequests:
         user, _ = self._setup_stolen_device()
         resp = client.post(
             "/api/recovery/requests",
-            json={"device_id": "stolen-phone", "description": "Grey Pixel 8, lost near the mall"},
+            json={
+                "device_id": "stolen-phone",
+                "description": "Grey Pixel 8, lost near the mall",
+            },
             headers=user_headers(user["token"]),
         )
         assert resp.status_code == 200, resp.text
@@ -317,7 +324,10 @@ class TestRecoveryRequests:
             assert device["operating_mode"] == "normal"
 
         # Closing a closed request → 400
-        resp = client.post(f"/api/recovery/requests/{req['id']}/close", headers=user_headers(user["token"]))
+        resp = client.post(
+            f"/api/recovery/requests/{req['id']}/close",
+            headers=user_headers(user["token"]),
+        )
         assert resp.status_code == 400
 
     def test_close_non_owner_403(self):
@@ -328,12 +338,18 @@ class TestRecoveryRequests:
             json={"device_id": "stolen-phone"},
             headers=user_headers(user["token"]),
         ).json()
-        resp = client.post(f"/api/recovery/requests/{req['id']}/close", headers=user_headers(other["token"]))
+        resp = client.post(
+            f"/api/recovery/requests/{req['id']}/close",
+            headers=user_headers(other["token"]),
+        )
         assert resp.status_code == 403
 
     def test_close_unknown_404(self):
         user = register_user("close404@example.com")
-        resp = client.post("/api/recovery/requests/rec-nonexistent/close", headers=user_headers(user["token"]))
+        resp = client.post(
+            "/api/recovery/requests/rec-nonexistent/close",
+            headers=user_headers(user["token"]),
+        )
         assert resp.status_code == 404
 
 
@@ -400,7 +416,12 @@ class TestNearbyAndSightings:
         stranger = register_user("sight-stranger@example.com")
         resp = client.post(
             "/api/recovery/sightings",
-            json={"request_id": req["id"], "lat": 9.083, "lng": 8.676, "note": "Saw it!"},
+            json={
+                "request_id": req["id"],
+                "lat": 9.083,
+                "lng": 8.676,
+                "note": "Saw it!",
+            },
             headers=user_headers(stranger["token"]),
         )
         assert resp.status_code == 403
@@ -409,7 +430,12 @@ class TestNearbyAndSightings:
         owner, guardian, req = self._setup()
         resp = client.post(
             "/api/recovery/sightings",
-            json={"request_id": req["id"], "lat": 9.083, "lng": 8.676, "note": "Saw it near the bus stop"},
+            json={
+                "request_id": req["id"],
+                "lat": 9.083,
+                "lng": 8.676,
+                "note": "Saw it near the bus stop",
+            },
             headers=user_headers(guardian["token"]),
         )
         assert resp.status_code == 200, resp.text
@@ -425,32 +451,72 @@ class TestNearbyAndSightings:
 
     def test_sighting_on_closed_request_400(self):
         owner, guardian, req = self._setup()
-        client.post(f"/api/recovery/requests/{req['id']}/close", headers=user_headers(owner["token"]))
+        client.post(
+            f"/api/recovery/requests/{req['id']}/close",
+            headers=user_headers(owner["token"]),
+        )
         resp = client.post(
             "/api/recovery/sightings",
-            json={"request_id": req["id"], "lat": 9.083, "lng": 8.676, "note": "Too late"},
+            json={
+                "request_id": req["id"],
+                "lat": 9.083,
+                "lng": 8.676,
+                "note": "Too late",
+            },
             headers=user_headers(guardian["token"]),
         )
         assert resp.status_code == 400
 
     def test_sighting_rate_limited(self, monkeypatch):
         _o, guardian, req = self._setup()
-        # Shrink the limit to make the test fast and deterministic
-        import routes.guardian as guardian_routes
-
-        monkeypatch.setattr(guardian_routes, "SIGHTING_RATE_MAX", 3)
+        # Shrink the limit to make the test fast and deterministic.
+        #
+        # SIGHTING_RATE_MAX is a module global of the routes.guardian module
+        # the app ACTUALLY holds. test_e2e / test_sim_change evict
+        # routes.guardian from sys.modules at collection and re-import it with
+        # THEIR env, so a fresh `import routes.guardian` here can resolve to a
+        # DIFFERENT module object than the one the app's handlers call — and a
+        # monkeypatch there would be invisible to the app (the full-suite CI
+        # order hazard). The app wraps each router in _IncludedRouter, so walk
+        # the original routers to the live POST sighting handler and patch its
+        # globals — the limit the app actually enforces is the one we shrink.
+        sighting_globals = None
+        for route in client.app.routes:
+            original_router = getattr(route, "original_router", None)
+            if original_router is None:
+                continue
+            for sub in original_router.routes:
+                if getattr(sub, "path", None) == "/api/recovery/sightings" and "POST" in (
+                    getattr(sub, "methods", None) or ()
+                ):
+                    sighting_globals = sub.endpoint.__globals__
+                    break
+            if sighting_globals is not None:
+                break
+        assert sighting_globals is not None, "POST /api/recovery/sightings route not registered"
+        monkeypatch.setitem(sighting_globals, "SIGHTING_RATE_MAX", 3)
 
         for i in range(3):
             resp = client.post(
                 "/api/recovery/sightings",
-                json={"request_id": req["id"], "lat": 9.083, "lng": 8.676, "note": f"Sighting {i}"},
+                json={
+                    "request_id": req["id"],
+                    "lat": 9.083,
+                    "lng": 8.676,
+                    "note": f"Sighting {i}",
+                },
                 headers=user_headers(guardian["token"]),
             )
             assert resp.status_code == 200
 
         resp = client.post(
             "/api/recovery/sightings",
-            json={"request_id": req["id"], "lat": 9.083, "lng": 8.676, "note": "Fourth"},
+            json={
+                "request_id": req["id"],
+                "lat": 9.083,
+                "lng": 8.676,
+                "note": "Fourth",
+            },
             headers=user_headers(guardian["token"]),
         )
         assert resp.status_code == 429

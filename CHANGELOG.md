@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased] — 2026-08-12
+
+### Fixed (test suite — full-suite order hazard closed)
+
+- **Backend full suite is green again in one process (454 passed, 4 skipped)**: CI runs every
+  test file in a single pytest process, and `test_e2e.py` / `test_sim_change.py` evict
+  `config/database/main/auth/alerts/websocket_manager/routes` from `sys.modules` at import
+  time (re-importing them with their own env). Test files imported **before** that eviction
+  kept stale module-level bindings — a dead module instance pointing at their temp DB while
+  app modules resolve the CURRENT module at call time — so 17 tests failed in the full suite
+  while passing individually. Closed with the codebase's documented lazy-resolution convention:
+  - `test_reliability.py` (9 failures: health DB check, WebSocket eviction/capacity/revoked-
+    token, `alerts.logger` patch misses, per-device recipients): a module-scoped autouse
+    fixture (`_align_to_current_modules`) re-points the module's bindings to the current
+    generation at run time — after collection, so after any eviction.
+  - `test_offline_monitor.py` (3) and `test_encryption_at_rest.py` (4): all helpers resolve
+    `client`/`database`/`api_key` lazily at call time.
+  - `test_guardian.py` (1, sighting rate-limit): the monkeypatch now targets the live POST
+    handler's `__globals__` via the app's `_IncludedRouter.original_router` — a fresh
+    `import routes.guardian` after eviction can resolve to a different module object than the
+    one the app's handlers call.
+
+---
+
 ## [Unreleased] — 2026-08-11
 
 ### Fixed (Android — live-tested on Samsung SM-A037F)

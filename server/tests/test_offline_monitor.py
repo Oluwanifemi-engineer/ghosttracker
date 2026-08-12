@@ -36,12 +36,45 @@ from database import init_db  # noqa: E402
 
 init_db(test_db_path)
 
-from main import app  # noqa: E402
-from offline_monitor import find_offline_devices, run_offline_sweep  # noqa: E402
+# ROBUSTNESS NOTE — lazy resolution (see test_sim_change.py docstring):
+# test_e2e / test_sim_change evict config/database/main/offline_monitor from
+# sys.modules at IMPORT time and re-import them with THEIR env, so module-level
+# bindings made before that eviction go stale (a dead database module pointing
+# at this file's temp DB while app modules resolve the CURRENT module at call
+# time). Every helper here therefore resolves modules lazily inside the
+# function so writes and reads hit the SAME (current) database.
 
-client = TestClient(app)
 
-TEST_API_KEY = config.settings.API_KEY
+def _current_client():
+    """TestClient bound to the CURRENT main.app (post-eviction module)."""
+    import main  # noqa: F401
+
+    return TestClient(main.app)
+
+
+def _current_database():
+    import database  # noqa: F401
+
+    return database
+
+
+def _current_api_key() -> str:
+    import config  # noqa: F401
+
+    return config.settings.API_KEY
+
+
+def _find_offline_devices(*args, **kwargs):
+    from offline_monitor import find_offline_devices as fn
+
+    return fn(*args, **kwargs)
+
+
+def _run_offline_sweep():
+    from offline_monitor import run_offline_sweep as fn
+
+    return fn()
+
 
 # Each test owns a DISTINCT device id so no test depends on another's state
 # (e.g. test 3 leaves an alert row that would change dedup for other tests).
@@ -55,11 +88,11 @@ DEVICE_SWEEP_REPORT = "off-device-007"
 
 
 def api_key_headers() -> dict:
-    return {"x-api-key": TEST_API_KEY}
+    return {"x-api-key": _current_api_key()}
 
 
 def register_device(device_id: str) -> None:
-    resp = client.post(
+    resp = _current_client().post(
         "/api/device/register",
         headers=api_key_headers(),
         json={
@@ -76,7 +109,7 @@ def register_device(device_id: str) -> None:
 def set_last_seen(device_id: str, hours_ago: int) -> None:
     """Force last_seen to a point `hours_ago` in the past (ISO-8601, like the
     live DB accumulates)."""
-    with database.get_db_context() as conn:
+    with _current_database().get_db_context() as conn:
         conn.execute(
             "UPDATE devices SET last_seen = datetime('now', ?) WHERE id=?",
             (f"-{hours_ago} hours", device_id),
@@ -85,13 +118,13 @@ def set_last_seen(device_id: str, hours_ago: int) -> None:
 
 
 def link_owner(device_id: str, owner: str = "usr-offline-owner") -> None:
-    with database.get_db_context() as conn:
+    with _current_database().get_db_context() as conn:
         conn.execute("UPDATE devices SET owner_id=? WHERE id=?", (owner, device_id))
         conn.commit()
 
 
 def mark_stolen(device_id: str) -> None:
-    with database.get_db_context() as conn:
+    with _current_database().get_db_context() as conn:
         conn.execute(
             "UPDATE devices SET is_stolen=1, operating_mode='stolen' WHERE id=?",
             (device_id,),
@@ -100,17 +133,23 @@ def mark_stolen(device_id: str) -> None:
 
 
 ALL_TEST_DEVICES = [
-    DEVICE_STALE, DEVICE_RECENT, DEVICE_ALERTED, DEVICE_STOLEN,
-    DEVICE_UNOWNED, DEVICE_SWEEP, DEVICE_SWEEP_REPORT,
+    DEVICE_STALE,
+    DEVICE_RECENT,
+    DEVICE_ALERTED,
+    DEVICE_STOLEN,
+    DEVICE_UNOWNED,
+    DEVICE_SWEEP,
+    DEVICE_SWEEP_REPORT,
 ]
 
 
 def cleanup_test_devices() -> None:
     """Delete every test device (with cascade) so sweep tests only ever see the
     device they seeded — a sweep alerts ALL stale owned devices, not just one."""
+    db = _current_database()
     from database import delete_device_cascade
 
-    with database.get_db_context() as conn:
+    with db.get_db_context() as conn:
         for device_id in ALL_TEST_DEVICES:
             if conn.execute("SELECT 1 FROM devices WHERE id=?", (device_id,)).fetchone():
                 delete_device_cascade(conn, device_id)
@@ -119,7 +158,7 @@ def cleanup_test_devices() -> None:
 
 def insert_offline_alert(device_id: str) -> None:
     """Simulate an offline alert already sent for this incident."""
-    with database.get_db_context() as conn:
+    with _current_database().get_db_context() as conn:
         conn.execute(
             "INSERT INTO alerts (device_id, alert_type, channel, recipient, message, delivered) "
             "VALUES (?, 'device_offline', 'sms', '+2348000000000', 'already alerted', 0)",
@@ -133,7 +172,7 @@ def test_find_offline_devices_returns_stale_owned_devices():
     link_owner(DEVICE_STALE)
     set_last_seen(DEVICE_STALE, hours_ago=2)
 
-    found = find_offline_devices(minutes=30)
+    found = _find_offline_devices(minutes=30)
     ids = [d["id"] for d in found]
     assert DEVICE_STALE in ids
     row = next(d for d in found if d["id"] == DEVICE_STALE)
@@ -145,7 +184,7 @@ def test_find_offline_devices_skips_recent_devices():
     link_owner(DEVICE_RECENT)
     set_last_seen(DEVICE_RECENT, hours_ago=0)  # just now
 
-    found = find_offline_devices(minutes=30)
+    found = _find_offline_devices(minutes=30)
     assert all(d["id"] != DEVICE_RECENT for d in found)
 
 
@@ -155,7 +194,7 @@ def test_find_offline_devices_skips_already_alerted():
     set_last_seen(DEVICE_ALERTED, hours_ago=2)
     insert_offline_alert(DEVICE_ALERTED)  # alert sent AFTER last_seen
 
-    found = find_offline_devices(minutes=30)
+    found = _find_offline_devices(minutes=30)
     assert all(d["id"] != DEVICE_ALERTED for d in found)
 
 
@@ -168,7 +207,7 @@ def test_find_offline_devices_skips_stolen_and_unowned():
     register_device(DEVICE_UNOWNED)  # no owner_id
     set_last_seen(DEVICE_UNOWNED, hours_ago=2)
 
-    found = find_offline_devices(minutes=30)
+    found = _find_offline_devices(minutes=30)
     ids = [d["id"] for d in found]
     assert DEVICE_STOLEN not in ids
     assert DEVICE_UNOWNED not in ids
@@ -181,10 +220,10 @@ def test_offline_sweep_alerts_once_per_incident():
     set_last_seen(DEVICE_SWEEP, hours_ago=2)
 
     # First sweep alerts the device (one incident → one alert)
-    first = asyncio.run(run_offline_sweep())
+    first = asyncio.run(_run_offline_sweep())
     assert first == 1
 
-    with database.get_db_context() as conn:
+    with _current_database().get_db_context() as conn:
         alerts = conn.execute(
             "SELECT COUNT(*) FROM alerts WHERE device_id=? AND alert_type='device_offline'",
             (DEVICE_SWEEP,),
@@ -192,7 +231,7 @@ def test_offline_sweep_alerts_once_per_incident():
     assert alerts >= 1
 
     # Second sweep: deduped — no re-alert while the device stays offline
-    second = asyncio.run(run_offline_sweep())
+    second = asyncio.run(_run_offline_sweep())
     assert second == 0
 
 
@@ -206,19 +245,19 @@ def test_offline_report_clears_incident_for_future_alerts():
     register_device(DEVICE_SWEEP_REPORT)
     link_owner(DEVICE_SWEEP_REPORT)
     set_last_seen(DEVICE_SWEEP_REPORT, hours_ago=2)
-    assert asyncio.run(run_offline_sweep()) == 1
+    assert asyncio.run(_run_offline_sweep()) == 1
 
     # Device reports: last_seen advances past the alert's sent_at → not offline
-    with database.get_db_context() as conn:
+    with _current_database().get_db_context() as conn:
         conn.execute(
             "UPDATE devices SET last_seen = datetime('now', '+1 minute') WHERE id=?",
             (DEVICE_SWEEP_REPORT,),
         )
         conn.commit()
-    assert asyncio.run(run_offline_sweep()) == 0
+    assert asyncio.run(_run_offline_sweep()) == 0
 
     # The dedup guard no longer matches: the alert is now OLDER than last_seen
-    with database.get_db_context() as conn:
+    with _current_database().get_db_context() as conn:
         row = conn.execute(
             "SELECT 1 FROM alerts a JOIN devices d ON d.id = a.device_id "
             "WHERE a.device_id=? AND a.alert_type='device_offline' "

@@ -41,8 +41,8 @@ from alerts import AlertEngine, ChannelPermanentError, normalize_phone_to_e164  
 from auth import create_token  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 from main import app  # noqa: E402
+from websocket_manager import MAX_DASHBOARD_CONNECTIONS  # noqa: E402
 from websocket_manager import (  # noqa: E402
-    MAX_DASHBOARD_CONNECTIONS,
     _safe_remove,
     active_dashboard_connections,
     can_accept_new_connection,
@@ -50,6 +50,56 @@ from websocket_manager import (  # noqa: E402
 )
 
 client = TestClient(app)
+
+
+# ROBUSTNESS NOTE — run-time module alignment (see test_sim_change.py's
+# docstring for the lazy-resolution convention):
+# test_e2e / test_sim_change evict config/database/main/auth/alerts/
+# websocket_manager from sys.modules at IMPORT time and re-import them with
+# THEIR env, so module-level bindings made at this file's collection go stale
+# (a dead module instance pointing at this file's temp DB/secrets while app
+# modules — and the live uvicorn server — resolve the CURRENT module at call
+# time). That stale-mixing is what broke the full suite (CI runs every file in
+# one process): devices inserted through the stale database were invisible to
+# the current alert engine, revoked tokens were checked against the wrong DB,
+# the capacity patch hit the wrong websocket_manager, and alerts.logger
+# patches missed the engine's logger.
+@pytest.fixture(autouse=True, scope="module")
+def _align_to_current_modules():
+    """Re-point this module's bindings to the CURRENT generation of modules.
+
+    Fixtures are instantiated at RUN time (after every file has been
+    collected, i.e. after any eviction), so resolving here always yields the
+    generation the app actually uses — order-independent whether this file is
+    collected before or after test_e2e / test_sim_change.
+    """
+    import alerts as cur_alerts
+    import auth as cur_auth
+    import config as cur_config
+    import database as cur_database
+    import main as cur_main
+    import websocket_manager as cur_ws
+
+    global client, database, config, app
+    global create_token, AlertEngine, ChannelPermanentError, normalize_phone_to_e164
+    global MAX_DASHBOARD_CONNECTIONS, _safe_remove, active_dashboard_connections
+    global can_accept_new_connection, prune_stale_connections
+
+    client = TestClient(cur_main.app)
+    app = cur_main.app
+    database = cur_database
+    config = cur_config
+    create_token = cur_auth.create_token
+    AlertEngine = cur_alerts.AlertEngine
+    ChannelPermanentError = cur_alerts.ChannelPermanentError
+    normalize_phone_to_e164 = cur_alerts.normalize_phone_to_e164
+    MAX_DASHBOARD_CONNECTIONS = cur_ws.MAX_DASHBOARD_CONNECTIONS
+    _safe_remove = cur_ws._safe_remove
+    active_dashboard_connections = cur_ws.active_dashboard_connections
+    can_accept_new_connection = cur_ws.can_accept_new_connection
+    prune_stale_connections = cur_ws.prune_stale_connections
+
+    yield
 
 
 async def _wait_until(predicate, timeout: float = 20.0) -> bool:
@@ -492,7 +542,10 @@ class TestWebSocketConnectionLimits:
         token = create_token("dashboard:revoked", "dashboard")
         jti = jwt.decode(token, config.settings.JWT_SECRET, algorithms=["HS256"])["jti"]
         with database.get_db_context() as conn:
-            conn.execute("INSERT OR IGNORE INTO revoked_tokens (jti, reason) VALUES (?, ?)", (jti, "test"))
+            conn.execute(
+                "INSERT OR IGNORE INTO revoked_tokens (jti, reason) VALUES (?, ?)",
+                (jti, "test"),
+            )
             conn.commit()
 
         url = f"{live_ws_server}?token={token}"
@@ -528,7 +581,11 @@ class TestWebSocketConnectionLimits:
         import jwt
 
         now = datetime.now(timezone.utc)
-        payload = {"sub": "dashboard:no-type", "iat": now, "exp": now + timedelta(hours=1)}
+        payload = {
+            "sub": "dashboard:no-type",
+            "iat": now,
+            "exp": now + timedelta(hours=1),
+        }
         token = jwt.encode(payload, config.settings.JWT_SECRET, algorithm="HS256")
         url = f"{live_ws_server}?token={token}"
         active_dashboard_connections.clear()
@@ -552,7 +609,10 @@ class TestRevokedTokensOnApi:
         token = create_token("dashboard:api-revoked", "dashboard")
         jti = jwt.decode(token, config.settings.JWT_SECRET, algorithms=["HS256"])["jti"]
         with database.get_db_context() as conn:
-            conn.execute("INSERT OR IGNORE INTO revoked_tokens (jti, reason) VALUES (?, ?)", (jti, "test"))
+            conn.execute(
+                "INSERT OR IGNORE INTO revoked_tokens (jti, reason) VALUES (?, ?)",
+                (jti, "test"),
+            )
             conn.commit()
 
         response = client.get("/api/dashboard/devices", headers={"Authorization": f"Bearer {token}"})
@@ -1033,7 +1093,11 @@ class TestAlertEngineChannels:
             result = await engine.send_whatsapp(
                 "+2348081234567",
                 "theft_detected",
-                {"location": "9.08, 8.67", "time": "2026-01-01T00:00:00", "score": "85"},
+                {
+                    "location": "9.08, 8.67",
+                    "time": "2026-01-01T00:00:00",
+                    "score": "85",
+                },
             )
 
         assert result is True
@@ -1061,7 +1125,11 @@ class TestAlertEngineChannels:
             await engine.send_whatsapp(
                 "+2348081234567",
                 "theft_detected",
-                {"location": "9.08, 8.67", "time": "2026-01-01T00:00:00", "score": "85"},
+                {
+                    "location": "9.08, 8.67",
+                    "time": "2026-01-01T00:00:00",
+                    "score": "85",
+                },
             )
 
         data = mock_client.return_value.__aenter__.return_value.post.call_args.kwargs["data"]
@@ -1078,7 +1146,10 @@ class TestAlertEngineChannels:
         config.settings.TWILIO_SID = "AC" + "1" * 32
         config.settings.TWILIO_AUTH_TOKEN = "2" * 32
         config.settings.TWILIO_WHATSAPP_TEMPLATE_SID = "HX" + "c" * 32
-        config.settings.TWILIO_WHATSAPP_TEMPLATE_VARIABLES = {"1": "location", "2": "missing_key"}
+        config.settings.TWILIO_WHATSAPP_TEMPLATE_VARIABLES = {
+            "1": "location",
+            "2": "missing_key",
+        }
 
         mock_response = MagicMock()
         mock_response.status_code = 201
@@ -1193,7 +1264,11 @@ class TestPerDeviceRecipients:
             results = await engine.send_all(
                 device_id=device_id,
                 alert_type="theft_detected",
-                data={"location": "9.08, 8.67", "time": "2026-01-01T00:00:00", "score": "85"},
+                data={
+                    "location": "9.08, 8.67",
+                    "time": "2026-01-01T00:00:00",
+                    "score": "85",
+                },
             )
 
         # whatsapp must have been attempted with the per-device phone (E.164)
