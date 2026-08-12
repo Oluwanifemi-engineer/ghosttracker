@@ -501,22 +501,54 @@ def _queue_auto_action(db, device_id: str, command: str):
     )
 
 
-def _sim_changed_alert_recent(db, device_id: str) -> bool:
+def _alert_recent(device_id: str, alert_type: str, minutes: int = 10) -> bool:
+    """True when an alert of the given type was already logged for this device
+    in the last `minutes` minutes. Shared by the location and heartbeat paths
+    so one incident (including queued/offline replays of the same flag) = one
+    always-deliver alert.
+
+    Reads through the CURRENT database module (resolved at call time) rather
+    than the request connection: alert_engine.send_all resolves
+    `from database import get_db_context` at call time too, so under
+    full-suite test eviction it writes rows to a DIFFERENT module than the
+    one the request's `db` came from. Reading the same module send_all
+    writes keeps the dedup truthful (same convention as test_alert_settings
+    seeding the current module). Single-process production has one module,
+    so the two are identical there.
+
+    sent_at is written by SQLite as CURRENT_TIMESTAMP (UTC, 'YYYY-MM-DD
+    HH:MM:SS') — comparing against datetime('now', '-N minutes') is
+    apples-to-apples UTC.
+    """
+    import database as _current_db
+
+    with _current_db.get_db_context() as conn:
+        recent = conn.execute(
+            "SELECT 1 FROM alerts WHERE device_id=? AND alert_type=? "
+            "AND datetime(sent_at) > datetime('now', ?) LIMIT 1",
+            (device_id, alert_type, f"-{minutes} minutes"),
+        ).fetchone()
+    return recent is not None
+
+
+def _sim_changed_alert_recent(device_id: str) -> bool:
     """True when a sim_changed alert was already logged for this device in the
     last 10 minutes. Shared by the location and heartbeat paths so one incident
     (including queued/offline replays of the same flag) = one always-deliver
-    alert.
+    alert."""
+    return _alert_recent(device_id, "sim_changed")
 
-    sent_at is written by SQLite as CURRENT_TIMESTAMP (UTC, 'YYYY-MM-DD
-    HH:MM:SS') — comparing against datetime('now', '-10 minutes') is
-    apples-to-apples UTC.
+
+def _queue_failed_unlock_reaction(db, device_id: str) -> None:
+    """Queue the "theftie" evidence pair (front photo + ambient audio) for a
+    device whose failed-unlock count crossed the threshold.
+
+    Reuses the geofence auto-action machinery: priority-1 poll commands,
+    deduplicated against identical already-pending rows so a device that
+    keeps pinging from a locked screen never piles up repeats.
     """
-    recent = db.execute(
-        "SELECT 1 FROM alerts WHERE device_id=? AND alert_type='sim_changed' "
-        "AND datetime(sent_at) > datetime('now', '-10 minutes') LIMIT 1",
-        (device_id,),
-    ).fetchone()
-    return recent is not None
+    _queue_auto_action(db, device_id, "capture_photo_front")
+    _queue_auto_action(db, device_id, "capture_audio")
 
 
 @router.post("/api/device/location")
@@ -633,12 +665,38 @@ async def post_location(
     # incident = one alert (tradeoff: two GENUINE swaps within 10 minutes are
     # coalesced — the owner is still alerted to the first, and the SIM
     # fingerprint is re-baselined on-device).
-    if report.sim_changed and not _sim_changed_alert_recent(db, device_id):
+    if report.sim_changed and not _sim_changed_alert_recent(device_id):
         await alert_engine.send_all(
             device_id,
             "sim_changed",
             {"location": f"{report.lat},{report.lng}", "time": now},
         )
+
+    # Failed-unlock "theftie" reaction (COMPETITOR_AUDIT P1 #4): repeated
+    # failed unlock attempts strongly suggest a stranger in possession, and
+    # the owner must know NOW while the device is still with the thief.
+    # Sentinel already scored the signal above (+20, if it crossed the
+    # threshold); here we queue the evidence pair (front photo + ambient
+    # audio — the same commands geofence exits use) and fire an
+    # always-deliver alert. Deduped: _queue_failed_unlock_reaction skips
+    # identical already-pending commands, and the 10-minute alert window
+    # absorbs queued/offline replays so one incident = one alert (same
+    # tradeoff as sim_changed).
+    if report.failed_unlock_count is not None and report.failed_unlock_count >= settings.FAILED_UNLOCK_THRESHOLD:
+        _queue_failed_unlock_reaction(db, device_id)
+        # Commit BEFORE send_all (same nested-write hazard documented on the
+        # geofence path below: send_all opens its own connection).
+        db.commit()
+        if not _alert_recent(device_id, "failed_unlock_attempts"):
+            await alert_engine.send_all(
+                device_id,
+                "failed_unlock_attempts",
+                {
+                    "attempts": report.failed_unlock_count,
+                    "location": f"{report.lat},{report.lng}",
+                    "time": now,
+                },
+            )
 
     geofences = db.execute("SELECT * FROM geofences WHERE device_id=? AND active=1", (device_id,)).fetchall()
 
@@ -1000,13 +1058,32 @@ async def post_heartbeat(
     # SIM change over the heartbeat (belt-and-braces for devices whose
     # location stream is quiet — e.g. location permission revoked): same
     # always-deliver alert, same 10-minute dedup as the location path.
-    if hb.sim_changed and not _sim_changed_alert_recent(db, device_id):
+    if hb.sim_changed and not _sim_changed_alert_recent(device_id):
         last = db.execute(
             "SELECT lat, lng FROM locations WHERE device_id=? " "ORDER BY server_timestamp DESC LIMIT 1",
             (device_id,),
         ).fetchone()
         loc = f"{last['lat']},{last['lng']}" if last else "unknown"
         await alert_engine.send_all(device_id, "sim_changed", {"location": loc, "time": now})
+
+    # Failed-unlock "theftie" over the heartbeat too (same belt-and-braces
+    # as sim_changed: the 60s heartbeat runs even when the location stream
+    # is quiet, so a locked screen is still reported). Same reaction and same
+    # 10-minute dedup as the location path.
+    if hb.failed_unlock_count is not None and hb.failed_unlock_count >= settings.FAILED_UNLOCK_THRESHOLD:
+        _queue_failed_unlock_reaction(db, device_id)
+        db.commit()
+        if not _alert_recent(device_id, "failed_unlock_attempts"):
+            last = db.execute(
+                "SELECT lat, lng FROM locations WHERE device_id=? " "ORDER BY server_timestamp DESC LIMIT 1",
+                (device_id,),
+            ).fetchone()
+            loc = f"{last['lat']},{last['lng']}" if last else "unknown"
+            await alert_engine.send_all(
+                device_id,
+                "failed_unlock_attempts",
+                {"attempts": hb.failed_unlock_count, "location": loc, "time": now},
+            )
 
     device = db.execute("SELECT operating_mode FROM devices WHERE id=?", (device_id,)).fetchone()
 

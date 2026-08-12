@@ -14,6 +14,7 @@ os.environ["MT_JWT_SECRET"] = "test-jwt-secret-" + "b" * 64
 os.environ["MT_ENCRYPTION_KEY"] = secrets.token_hex(32)
 os.environ["MT_DB_PATH"] = ":memory:"
 
+from config import settings  # noqa: E402
 from models import TelemetryPing  # noqa: E402 (env set above)
 from sentinel import SentinelEngine  # noqa: E402
 
@@ -93,6 +94,38 @@ class TestTheftSignals:
         assert score >= 35  # SIM change weight
         assert level in ("ELEVATED", "HIGH", "CRITICAL")
         assert any("SIM" in a for a in anomalies)
+
+    def test_failed_unlocks_raise_score(self, engine):
+        """The theftie signal (N failed unlocks) must populate the previously
+        dead `failed_unlocks` anomaly and add its weight (+20) once the count
+        crosses the configured threshold."""
+        ping = TelemetryPing(
+            device_id="test",
+            lat=9.0820,
+            lng=8.6753,
+            failed_unlock_count=settings.FAILED_UNLOCK_THRESHOLD,
+        )
+        score, level, anomalies = engine.compute_score(ping, [])
+        assert score >= 20  # failed_unlocks weight
+        assert any("failed unlock" in a.lower() for a in anomalies)
+
+    def test_failed_unlocks_below_threshold_do_not_score(self, engine):
+        ping = TelemetryPing(
+            device_id="test",
+            lat=9.0820,
+            lng=8.6753,
+            failed_unlock_count=settings.FAILED_UNLOCK_THRESHOLD - 1,
+        )
+        score, level, anomalies = engine.compute_score(ping, [])
+        assert score == 0
+        assert len(anomalies) == 0
+
+    def test_failed_unlocks_none_does_not_score(self, engine):
+        """Old app builds that never report the field must not be penalized."""
+        ping = TelemetryPing(device_id="test", lat=9.0820, lng=8.6753)
+        score, level, anomalies = engine.compute_score(ping, [])
+        assert score == 0
+        assert len(anomalies) == 0
 
     def test_high_velocity_raises_score(self, engine):
         ping = TelemetryPing(

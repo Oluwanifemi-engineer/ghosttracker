@@ -166,6 +166,11 @@ class Settings:
     THEFT_SCORE_THRESHOLD: int = 80  # Auto-activate theft mode
     ANOMALY_CONFIRMATION_COUNT: int = 3  # Consecutive anomalies to escalate
 
+    # Failed unlock attempts ("theftie") that trigger an automatic evidence
+    # capture + alert. Sentinel also scores the signal (+20) once it crosses
+    # this bar. Default 5 matches the audit's "N failed unlocks".
+    FAILED_UNLOCK_THRESHOLD: int = int(os.environ.get("MT_FAILED_UNLOCK_THRESHOLD", "5"))
+
     # ── Offline Monitor ────────────────────────────────────────────────────
     # A device is considered offline (and its owner alerted) after this many
     # minutes without any heartbeat/location. Floor of 10 minutes is enforced

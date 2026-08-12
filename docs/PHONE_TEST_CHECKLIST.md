@@ -134,7 +134,8 @@ notification, then retry. The dashboard honestly shows "Unarmed" when capture is
 | 6.3 | While armed, issue **PHOTO / FRONT / AUDIO** | Capture runs even with screen locked (armed MediaCaptureService) | ☐ |
 | 6.4 | Evidence panel | Photos/audio + location trail present with **SHA-256 chain-of-custody** hashes | ☐ |
 | 6.5 | Guardian network panel | Device marked lost; nearby guardians (if any) can submit sightings | ☐ |
-| 6.6 | End the response (mark recovered / disarm) | Theft mode clears; device returns to normal tracking | ☐ |
+| 6.6 | **Failed-unlock "theftie" (v1.5.1):** with the device locked, enter the wrong PIN/pattern ≥ 5 times across screen-on/off cycles, then check the dashboard | `failed_unlock_attempts` alert fires + `capture_photo_front`/`capture_audio` queued (evidence lands in the gallery). On device-owner installs (provisioned via `scripts/enable-uninstall-protection.sh`) the DPC's exact count is used; otherwise the keyguard heuristic counts locked screen-on sessions (one per screen-on/off cycle). A correct unlock resets the counter | ☐ |
+| 6.7 | End the response (mark recovered / disarm) | Theft mode clears; device returns to normal tracking | ☐ |
 
 ---
 

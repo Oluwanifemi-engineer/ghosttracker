@@ -44,6 +44,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   carries an explicit DECISION (SQLite is the production architecture; the
   adapter is experimental, Phase 2b not scheduled); ADR-0005 status, the
   `kubernetes/` README, and the adapter module docstrings all say so.
+- **Failed-unlock "theftie" auto-capture (P1 gap-closer #4)**: repeated
+  failed unlock attempts now trigger the same automatic evidence capture as
+  a geofence exit. Android: new `FailedUnlockMonitor` reports the count of
+  failed unlocks since the last successful unlock on every telemetry ping
+  and heartbeat — the DPC's authoritative `getCurrentFailedPasswordAttempts`
+  when the app is device admin/owner, else a permission-free keyguard
+  heuristic (a screen-on behind the keyguard that ends without
+  `ACTION_USER_PRESENT` = one failure; a successful unlock resets). New
+  manifest `FailedUnlockReceiver` (SCREEN_ON/SCREEN_OFF/USER_PRESENT),
+  fresh-install baseline. Server: `TelemetryPing.failed_unlock_count` /
+  `HeartbeatPacket.failed_unlock_count` (validated ≥ 0), Sentinel now
+  actually scores the previously-dead `failed_unlocks` anomaly (+20) when
+  the count crosses `MT_FAILED_UNLOCK_THRESHOLD` (default 5), and both the
+  location and heartbeat paths queue `capture_photo_front` +
+  `capture_audio` (priority 1, deduped) and fire an always-deliver
+  `failed_unlock_attempts` alert (10-minute dedup — reads the same current
+  DB module `send_all` writes to, so eviction-order runs stay truthful).
+  Tests: 4 API (threshold reaction + alert, dedup, below-threshold/absent
+  inert, heartbeat path) + 3 Sentinel scoring + 11 Android
+  `FailedUnlockTrackerTest` (counting contract, reset, DPC overwrite,
+  persistence).
 
 ### Fixed (v1.5)
 

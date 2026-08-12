@@ -3197,3 +3197,163 @@ class TestCaptureCommandHonestAck:
 
         poll = client.get(f"/api/device/commands/{TEST_DEVICE_ID}", headers=get_device_headers()).json()
         assert all(c["id"] != cmd_id for c in poll["commands"])
+
+
+# ─── Failed-Unlock "Theftie" Auto-Capture (COMPETITOR_AUDIT P1 #4) ──────────
+
+
+class TestFailedUnlockTheftie:
+    """Repeated failed unlock attempts ("theftie") must trigger the same
+    automatic evidence capture machinery as a geofence exit: when the device
+    reports a failed_unlock_count >= the threshold, the server queues
+    capture_photo_front + capture_audio (priority 1, deduped against
+    already-pending identical commands) and fires an always-deliver
+    failed_unlock_attempts alert (10-minute dedup). Below the threshold — or
+    with the field absent (old app builds) — nothing is queued."""
+
+    def _register(self, device_id: str) -> str:
+        resp = client.post(
+            "/api/device/register",
+            json={
+                "device_id": device_id,
+                "fingerprint": f"fp-theftie-{device_id}",
+                "model": "Theftie",
+                "device_key": f"key-{device_id}",
+            },
+            headers=get_auth_headers(),
+        )
+        assert resp.status_code == 200, resp.text
+        return resp.json()["token"]
+
+    def _seed_current_db_device(self, device_id: str) -> None:
+        """alert_engine.send_all resolves `from database import get_db_context`
+        at CALL time, so under full-suite runs it reads/writes the CURRENT
+        (post-eviction) database module. Seed the device row there too, or the
+        alert row's FK fails silently (same convention as test_alert_settings.py
+        and TestGeofenceAutoActions)."""
+        import database as _current_db
+
+        with _current_db.get_db_context() as conn:
+            conn.execute(
+                "INSERT OR IGNORE INTO devices (id, model, alert_phone, alert_email) "
+                "VALUES (?, 'Theftie', '+2348000000000', 'theftie-test@example.com')",
+                (device_id,),
+            )
+            conn.commit()
+
+    def _post_location(self, device_id: str, token: str, failed_unlock_count: int) -> None:
+        resp = client.post(
+            "/api/device/location",
+            json={
+                "device_id": device_id,
+                "lat": 9.0820,
+                "lng": 8.6753,
+                "accuracy_horizontal": 7.5,
+                "provider": "gps",
+                "failed_unlock_count": failed_unlock_count,
+            },
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert resp.status_code == 200, resp.text
+
+    def _pending(self, device_id: str) -> list:
+        with database.get_db_context() as conn:
+            rows = conn.execute(
+                "SELECT command, priority FROM commands WHERE device_id=? AND status='pending'",
+                (device_id,),
+            ).fetchall()
+        return [dict(r) for r in rows]
+
+    def _alerts(self, device_id: str) -> list:
+        import database as _current_db
+
+        with _current_db.get_db_context() as conn:
+            rows = conn.execute(
+                "SELECT alert_type, delivered FROM alerts WHERE device_id=? AND alert_type='failed_unlock_attempts'",
+                (device_id,),
+            ).fetchall()
+        return [dict(r) for r in rows]
+
+    def test_threshold_crossed_queues_capture_and_alerts(self):
+        device_id = "theftie-capture"
+        token = self._register(device_id)
+        self._seed_current_db_device(device_id)
+
+        # One ping above the threshold → evidence pair queued + alert fired.
+        self._post_location(device_id, token, config.settings.FAILED_UNLOCK_THRESHOLD)
+
+        pending = self._pending(device_id)
+        commands = {p["command"] for p in pending}
+        assert {"capture_photo_front", "capture_audio"} <= commands
+        assert all(p["priority"] == 1 for p in pending), "theftie capture must jump the queue"
+
+        alert_rows = self._alerts(device_id)
+        assert len(alert_rows) >= 1, "failed_unlock_attempts alert must fire"
+        assert all(a["alert_type"] == "failed_unlock_attempts" for a in alert_rows)
+
+        # Still locked, pinging again → no duplicate commands, no repeat alert.
+        self._post_location(device_id, token, config.settings.FAILED_UNLOCK_THRESHOLD + 2)
+        assert len(self._pending(device_id)) == 2, "theftie reaction must fire exactly once per incident"
+        assert len(self._alerts(device_id)) == len(alert_rows), "second ping must not re-alert"
+
+    def test_below_threshold_queues_nothing(self):
+        device_id = "theftie-quiet"
+        token = self._register(device_id)
+        self._seed_current_db_device(device_id)
+
+        self._post_location(device_id, token, config.settings.FAILED_UNLOCK_THRESHOLD - 1)
+        assert self._pending(device_id) == [], "below threshold must not queue anything"
+        assert self._alerts(device_id) == [], "below threshold must not alert"
+
+    def test_field_absent_queues_nothing(self):
+        """Old app builds that never report failed_unlock_count must be inert
+        (None is treated as 'not reported', not as a failure count)."""
+        device_id = "theftie-legacy"
+        resp = client.post(
+            "/api/device/register",
+            json={"device_id": device_id, "fingerprint": f"fp-theftie-legacy-{device_id}"},
+            headers=get_auth_headers(),
+        )
+        token = resp.json()["token"]
+        self._seed_current_db_device(device_id)
+
+        client.post(
+            "/api/device/location",
+            json={
+                "device_id": device_id,
+                "lat": 9.0820,
+                "lng": 8.6753,
+                "accuracy_horizontal": 7.5,
+                "provider": "gps",
+            },
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert self._pending(device_id) == []
+        assert self._alerts(device_id) == []
+
+    def test_heartbeat_threshold_also_queues_capture(self):
+        """The 60s heartbeat must react too — a device with its location
+        stream quiet (permission revoked) still reports the locked screen."""
+        device_id = "theftie-heartbeat"
+        resp = client.post(
+            "/api/device/register",
+            json={"device_id": device_id, "fingerprint": f"fp-theftie-hb-{device_id}"},
+            headers=get_auth_headers(),
+        )
+        token = resp.json()["token"]
+        self._seed_current_db_device(device_id)
+
+        resp = client.post(
+            "/api/device/heartbeat",
+            json={
+                "device_id": device_id,
+                "failed_unlock_count": config.settings.FAILED_UNLOCK_THRESHOLD,
+            },
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert resp.status_code == 200, resp.text
+
+        pending = self._pending(device_id)
+        commands = {p["command"] for p in pending}
+        assert {"capture_photo_front", "capture_audio"} <= commands
+        assert len(self._alerts(device_id)) >= 1, "heartbeat must fire the theftie alert too"

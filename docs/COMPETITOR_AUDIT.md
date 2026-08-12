@@ -21,7 +21,7 @@ feature, and prioritizes what closes the gap with the least effort.
 | Audio capture | ✅ | ❌ consumer | ⚠️ | ❌ |
 | **SIM-change detection + alert** | ✅ **new (v1.4.1)** | ✅ | ✅ (cornerstone) | ❌ |
 | Geofencing | ✅ (radius, exit alerts) | ✅ radius + geo-divisions, **automated actions** | ✅ + automated reactions | ✅ (notifications) |
-| **Failed-unlock "theftie" capture** | ❌ (signal exists, no hook) | ❌ | ✅ | ❌ |
+| **Failed-unlock "theftie" capture** | ✅ **new (v1.5.1)** | ❌ | ✅ | ❌ |
 | Custom lock-screen recovery message ("Lost mode") | ❌ (roadmap P0) | ✅ (alert message) | ✅ | ✅ |
 | Screenshots of thief's screen | ❌ | ✅ (opt-in) | ✅ | ❌ |
 | Stealth / hidden icon | ⚠️ covert minimize only | ✅ | ✅ (sideload APK) | ❌ (system) |
@@ -64,7 +64,7 @@ feature, and prioritizes what closes the gap with the least effort.
 | 1 | **Geofence automated actions** — exit safe zone at 2am → auto siren + front capture + alert | 🔴 P0 | ~1 wk | ✅ none | Sentinel already scores exits; wire per-zone policy + queue the capture commands server-side (same machinery as theft-mode auto-capture) |
 | 2 | **Lost Mode** — remote lock + full-screen "call this number / reward" message | 🔴 P0 | ~1 wk | ✅ with one rule | Use `showWhenLocked` activity / existing `SYSTEM_ALERT_WINDOW`; degrade to high-priority notification on Android 14+ (no auto `USE_FULL_SCREEN_INTENT`) — see `docs/PLAY_POLICY_ANALYSIS.md` §2 |
 | 3 | **Recovery Dossier** — one-click police/insurer PDF (timeline + evidence + chain) | 🔴 P0 | ~1 wk | ✅ none (server-side) | `evidence_pdf.py` exists; wire a dashboard "Export dossier" |
-| 4 | **Failed-unlock "theftie"** — auto front-camera capture on N failed unlocks | 🟡 P1 | 1–2 wks | ✅ none | Sentinel already scores `failed_unlocks`; add the Android unlock-attempt hook + queue capture |
+| 4 | **Failed-unlock "theftie"** — auto front-camera capture on N failed unlocks | 🟡 P1 | 1–2 wks | ✅ none | ✅ **CLOSED (2026-08-12)** — Android `FailedUnlockMonitor` (DPC exact count when device admin/owner, else keyguard heuristic via `FailedUnlockReceiver`) reports the count on every ping/heartbeat; Sentinel now actually scores the previously-dead `failed_unlocks` signal (+20) over `MT_FAILED_UNLOCK_THRESHOLD` (default 5); both telemetry paths queue `capture_photo_front` + `capture_audio` + an always-deliver alert with 10-min dedup. 4 API + 3 Sentinel + 11 Android tests |
 | 5 | **Location history + CSV export** — 30-day persistence + export | 🟡 P1 | 1–2 wks | ✅ none | Prey parity; also a free/paid lever |
 | 6 | **Magneetar Find Network** (offline BLE mesh) | 🟡 P1 | 2–3 mo | ✅ with BLE scan declaration | The differentiator; rides the existing Guardian sighting pipeline |
 | 7 | **Wear OS companion** (panic siren, last-known glance) | 🟢 P2 | 3 wks | ✅ | Cheap win, big demo value |

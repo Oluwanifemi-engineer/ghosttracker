@@ -140,6 +140,12 @@ class TelemetryPing(BaseModel):
     is_airplane_mode: Optional[bool] = None
     sim_serial_hash: Optional[str] = None
     sim_changed: bool = False
+    # Failed unlock attempts since the last successful unlock (the "theftie"
+    # signal, COMPETITOR_AUDIT P1 #4). Reported by the app's keyguard/DPC
+    # monitor on every ping and heartbeat; Sentinel scores it (+20) and the
+    # telemetry path queues an evidence capture when it crosses the
+    # configured threshold. None = not reported (older app builds).
+    failed_unlock_count: Optional[int] = Field(None, ge=0)
     # Armed Watch state — True while the device's camera|mic foreground
     # service is armed (remote capture possible). Reported by the app on
     # every location ping and heartbeat so the dashboard can show the
@@ -309,6 +315,10 @@ class HeartbeatPacket(BaseModel):
     # permission-free operator-fingerprint change exactly once; the server
     # fires the always-deliver sim_changed alert and lets Sentinel score it.
     sim_changed: Optional[bool] = None
+    # Failed unlock attempts since the last successful unlock (see
+    # TelemetryPing.failed_unlock_count) — carried on the heartbeat so a
+    # locked screen is still reported when the location stream is quiet.
+    failed_unlock_count: Optional[int] = Field(None, ge=0)
 
 
 # ─── Auth Models ─────────────────────────────────────────────────────────────

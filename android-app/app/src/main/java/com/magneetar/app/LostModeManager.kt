@@ -2,6 +2,7 @@ package com.magneetar.app
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.os.Build
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
@@ -67,9 +68,14 @@ object LostModeManager {
 
     private fun postNotification(context: Context, message: String, phone: String?) {
         val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        nm.createNotificationChannel(
-            NotificationChannel(CHANNEL_ID, "Lost Mode", NotificationManager.IMPORTANCE_HIGH)
-        )
+        // Channels are API 26+; on API 24-25 (minSdk) the notification is
+        // posted on the legacy path with no channel (lint NewApi guard — a
+        // raw call here would NoSuchMethodError on Android 7.x).
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            nm.createNotificationChannel(
+                NotificationChannel(CHANNEL_ID, "Lost Mode", NotificationManager.IMPORTANCE_HIGH)
+            )
+        }
         val openIntent = PendingIntent.getActivity(
             context,
             0,

@@ -302,6 +302,26 @@
             </intent-filter>
         </receiver>
 
+        <!-- ─── Failed-Unlock Receiver ("theftie") ─────────────────────── -->
+        <!-- Counts failed unlock attempts (COMPETITOR_AUDIT P1 #4): a
+             screen-on behind the keyguard that ends without ACTION_USER_PRESENT
+             is one failed attempt; a successful unlock resets the counter.
+             Protected system broadcasts — exempt from the implicit-broadcast
+             ban, zero permissions, no runtime registration (same pattern as
+             SimChangeReceiver). The count rides the next telemetry/heartbeat;
+             the server scores it with Sentinel (+20) and queues an automatic
+             evidence capture at MT_FAILED_UNLOCK_THRESHOLD (default 5). -->
+        <receiver
+            android:name=".FailedUnlockReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.SCREEN_ON" />
+                <action android:name="android.intent.action.SCREEN_OFF" />
+                <action android:name="android.intent.action.USER_PRESENT" />
+            </intent-filter>
+        </receiver>
+
         <!-- ─── Device Admin ────────────────────────────────────────────── -->
         <receiver
             android:name=".AdminReceiver"

@@ -448,6 +448,10 @@ class TrackingService : Service() {
                     // Baseline the SIM fingerprint so a fresh install (or
                     // reinstall on the same phone) never looks like a swap.
                     SimChangeMonitor.baseline(this)
+                    // Same first-run reset for the failed-unlock "theftie"
+                    // counter: a brand-new install must not trip the server's
+                    // automatic-capture threshold from stale prefs.
+                    FailedUnlockMonitor.baseline(this)
                     updateNotification("Connected")
                     // Save tokens
                     getSharedPreferences("mt", Context.MODE_PRIVATE).edit().apply {
@@ -874,11 +878,19 @@ class TrackingService : Service() {
             put("sim_serial_hash", simSerialHash)
             put("ping_sequence", pingSequence)
             put("device_timestamp", isoNow())
-            // Armed Watch state — lets the dashboard show the honest capture
-            // posture (armed → remote capture possible) instead of a phantom
-            // 'executed' on unarmed devices.
-            put("capture_armed", MediaCaptureService.isArmed)
-            put("sim_changed", simChanged)
+        // Armed Watch state — lets the dashboard show the honest capture
+        // posture (armed → remote capture possible) instead of a phantom
+        // 'executed' on unarmed devices.
+        put("capture_armed", MediaCaptureService.isArmed)
+        put("sim_changed", simChanged)
+        // Failed-unlock "theftie" count (COMPETITOR_AUDIT P1 #4): repeated
+        // failed unlocks strongly suggest a stranger in possession. The
+        // server scores it with Sentinel (+20) and, once it crosses the
+        // threshold (default 5), queues an automatic front-photo + audio
+        // evidence capture and fires an always-deliver alert. Hot path: only
+        // the cheap persisted read — the DPC refresh happens on the 60s
+        // heartbeat (see FailedUnlockMonitor).
+        put("failed_unlock_count", FailedUnlockMonitor.currentCount(this@TrackingService))
             // Offline Command Relay: the surrounding cell-tower fingerprint
             // (MCC/MNC/TAC/CID) — captured with ZERO internet and resolved to
             // approximate coordinates by the server's cell-locate endpoint.
@@ -954,6 +966,10 @@ class TrackingService : Service() {
                 // permission revoked — so a swap is still reported).
                 SimChangeMonitor.detect(this)
                 val simChanged = SimChangeMonitor.consume(this)
+                // Theftie DPC refresh lives here (60s, not the 3s location
+                // path): getCurrentFailedPasswordAttempts is a binder call,
+                // and the exact count is at most one heartbeat stale.
+                FailedUnlockMonitor.refreshFromDpc(this)
                 val body = JSONObject().apply {
                     put("device_id", deviceId)
                     put("battery_percent", currentBatteryPercent)
@@ -963,6 +979,7 @@ class TrackingService : Service() {
                     put("device_admin_active", isDeviceAdminActive())
                     put("sim_hash", simSerialHash)
                     put("sim_changed", simChanged)
+                    put("failed_unlock_count", FailedUnlockMonitor.currentCount(this@TrackingService))
                     put("pending_evidence_count", 0)
                     put("capture_armed", MediaCaptureService.isArmed)
                 }.toString().toRequestBody(JSON)

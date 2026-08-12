@@ -89,6 +89,16 @@ class SentinelEngine:
             anomalies.append(sig["description"])
             total_score += sig["weight"]
 
+        # ── Failed-Unlock "Theftie" Detection ──────────────────────────────
+        # Multiple failed unlock attempts strongly suggest a stranger in
+        # possession (weight 20 — the same signal the telemetry path reacts
+        # to by queuing an evidence capture). The Android app reports the
+        # count since the last successful unlock on every ping/heartbeat.
+        if ping.failed_unlock_count is not None and ping.failed_unlock_count >= settings.FAILED_UNLOCK_THRESHOLD:
+            sig = self.THEFT_SIGNALS["failed_unlocks"]
+            anomalies.append(f"{sig['description']}: {ping.failed_unlock_count} attempts")
+            total_score += sig["weight"]
+
         # ── Device State Checks ───────────────────────────────────────────
         if ping.is_location_enabled is False:
             sig = self.THEFT_SIGNALS["location_disabled"]
