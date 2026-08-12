@@ -6,8 +6,8 @@ Magneetar ships two Android build flavors from a single codebase:
 
 | Flavor | Distribution | SMS Commands | Play Protect |
 |--------|--------------|--------------|--------------|
-| **play** | Google Play Store | ❌ Removed | ✅ No blocking |
-| **sideload** | Direct APK download | ✅ Full relay | ⚠️ Requires bypass |
+| **play** | Google Play Store **+ the download page** (since 2026-08-11) | ❌ Removed | ✅ No blocking (Play channel); sideloads of the same binary still get flagged (see `docs/PLAY_POLICY_ANALYSIS.md`) |
+| **sideload** | Direct APK download (archived artifact only) | ✅ Full relay | ⚠️ Requires bypass — `RECEIVE_SMS` is the deterministic Play Protect hard-block trigger |
 
 Both flavors share:
 - Same server, same account, same encryption
@@ -130,10 +130,15 @@ If the Play Store version is used, the server simply waits for FCM reconnection.
 - Commands work when device has internet
 
 ### Sideload Version
-- Download APK from app.magneetar.me/download
-- May trigger Play Protect warning (guide provided)
+- **2026-08-11+: the download page serves the `play`-flavor build** (no SMS
+  relay) because current Android hard-blocks any internet-sideloaded APK
+  with Magneetar's anti-theft permission profile (see
+  `docs/play-store-checklist.md` / `docs/PLAY_POLICY_ANALYSIS.md`). The
+  SMS-capable sideload build is still produced
+  (`assembleSideloadRelease` → `magneetar-v1.4.1-sideload-release.apk`) for
+  power users who install via adb or pause Play Protect scanning.
 - Manual updates (or use ADB)
-- Commands work even without internet (SMS relay)
+- Commands work without internet only in the SMS-capable sideload build (SMS relay)
 
 ## Migration Between Flavors
 

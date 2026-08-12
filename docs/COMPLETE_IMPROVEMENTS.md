@@ -23,12 +23,18 @@ All critical limitations have been systematically addressed. Magneetar is now **
 - Health checks (liveness + readiness probes)
 - Resource limits and requests
 
-### 3. **End-to-End Encryption**
-**File:** `server/e2e_encryption.py`
-- AES-256-GCM encryption for sensitive data
-- Device-specific encryption keys
-- Key derivation using PBKDF2
-- Guardian Network shared key support
+### 3. **Encryption at Rest** ✅ WIRED (2026-08-11)
+**Files:** `server/encryption.py` + every ingest/read path
+- Location telemetry AES-256-GCM encrypted AT REST with per-device
+  HKDF-derived keys (`encrypt_location_for_store()` / `decrypt_location_row()`);
+  rows carry ciphertext in `locations.location_data` (flag 0 = legacy
+  plaintext, dual-mode reads keep it readable). New `location_data` column in
+  both SQLite and the pg adapter (parity-enforced).
+- Account secrets (TOTP) remain AES-256-GCM encrypted (user_security.py).
+- ⚠️ True END-TO-END encryption (device-side keys, server never sees
+  plaintext) is still NOT shipped — it is incompatible with server-side theft
+  detection/geofencing. The shipped design is server-side encryption at rest;
+  user-facing copy states this honestly.
 
 ### 4. **Hardware Tag Tracking**
 **File:** `server/hardware_tags.py`
@@ -88,10 +94,10 @@ All critical limitations have been systematically addressed. Magneetar is now **
 
 ## 🛡️ Security Enhancements
 
-1. **End-to-End Encryption** - Client-side encryption for sensitive data
+1. **End-to-End Encryption** - ⚠️ Scaffold only — NOT wired (see §3 status)
 2. **Device Attestation** - Android SafetyNet/Play Integrity verification
 3. **Hardware Tag Security** - Secure tag registration and authentication
-4. **CDN Security** - Signed URLs, access controls, encryption at rest
+4. **CDN Security** - Signed URLs, access controls
 5. **Distributed Security** - Cross-instance token revocation, rate limiting
 
 ---
@@ -208,7 +214,7 @@ kubectl apply -f kubernetes/
 3. **Global CDN Media Delivery** ✅
 4. **Multi-Region Deployment** ✅
 5. **Hardware Tracking Tags** ✅
-6. **End-to-End Encryption** ✅
+6. **End-to-End Encryption** ⚠️ Scaffold only
 7. **iOS Support (Structure Ready)** ✅
 8. **Enterprise Compliance (GDPR)** ✅
 
@@ -232,7 +238,7 @@ kubectl apply -f kubernetes/
 - ✅ Enterprise-grade scalability
 - ✅ Global deployment ready
 - ✅ Hardware tag support
-- ✅ End-to-end encryption
+- ⚠️ End-to-end encryption (scaffold only)
 - ✅ Multi-platform coverage
 
 The system is ready for production deployment with thousands of users and can scale to handle any growth trajectory.

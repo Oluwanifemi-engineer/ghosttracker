@@ -127,10 +127,9 @@ export default function LoginPage() {
           return;
         }
         // API key validation — the login endpoint is the authoritative check.
-        // Security: store the JWT the server returns, NOT the raw key. The
-        // master key is embedded in the public APK, so sending it raw on every
-        // request made anyone with an APK a platform admin (x-api-key fallback
-        // has been removed server-side).
+        // Security: store the JWT the server returns, NOT the raw key. The APK
+        // embeds only a low-privilege device key; the master key must never be
+        // sent raw (the old x-api-key fallback has been removed server-side).
         const res = await fetch(`${baseUrl}/api/auth/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -408,7 +407,7 @@ export default function LoginPage() {
             <span className="text-[11px] font-mono font-bold tracking-wider text-white/40">
               ALL SYSTEMS OPERATIONAL
             </span>
-            <span className="hidden xl:inline text-[11px] font-mono text-white/20 ml-2">24/7 · AES-256 · 3-LAYER PERSISTENCE</span>
+            <span className="hidden xl:inline text-[11px] font-mono text-white/20 ml-2">24/7 · TLS-SECURED · 3-LAYER PERSISTENCE</span>
           </div>
         </div>
 
@@ -716,7 +715,7 @@ export default function LoginPage() {
             {/* Security strip */}
             <div className="mt-8 flex items-center justify-center gap-5">
               {[
-                { icon: Lock, label: 'AES-256' },
+                { icon: Lock, label: 'TOTP 2FA' },
                 { icon: KeyRound, label: 'BCRYPT' },
                 { icon: ShieldCheck, label: 'RATE-LIMITED' },
               ].map((item) => (

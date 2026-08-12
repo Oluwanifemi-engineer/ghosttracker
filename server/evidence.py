@@ -19,6 +19,7 @@ from typing import Optional
 # database module at call time and writes to a different DB (full-suite FK
 # failures). Do not "fix" this without re-running the whole suite.
 from database import get_db_context, log_audit
+from encryption import decrypt_location_row
 
 
 class EvidenceBuilder:
@@ -193,7 +194,8 @@ class EvidenceBuilder:
             # real schema, with `timestamp` aliased to server_timestamp so the
             # PDF renderer (evidence_pdf.py reads loc["timestamp"]) keeps working.
             locations = conn.execute(
-                """SELECT lat, lng, accuracy_horizontal, provider,
+                """SELECT device_id, lat, lng, location_encrypted, location_data,
+                          accuracy_horizontal, provider,
                           server_timestamp AS timestamp, speed, bearing,
                           battery_percent, network_type, sentinel_score, threat_level
                    FROM locations
@@ -201,6 +203,15 @@ class EvidenceBuilder:
                    ORDER BY server_timestamp ASC""",
                 (summary["device_id"],),
             ).fetchall()
+            # At-rest encryption: decrypt each trail point so the PDF renders
+            # real coordinates (encrypted rows carry 0.0 placeholders).
+            decrypted_locations = []
+            for loc in locations:
+                loc_dict = dict(loc)
+                loc_dict["lat"], loc_dict["lng"] = decrypt_location_row(loc_dict)
+                # location_data is the raw ciphertext — never ship it in the case.
+                loc_dict.pop("location_data", None)
+                decrypted_locations.append(loc_dict)
 
             # Get media metadata
             media = conn.execute(
@@ -224,7 +235,7 @@ class EvidenceBuilder:
                     "os_version": device["os_version"] if device else "Unknown",
                     "imei_hash": device["imei_hash"] if device else None,
                 },
-                "locations": [dict(loc) for loc in locations],
+                "locations": decrypted_locations,
                 "media": [dict(m) for m in media],
                 "alerts": [dict(a) for a in alerts],
                 "generated_at": datetime.now(timezone.utc).isoformat(),

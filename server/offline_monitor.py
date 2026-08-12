@@ -43,14 +43,19 @@ def find_offline_devices(minutes: int = None) -> list[dict]:
 
     threshold = max(minutes if minutes is not None else settings.OFFLINE_ALERT_MINUTES, _MIN_FLOOR_MINUTES)
 
+    from encryption import decrypt_location_row  # see note above (import inside)
+
     with get_db_context() as conn:
+        # JOIN the LAST location row (not scalar subqueries): at-rest
+        # encryption means coordinates may live in location_data (with 0.0
+        # placeholders in lat/lng), so the alert needs the whole row to
+        # decrypt — a subquery selecting only lat/lng would emit null-island.
         rows = conn.execute(
             """SELECT d.id, d.last_seen, d.owner_id,
-                      (SELECT lat FROM locations l WHERE l.device_id = d.id
-                       ORDER BY server_timestamp DESC LIMIT 1) AS lat,
-                      (SELECT lng FROM locations l WHERE l.device_id = d.id
-                       ORDER BY server_timestamp DESC LIMIT 1) AS lng
+                      l.lat, l.lng, l.location_encrypted, l.location_data
                FROM devices d
+               LEFT JOIN locations l ON l.id = (
+                   SELECT MAX(id) FROM locations WHERE device_id = d.id)
                WHERE d.last_seen IS NOT NULL
                  AND d.owner_id IS NOT NULL
                  AND d.is_stolen = 0
@@ -68,7 +73,20 @@ def find_offline_devices(minutes: int = None) -> list[dict]:
                ORDER BY d.last_seen ASC""",
             (f"-{threshold} minutes", ALERT_TYPE),
         ).fetchall()
-        return [dict(r) for r in rows]
+        result = []
+        for r in rows:
+            d = dict(r)
+            d["lat"], d["lng"] = decrypt_location_row(
+                {
+                    "device_id": d["id"],
+                    "lat": d["lat"],
+                    "lng": d["lng"],
+                    "location_encrypted": d["location_encrypted"],
+                    "location_data": d["location_data"],
+                }
+            )
+            result.append(d)
+        return result
 
 
 async def check_offline_devices_loop(interval_seconds: int = 60):

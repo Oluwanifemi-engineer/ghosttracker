@@ -44,6 +44,22 @@ ALL_CHANNELS = ["email", "whatsapp", "sms", "push"]
 
 logger = logging.getLogger(__name__)
 
+
+class ChannelPermanentError(Exception):
+    """Raised when a channel failure cannot be fixed by retrying.
+
+    Bad credentials or a permanent provider rejection (HTTP 401/403) will
+    fail identically on every attempt, so retrying only multiplies alert
+    latency by retries-per-channel. With two misconfigured Twilio channels
+    (SMS + WhatsApp) and one retry each, a single sim_changed alert was
+    blocking the device's location POST for ~21s of serial backoff — the
+    phone's request must not pay that price. The retry wrapper returns
+    immediately on this exception; transient failures (timeouts, 5xx, network
+    blips) still get their retry. The channel name is carried in the message
+    (str(e)) so callers don't need structured access to it.
+    """
+
+
 # Default mapping from template placeholders ({{1}}, {{2}}, ...) to alert data
 # keys. Used when MT_TWILIO_WHATSAPP_TEMPLATE_VARIABLES is unset — keep in sync
 # with the template created in the Twilio Console.
@@ -159,6 +175,13 @@ class AlertEngine:
                     wait = 1.0 + random.random()  # 1–2s jitter
                     logger.info("Retrying %s in %.1fs (attempt %d)", channel, wait, attempt + 1)
                     await asyncio.sleep(wait)
+            except ChannelPermanentError as e:
+                # Bad credentials/config — retrying cannot succeed; fail fast
+                # so broken providers never stall the caller (e.g. the device
+                # request that triggered the alert).
+                logger.warning("Channel '%s' permanently failing (%s) — not retrying", channel, e)
+                self._record_failure(channel)
+                return False
             except Exception as e:
                 logger.warning("%s attempt %d failed: %s", channel, attempt + 1, e)
                 if attempt == 0:
@@ -266,7 +289,11 @@ class AlertEngine:
                         breaker.record_success()
                     else:
                         breaker.record_failure()
+                if response.status_code in (401, 403):
+                    raise ChannelPermanentError(f"email: SendGrid rejected credentials (HTTP {response.status_code})")
                 return success
+        except ChannelPermanentError:
+            raise  # let the retry wrapper fail fast on bad credentials
         except Exception as e:
             logger.warning("Email send failed: %s", e)
             if CIRCUIT_BREAKER_ENABLED:
@@ -280,6 +307,7 @@ class AlertEngine:
         message = tmpl.get("sms", "").format(**data)
 
         # ── Preferred: Twilio SMS (same account as WhatsApp) ─────────────
+        twilio_permanent = False
         if settings.TWILIO_SID and settings.TWILIO_AUTH_TOKEN and settings.TWILIO_SMS_FROM:
             try:
                 async with httpx.AsyncClient() as client:
@@ -296,12 +324,19 @@ class AlertEngine:
                     if response.status_code in (200, 201):
                         return True
                     logger.warning("Twilio SMS returned %d: %s", response.status_code, response.text[:300])
+                    if response.status_code in (401, 403):
+                        twilio_permanent = True
             except Exception as e:
                 logger.warning("Twilio SMS send failed: %s", e)
                 # fall through to Termii fallback below
 
         # ── Fallback: Termii API (Nigerian provider) ──────────────────────
         if not settings.TERMII_API_KEY:
+            # Twilio rejected the credentials AND there is no fallback — a
+            # permanent failure, so the caller stops retrying instead of
+            # burning serial backoff on every alert.
+            if twilio_permanent:
+                raise ChannelPermanentError("sms: Twilio rejected credentials and no Termii fallback is configured")
             return False
 
         try:
@@ -317,10 +352,15 @@ class AlertEngine:
                     },
                     timeout=10,
                 )
-                return response.status_code == 200
+                if response.status_code == 200:
+                    return True
+                if response.status_code in (401, 403):
+                    raise ChannelPermanentError(f"sms: Termii rejected credentials (HTTP {response.status_code})")
+        except ChannelPermanentError:
+            raise
         except Exception as e:
             logger.warning("SMS send failed: %s", e)
-            return False
+        return False
 
     async def send_push(self, device_token: str, template: str, data: dict) -> bool:
         """Send push notification via Firebase Cloud Messaging (FCM v1).
@@ -386,6 +426,26 @@ class AlertEngine:
             logger.warning("firebase-admin not installed. Run: pip install firebase-admin")
             return False
         except Exception as e:
+            # A stale/uninstalled app's token (NotRegistered / 404) will never
+            # succeed — retrying it only multiplies the device request's
+            # latency (each dead token costs a firebase call + backoff).
+            # Classify it as permanent so the retry wrapper fails fast; the
+            # token stays in the table until re-registration replaces it.
+            # Prefer the typed exception (firebase_admin.messaging.UnregisteredError)
+            # when available, with string-matching on the code/message as the
+            # version-tolerant fallback.
+            code = getattr(e, "code", "") or ""
+            err = str(e)
+            stale = "NotRegistered" in err or "registration-token-not-registered" in (code + err)
+            if not stale:
+                try:
+                    from firebase_admin.messaging import UnregisteredError
+
+                    stale = isinstance(e, UnregisteredError)
+                except Exception:
+                    stale = False
+            if stale:
+                raise ChannelPermanentError(f"push: stale FCM token rejected ({code or 'NotRegistered'})")
             logger.error("Push notification failed: %s", e)
             return False
 
@@ -441,6 +501,8 @@ class AlertEngine:
                     return True
                 body = response.text[:300]
                 logger.warning("Twilio WhatsApp returned %d: %s", response.status_code, body)
+                if response.status_code in (401, 403):
+                    raise ChannelPermanentError(f"whatsapp: Twilio rejected credentials (HTTP {response.status_code})")
                 if any(code in body for code in ("63010", "63016", "63017", "63018")):
                     logger.warning(
                         "WhatsApp message rejected — template problem. Set "
@@ -451,6 +513,8 @@ class AlertEngine:
                         "a template."
                     )
                 return False
+        except ChannelPermanentError:
+            raise  # let the retry wrapper fail fast on bad credentials
         except Exception as e:
             logger.warning("WhatsApp send failed: %s", e)
             return False

@@ -85,3 +85,6 @@ server/firebase-key.json
 # (or inject it via the GOOGLE_SERVICES_JSON secret in GitHub Actions).
 # NOTE: android-app/app/google-services.json is tracked by git; use
 # `git update-index --skip-worktree` if you keep real credentials locally.
+*.apk.bak*
+*.apk.sideload*
+*.aab

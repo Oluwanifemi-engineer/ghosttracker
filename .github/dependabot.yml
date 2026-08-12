@@ -1,0 +1,80 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# MAGNEETAR — Dependabot
+#
+# All runtime/dev dependencies are pinned EXACTLY (see server/requirements.txt,
+# dashboard/package.json, android-app gradle catalogs). Dependabot opens PRs
+# for bumps; the CI pipeline (tests, lint, typecheck, Docker build) gates every
+# change, so an upgrade that breaks anything fails before merge.
+#
+# Policy notes:
+# - `pip`/`npm` open PRs for BOTH the manifest and the lockfile so CI and local
+#   installs never drift (a plain manifest bump with a stale lockfile breaks
+#   `npm ci` / reproducible installs).
+# - Gradle bumps are PR-only (no lockfile in this project) — CI compiles and
+#   runs the Android unit tests on every PR.
+# - Weekly schedule keeps the noise low; `open-pull-requests-limit` bounds the
+#   backlog for exact-pin ecosystems where each update is its own PR.
+# ═══════════════════════════════════════════════════════════════════════════════
+
+version: 2
+updates:
+  # ── Python (server) ──────────────────────────────────────────────────────
+  - package-ecosystem: "pip"
+    directory: "/server"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "07:00"
+      timezone: "Africa/Lagos"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "python"
+
+  # ── Node (dashboard) ─────────────────────────────────────────────────────
+  - package-ecosystem: "npm"
+    directory: "/dashboard"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "07:00"
+      timezone: "Africa/Lagos"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "javascript"
+    # The dashboard pins exact Next.js/React versions — treat major bumps of
+    # the framework as manual, human-reviewed upgrades.
+    ignore:
+      - dependency-name: "next"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-dom"
+        update-types: ["version-update:semver-major"]
+
+  # ── GitHub Actions ───────────────────────────────────────────────────────
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "07:00"
+      timezone: "Africa/Lagos"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "ci"
+
+  # ── Android (Gradle) ─────────────────────────────────────────────────────
+  - package-ecosystem: "gradle"
+    directory: "/android-app"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "07:00"
+      timezone: "Africa/Lagos"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "android"

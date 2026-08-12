@@ -57,7 +57,7 @@ For details on Magneetar's security design, see:
 
 ### Key Security Features
 
-- **AES-256-GCM** field-level encryption for location data with per-device HKDF key derivation
+- **AES-256-GCM** encryption at rest: account secrets (TOTP 2FA) always encrypted; location telemetry encrypted with per-device HKDF keys when `MT_ENCRYPTION_KEY` is set (v1.5+); SHA-256 chain-of-custody hashing for evidence; TLS in transit
 - **JWT tokens** with refresh rotation and revocation (in-memory + DB cache)
 - **Separate device key** (low-privilege, in APK) vs master API key (dashboard only)
 - **Step-up authentication** for destructive actions (wipe, device/media deletion)

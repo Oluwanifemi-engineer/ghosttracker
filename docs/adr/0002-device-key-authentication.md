@@ -38,6 +38,12 @@ Implement a **two-tier key architecture**:
 - Accepted only for device-scope auth during rotation grace period
 - Allows old APKs to keep working until users upgrade
 
+> **Update (2026-08-10):** Tier 3 is **retired** — `MT_LEGACY_DEVICE_KEY`
+> was removed from the codebase (`config.py`, `auth.py`, env templates) and
+> `test_device_key_separation.py` asserts a legacy-style key is rejected.
+> Installed APKs that still present the old master key can no longer
+> authenticate; upgrade them to an APK embedding `MT_DEVICE_KEY`.
+
 ### Authentication Flow
 
 ```

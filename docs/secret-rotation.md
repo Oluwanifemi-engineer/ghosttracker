@@ -15,9 +15,9 @@ public APK can never carry admin power:
 |---|---|---|---|---|
 | **Master key** | `MT_API_KEY` | 32 chars | Dashboard `/api/auth/login` + admin step-up ONLY | ❌ server-side only |
 | **Device key** | `MT_DEVICE_KEY` | 32 chars | Device-scope auth (`x-api-key`): register, location, media, fcm, command poll | ✅ embedded in every APK (`BuildConfig.DEVICE_KEY`) |
-| **Legacy device key** | `MT_LEGACY_DEVICE_KEY` | 32 chars | Pre-split master key accepted for **device-scope** auth only (rotation grace for installed APKs) | ❌ (it IS the old master, so old APKs present it) |
+| **Legacy device key** | `MT_LEGACY_DEVICE_KEY` | 32 chars | ~~Pre-split master key accepted for device-scope auth during rotation~~ **RETIRED 2026-08-10 — removed from code/config; old APKs must upgrade** | ❌ |
 | JWT secret | `MT_JWT_SECRET` | 64 chars | Signing every access/refresh/device/dashboard token | ❌ |
-| Encryption key | `MT_ENCRYPTION_KEY` | 64 hex (32 bytes) | AES-256-GCM field encryption, HKDF per-device key derivation | ❌ |
+| Encryption key | `MT_ENCRYPTION_KEY` | 64 hex (32 bytes) | AES-256-GCM at rest for account secrets (TOTP) AND location telemetry (per-device HKDF keys, v1.5+) | ❌ |
 
 **Why the split:** the APK is a public artifact — anyone can sideload it and
 `strings`-scan the dex. Before the split the APK carried the SAME key that
@@ -32,9 +32,9 @@ is a low-privilege credential that only gates device-scope endpoints
 
 | Rotating | Devices affected | Dashboards affected | Data risk | Notes |
 |---|---|---|---|---|
-| `MT_API_KEY` (master) | ❌ (device auth accepts device/legacy keys) | YES — users re-login | None | Rotation is now **zero-downtime for devices**: installed APKs keep working via `MT_LEGACY_DEVICE_KEY` (or the device key) until you also rotate it. |
-| `MT_DEVICE_KEY` | **YES — APKs that embed it** | ❌ | None | Ship a new APK embedding the new device key, and keep the old one as `MT_LEGACY_DEVICE_KEY` during rollout so in-the-wild APKs keep registering. |
-| `MT_LEGACY_DEVICE_KEY` | YES — pre-split APKs can't re-register | ❌ | None | Clear it only after the installed fleet has upgraded to an APK embedding the device key. |
+| `MT_API_KEY` (master) | ❌ (device auth accepts the device key) | YES — users re-login | None | Rotation is **zero-downtime for devices**: installed APKs authenticate with `MT_DEVICE_KEY`, which is unchanged. |
+| `MT_DEVICE_KEY` | **YES — APKs that embed it** | ❌ | None | Ship a new APK embedding the new device key FIRST, then deploy the server. Since the legacy grace key was retired (2026-08-10), rotating before the fleet upgrades orphans in-the-wild APKs. |
+| `MT_LEGACY_DEVICE_KEY` | **RETIRED (2026-08-10)** — pre-split APKs can no longer authenticate | ❌ | None | Removed from `config.py`/`auth.py`/env templates; an upgraded APK (embedding `MT_DEVICE_KEY`) is now mandatory. |
 | `MT_JWT_SECRET` | YES — all active tokens invalid | YES — all sessions invalid | None | Tokens are short-lived; devices auto re-register (`TrackingService` auth-death loop) and users re-login. |
 | `MT_ENCRYPTION_KEY` | N/A (device-side never holds it) | N/A | **YES** | Old ciphertext becomes undecryptable. **Verify encryption is actually in use before rotating.** |
 
@@ -47,22 +47,24 @@ longer baked into APKs** and can be rotated without touching devices:
 python -c "import secrets; print(secrets.token_hex(32))"   # new master
 ```
 
-1. Update `MT_API_KEY` in `server/.env` (keep `MT_DEVICE_KEY` and
-   `MT_LEGACY_DEVICE_KEY` unchanged), then `bash scripts/deploy.sh`.
+1. Update `MT_API_KEY` in `server/.env` (keep `MT_DEVICE_KEY` unchanged),
+   then `bash scripts/deploy.sh`.
 2. Dashboard sessions using the old key are rejected at login — log in with
    the new master key. Device traffic is unaffected.
 3. Verify: `POST /api/auth/login` with the new key → 200; with the old key
-   → 401; a device registration with `x-api-key` = old key → still 200
-   (legacy device scope) if `MT_LEGACY_DEVICE_KEY` still holds it.
+   → 401; a device registration with `x-api-key` = old key → 401 (the
+   legacy grace key was retired 2026-08-10 — devices must use
+   `MT_DEVICE_KEY`).
 
 ### Rotating the device key (MT_DEVICE_KEY)
 
-1. Generate a new device key; put it in `server/.env` as `MT_DEVICE_KEY`
-   AND move the current one to `MT_LEGACY_DEVICE_KEY` (grace).
+1. Generate a new device key; put it in `server/.env` as `MT_DEVICE_KEY`.
 2. Update `DEVICE_KEY` in `android-app/local.properties` and the GitHub
    secret `DEVICE_KEY`, then rebuild + ship the APK.
-3. Deploy the server and roll the APK out; once the fleet has upgraded,
-   drop the old key from `MT_LEGACY_DEVICE_KEY` and redeploy.
+3. Deploy the server and roll the APK out. NOTE: since the legacy grace key
+   was retired (2026-08-10), rotating `MT_DEVICE_KEY` immediately orphans
+   in-the-wild APKs embedding the old device key — coordinate the rollout so
+   the fleet upgrades promptly.
 
 ## 4. Rotating MT_JWT_SECRET
 
@@ -86,22 +88,34 @@ No data is at risk: tokens are stateless and short-lived, and the
 
 ## 5. Rotating MT_ENCRYPTION_KEY
 
-`MT_ENCRYPTION_KEY` derives a per-device AES-256-GCM key via HKDF
-(`salt=b"magneetar-v1"`, `info=device:<id>`). Existing ciphertext cannot be
-decrypted with a new master key.
+`MT_ENCRYPTION_KEY` is used by `user_security.py` to AES-256-GCM-encrypt
+account secrets (TOTP). Since v1.5 it ALSO encrypts location telemetry at
+rest: every ingest path (`_persist_location`, `/api/device/location/simple`,
+offline-queue) derives a per-device AES-256-GCM key via HKDF
+(`salt=b"magneetar-v1"`, `info=device:<id>`) and stores the base64 ciphertext
+in `locations.location_data` with `location_encrypted=1`. Legacy plaintext
+rows (flag 0) remain readable forever (dual-mode reads). **Rotating the key
+affects TOTP secrets AND every encrypted location row — old ciphertext
+cannot be decrypted with a new master key.**
 
 ### First: is encryption actually enabled?
 
-As of v1.3.x, **`post_location` does NOT call `encrypt_field`** — the
-`FieldEncryption` helper exists and the `location_encrypted` column is
-present, but the write path stores plaintext lat/lng. **If the flag column
-shows all zeros and no ciphertext exists in `locations.lat/lng`, rotating
-the key is a no-op data-wise.**
-
-Verify before rotating:
+As of v1.5, YES — with `MT_ENCRYPTION_KEY` set, `post_location` encrypts via
+`encrypt_location_for_store()` and every reader decrypts via
+`decrypt_location_row()` (dashboard map/replay/live, guardian recovery,
+offline monitor, GDPR export, evidence PDF). Sentinel runs on the in-memory
+payload, so theft detection is unaffected. Verify live rows:
 
 ```sql
 SELECT COUNT(*) FROM locations WHERE location_encrypted = 1;
+```
+
+Sanity check: encrypted rows must NEVER carry plaintext coordinates in
+`lat`/`lng` (they hold 0.0 placeholders) and must always have non-NULL
+`location_data`:
+
+```sql
+SELECT COUNT(*) FROM locations WHERE location_encrypted = 1 AND location_data IS NULL;
 ```
 
 ### If encryption is NOT in use
@@ -112,7 +126,7 @@ python -c "import secrets; print(secrets.token_hex(32))"
 ```
 Update `server/.env`, deploy. Done.
 
-### If encryption IS in use (future)
+### If encryption IS in use
 
 You MUST re-encrypt or decrypt-then-encrypt all data before rotating,
 otherwise every stored location becomes garbage:
@@ -205,18 +219,26 @@ was free; do NOT lose the new keystore password.
 - Existing registered device (`mt-14bddfeb`) kept heartbeating (JWT/
   device-key auth unaffected by the rotation).
 
-## 11. Executable checklist — retiring MT_LEGACY_DEVICE_KEY
+## 11. Legacy key retirement — EXECUTED 2026-08-10
 
-The legacy key exists ONLY as a grace credential for APKs installed before
-the master/device-key split (v1.4.0). Every day it stays, the old master
-(a key proven extractable from the public APK by `strings`) is a live
-device-scope credential. Retire it as soon as the fleet runs the new APK.
+`MT_LEGACY_DEVICE_KEY` has been **removed from the codebase**: `config.py`,
+`auth.py`, `generate-env.sh`, the README, and this runbook no longer
+reference it, and `test_device_key_separation.py` now asserts a legacy-style
+key is REJECTED for device scope (regression lock).
 
-> **Where the value lives**: `docker-compose.yml` carries it inline as
-> `MT_LEGACY_DEVICE_KEY` (server env block) — it is NOT only in `server/.env`.
-> Remove it from BOTH places.
+Operational notes for the installed fleet:
+- Any APK still presenting the pre-split master key gets **401** on
+  device endpoints — upgrade those devices to an APK embedding
+  `BuildConfig.DEVICE_KEY` (`MT_DEVICE_KEY`).
+- If a device drops offline after this change, verify it is on the new APK
+  before anything else; re-introducing the legacy key is possible but
+  recreates the exact credential the retirement removed.
 
-### Pre-flight gate (all must pass before touching the env)
+> The step-by-step checklist below is kept for the audit record — it was
+> executed as part of the retirement. It is NOT pending work; do not re-run
+> it.
+
+### Historical checklist — pre-flight gate (executed)
 
 ```bash
 # 1. The phone is on the new APK (installed from the download page, Play
@@ -294,8 +316,8 @@ docker exec magneetar-server sh -c 'env | grep -c LEGACY_DEVICE_KEY'  # → 0
 - `MT_DEVICE_KEY`: key extracted from an APK (it WILL be — treat it as
   public knowledge; rotate only to force the installed fleet onto a new
   key, using the legacy grace path above).
-- `MT_LEGACY_DEVICE_KEY`: the old master key is in this chat log / every
-  old APK — keep it only for the installed-fleet grace period, then clear.
+- `MT_LEGACY_DEVICE_KEY`: retired 2026-08-10 — the old master key no longer
+  exists in code/config; in-the-wild APKs embedding it must be upgraded.
 - `MT_ENCRYPTION_KEY`: team-member departure with DB access, or key shown
   in logs/screenshots.
 
@@ -316,5 +338,8 @@ docker exec magneetar-server sh -c 'env | grep -c LEGACY_DEVICE_KEY'  # → 0
   Full suite: **395 passed**.
 - **Actions still outstanding**: set the GitHub `DEVICE_KEY` secret (repo
   Settings → Secrets → Actions) to the `MT_DEVICE_KEY` in `server/.env`;
-  rebuild + ship a release APK embedding `BuildConfig.DEVICE_KEY`; once the
-  fleet has upgraded, remove `MT_LEGACY_DEVICE_KEY` from `server/.env`.
+  rebuild + ship a release APK embedding `BuildConfig.DEVICE_KEY`.
+- **DONE 2026-08-10 — legacy key retired**: `MT_LEGACY_DEVICE_KEY` removed
+  from `config.py`, `auth.py`, `generate-env.sh`, README, and this runbook.
+  Installed APKs still presenting the old master key can no longer
+  authenticate — the fleet must run the new APK.

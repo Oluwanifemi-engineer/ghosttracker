@@ -20,7 +20,7 @@ from config import settings
 from database import DB_PATH, check_rate_limit, ensure_initialized, get_db_context, log_error
 from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from leader_lock import acquire_task_lock, release_task_lock
 from logging_config import get_logger
 from models import ConfigResponse, HealthResponse
@@ -102,8 +102,10 @@ async def lifespan(app: FastAPI):
     # writes in batches, removing SQLite's single-writer lock from the
     # request path (measured: sync commits cap the server at ~370 req/s with
     # 3s p50 latency; batching lifts that ceiling 5-10x). No-op unless
-    # MT_WRITE_BATCH_MS>0, so default behavior is unchanged.
-    if write_queue_enabled():
+    # MT_WRITE_BATCH_MS>0, so default behavior is unchanged. SQLite-only by
+    # design — in PostgreSQL mode (MT_DATABASE_URL set) the facade pool
+    # handles writes and the batch queue is skipped.
+    if write_queue_enabled() and not settings.DATABASE_URL:
         await start_write_queue(DB_PATH)
 
     # ── Validate configuration on startup ──────────────────────────────────
@@ -138,23 +140,26 @@ async def lifespan(app: FastAPI):
         },
     )
 
-    # ── PostgreSQL Setup (optional) ────────────────────────────────────────
+    # ── PostgreSQL Setup (optional, storage facade — ADR-0005 Phase 2a) ──
+    # When MT_DATABASE_URL is set, get_db()/get_db_context() return the
+    # PgStore sync facade (storage.py) and every route reads/writes Postgres.
+    # The SQL portability pass (Phase 2b, docs/postgres-migration.md §6.4) is
+    # the remaining work before production cutover — dialect gaps like
+    # datetime('now', ?) and INSERT OR REPLACE still live in route SQL. Any
+    # setup failure falls back to SQLite so the server always boots.
     pg_connected = False
     if settings.DATABASE_URL:
         try:
-            from database_postgres import get_postgres_db, is_postgres_configured
+            from storage import init_pg_store
 
-            if is_postgres_configured():
-                pg = await get_postgres_db()
-                if pg.is_connected:
-                    pg_connected = True
-                    logger.warning(
-                        "PostgreSQL connected, but ALL application routes read/write "
-                        "SQLite (database.py) — the live data plane is SQLite. The "
-                        "Postgres adapter (database_postgres.py) is EXPERIMENTAL and "
-                        "its schema may lag the SQLite schema; the Docker stack is "
-                        "SQLite-only by design. Set MT_DATABASE_URL='' to silence this."
-                    )
+            if init_pg_store():
+                pg_connected = True
+                logger.info(
+                    "PostgreSQL wired via the storage facade (ADR-0005 Phase 2a): "
+                    "routes read/write Postgres. Phase 2b (SQL portability pass, "
+                    "docs/postgres-migration.md §6.4) is the remaining work before "
+                    "production cutover."
+                )
         except Exception as e:
             logger.warning(f"PostgreSQL setup failed, falling back to SQLite: {e}")
 
@@ -307,6 +312,15 @@ async def lifespan(app: FastAPI):
             logger.warning("Shutdown notification timed out or failed")
 
     active_dashboard_connections.clear()
+
+    # ── Close the PostgreSQL facade pool (only when wired) ─────────────────
+    if settings.DATABASE_URL:
+        try:
+            from storage import close_pg_store
+
+            close_pg_store()
+        except Exception:
+            logger.warning("PostgreSQL pool close failed (process exit continues)")
 
 
 # ─── App Setup ───────────────────────────────────────────────────────────────
@@ -547,6 +561,18 @@ async def monitor_request_time(request: Request, call_next):
 APK_TICKET_TTL_SECONDS = 600  # 10 minutes — short enough that a leaked URL dies fast
 
 
+# Where a browser lands when it follows a stale/expired download link. The
+# download page re-mints a fresh ticket on load, so a dead link self-heals
+# instead of dead-ending on a raw 403 JSON body. Configurable for self-hosters
+# whose dashboard lives elsewhere; the trailing '/download' is the page that
+# mints tickets (see dashboard/src/app/download/page.tsx).
+def _apk_download_page() -> str:
+    base = settings.DASHBOARD_URL.strip().rstrip("/")
+    # Defensive: an empty base degrades to a same-host relative redirect (a
+    # 404 on the API host) rather than a malformed URL — never a crash.
+    return base + "/download" if base else "/download"
+
+
 def _apk_ticket_key() -> bytes:
     """HMAC key for APK download tickets (server-only JWT secret, domain-separated)."""
     return hmac.new(settings.JWT_SECRET.encode(), b"magneetar:apk-ticket:v1", hashlib.sha256).digest()
@@ -663,7 +689,9 @@ async def download_apk(expires: int = 0, sig: str = ""):
     """Download the latest Magneetar release APK.
 
     Requires a short-lived signed ticket (?expires=<epoch>&sig=<hmac>) minted
-    by /apk/ticket — anonymous/hotlinked downloads are rejected with 403.
+    by /apk/ticket. A missing/expired ticket is redirected to the download
+    page (302), which mints a fresh one — anonymous/hotlinked downloads never
+    receive bytes.
 
     Resolves in order of preference so a version bump never breaks the link:
     1. magneetar-v{APP_VERSION}-release.apk  (the release built for this version)
@@ -671,9 +699,13 @@ async def download_apk(expires: int = 0, sig: str = ""):
     3. the newest magneetar-*.apk on disk     (last resort)
     """
     if not _verify_apk_ticket(expires, sig):
-        raise HTTPException(
-            status_code=403,
-            detail="Missing or expired download ticket — request one from /apk/ticket",
+        # A stale/expired link must not dead-end on raw JSON: the download page
+        # mints a fresh ticket on load, so bounce the browser there (302 — the
+        # ticket itself is still REQUIRED to receive bytes, so the anti-scrape
+        # gate is unchanged; only the error UX changed).
+        return RedirectResponse(
+            _apk_download_page(),
+            status_code=302,
         )
     path = _resolve_apk()
     if path is None:

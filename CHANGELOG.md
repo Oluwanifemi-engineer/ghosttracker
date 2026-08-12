@@ -7,6 +7,332 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased] — 2026-08-11
+
+### Fixed (Android — live-tested on Samsung SM-A037F)
+
+- **`capture_audio` failed with "Audio file not found after recording" —
+  `setMaxDuration` race removed**: `MediaCaptureService.captureAudio()` set
+  `setMaxDuration(30s)` AND its own polling loop waited exactly 30s before
+  calling `stop()` — when the OS auto-stop at max duration fired at the same
+  moment the app called `stop()`, Samsung's MediaRecorder finalized the file
+  and removed it, so the post-recording `file.exists()` check threw. The
+  duplicate 30s timer is gone (the app-side loop alone owns the window), so
+  `stop()` is always the only stop and the file is always kept. Same flaky
+  signature seen live on the fleet phone (worked 08-09, failed 08-11). Fixed
+  APK rebuilt (`assembleSideloadRelease`, JDK 21 — host JDK 25 is
+  incompatible with Gradle 8.12), verified in the dex (`setMaxDuration` gone,
+  error string intact), deployed to `server/static/apk/` (all aliases),
+  live `/apk/checksum` = `cefdc203…33b` matching the exact bytes
+  `/apk/download` serves (7,506,533 bytes). Owners must re-download +
+  reinstall to pick up the fix.
+
+### Changed (download page)
+
+- **Play Protect block warning removed from the download page (owner decision)**: the amber "If Google shows App blocked…" notice (the three install workarounds) was deleted from `dashboard/src/app/download/page.tsx` — a public warning that the app is blocked read like a scam move to would-be installers. The page keeps the clean install steps, checksum verification, and OEM battery notes; the Play Protect workarounds now live ONLY in `docs/play-store-checklist.md` + `docs/PHONE_TEST_CHECKLIST.md` (  internal). No functional change to the ticket → download → checksum flow. `docs/play-store-checklist.md` and `docs/PHONE_TEST_CHECKLIST.md` updated to say the notice is gone.
+- **Subtle install-help FAQ added to the download page**: a collapsed **"Having trouble installing?"** accordion (native `<details>`/`<summary>`, no JS) now sits below the OEM battery notes — 4 items: download won't start (refresh + re-mint tip), the "Install unknown apps" permission (Play Protect pause path lives here as an answer, not a warning banner), dashboard OFFLINE fix (covert-mode re-open + background settings), and SHA-256 verification. Removed an unused `ExternalLink` import.
+
+### Deployed / Android
+
+- **Release APK built + verified with the device key**: full release pipeline
+  green (lint 0 errors → `assembleSideloadRelease` → `bundlePlayRelease` →
+  signature verify). The sideload APK embeds `BuildConfig.DEVICE_KEY` =
+  the server's `MT_DEVICE_KEY` (verified inside the dex; `SERVER_URL`
+  confirmed) — the fleet can authenticate after the legacy-key retirement.
+  Artifacts: `Magneetar-v1.4.0-b6-<ts>.apk` + `Magneetar-v1.4.0-b6.aab`.
+- **Android lint gate fixed (5 errors → 0)**: one real `MissingPermission`
+  (`fusedClient.requestLocationUpdates` — already wrapped in
+  try/catch(Exception), lint can't see it) and four `ForegroundServiceType`
+  false positives that fire ONLY on the `play` flavor (the merged manifest
+  declares `android:foregroundServiceType` on Tracking/Persistence/
+  MediaCapture services; the play overlay's `tools:node="remove"` trips the
+  check — sideload variants lint clean with identical code). All five now
+  carry documented `@SuppressLint` annotations.
+- **APK download ticket self-heals (dead links can't 403 anymore)**: the
+  download page pre-mints a 10-minute HMAC ticket into the button's `href`;
+  a long-press / new-tab / stale saved link used to dead-end on the server's
+  raw `403 {"detail":"Missing or expired download ticket"}` JSON. The page
+  now refreshes the href every 4 minutes + on tab re-focus and re-mints on
+  click (`lib/downloadTicket.ts` — `pickDownloadUrl` falls back to a
+  still-valid href only), and the SERVER now answers an invalid/expired
+  ticket with a **302 redirect to the download page** (which mints a fresh
+  one) instead of raw JSON — verified live (302 → page 200 → fresh ticket →
+  APK bytes). Security unchanged: bytes still require a valid HMAC ticket;
+  the redirect only changes the error UX. Tests updated in
+  `test_api.py::TestApkChecksum` (302 + Location asserted, valid ticket still
+  downloads).
+- **Play Protect hard block — diagnosis corrected, download page serves the
+  Play-clean APK + honest guidance (2026-08-11)**: Google's sideload block
+  has no bypass on current Android ("App blocked to protect your device"
+  with only an **OK** button — the old "More details → Install anyway" flow
+  no longer exists). First fix: the download page began serving the
+  **`play`-flavor release APK** (built with `assemblePlayRelease`, JDK 21)
+  — same signing key, same device key, **zero SMS/phone permissions**
+  (verified with `aapt`), deployed to `server/static/apk/` (all aliases),
+  live `/apk/checksum` = `5958bbb4…a003`. **Correction (user-verified
+  on-device): the SMS-free build is STILL hard-blocked** — `BIND_DEVICE_ADMIN`
+  (kept in both flavors for thief-resistant uninstall + remote lock/wipe) is
+  itself a deterministic sideload trigger, so **no permission profile that
+  keeps Magneetar's anti-theft features can be sideloaded on current
+  Android**. The download page's earlier "Play Protect friendly — it should
+  install without it" notice was **replaced** (2026-08-11) with honest
+  guidance + the real test paths: (1) temporarily pause Play Protect
+  scanning (`Settings → Security & privacy → App security → Google Play
+  Protect → ⚙️ → off`), (2) `adb install` for developers, (3) the Play Store
+  listing (the only friction-free channel). Trade-off of the served build:
+  offline SMS command relay unavailable (network/FCM + offline queue still
+  work); the SMS-capable sideload APK stays backed up in
+  `server/static/apk/magneetar-latest.apk.sideload-<ts>`.
+  `docs/play-store-checklist.md` + `docs/PHONE_TEST_CHECKLIST.md` updated.
+
+### Database (PostgreSQL storage facade — ADR-0005 Phase 2a)
+
+- **Storage interface landed (`server/storage.py`)**: `SqliteStore` (wraps
+  the sqlite3 connection — the zero-risk default) and `PgStore` (sync
+  facade over asyncpg via `run_coroutine_threadsafe`). Setting
+  `MT_DATABASE_URL` now makes `get_db()`/`get_db_context()` return
+  `PgStore` — routes are untouched for the switch itself.
+- **Dialect + strictness handling in the facade**: `?`→`$n` placeholder
+  translation (quoted literals skipped), plain INSERTs rewritten with
+  `RETURNING id` so `lastrowid` keeps working, bool 0/1 → Python bool and
+  ISO strings → `datetime` for timestamp columns (asyncpg strictness, same
+  tolerance SQLite had), and row-value normalization back to SQLite
+  semantics (bool → 0/1, timestamps → ISO strings) so route code behaves
+  identically on both backends.
+- **Validated live against Postgres 16** (scratch container):
+  `tests/test_storage_facade.py` (22 tests) — translator, INSERT rewrite,
+  coercions, SqliteStore scenario, and PgStore schema/`lastrowid`/
+  `rowcount`/identical-row-parity scenarios. App-level smoke on the
+  pg-backed facade confirmed dashboard reads return decrypted coordinates.
+- **Honest remaining gap recorded**: the Phase 2b SQL portability pass
+  (`datetime()` dialect calls in ~35 sites across routes/database.py —
+  register adoption, login rate-limit purge, metrics counts, retention
+  purges; plus `INSERT OR REPLACE`) still fails on pg and is documented in
+  `docs/postgres-migration.md` §6.4 with the recommended facade-level
+  rewrite design. Production keeps SQLite; `MT_DATABASE_URL` stays unset in
+  the Docker stack until 2b lands.
+
+### Security
+
+- **Location telemetry encrypted at rest (v1.5 — the E2E todo, wired for
+  real)**: every ingest path (`_persist_location`, `/api/device/location/simple`,
+  offline-queue) now AES-256-GCM-encrypts lat/lng with a per-device
+  HKDF-derived key when `MT_ENCRYPTION_KEY` is set — rows store ciphertext in
+  the new `locations.location_data` column with `location_encrypted=1` and
+  0.0 placeholders in the NOT NULL lat/lng (plaintext never touches the DB).
+  Every reader (dashboard list/map/replay/live, guardian recovery, offline
+  monitor, GDPR export, evidence PDF, Sentinel history) decrypts via the new
+  `encrypt_location_for_store()`/`decrypt_location_row()` helpers; legacy
+  plaintext rows stay readable forever (dual-mode). Sentinel/geofences/WS
+  still run on the in-memory payload, so theft detection is unaffected.
+  `location_data` added to the pg adapter (parity test enforced) and to
+  `ensure_initialized`'s staleness check so existing DBs migrate. New
+  `tests/test_encryption_at_rest.py` (15 tests: ciphertext-not-plaintext,
+  every read path, legacy rows, offline alerts, evidence PDF, export,
+  guardian snapshot, simple-path parity, ciphertext-never-leaks). `docs/secret-rotation.md` updated
+  (rotating the key now affects encrypted locations). Code-review hardening:
+  API/export/evidence payloads strip `location_data` (raw ciphertext never
+  leaves the server), and decrypt failures log a warning so key-rotation
+  breakage is visible instead of silent null coords.
+
+### Changed (honest security claims — audit round 2)
+
+- **Remaining overstated encryption claims corrected**: `SECURITY.md`,
+  `docs/CONTRIBUTING.md`, `docs/play-store-checklist.md`, `docs/play-store-
+  submission.md`, `docs/deployment.md`, `docs/FINAL_EXECUTION_REPORT.md`,
+  `docs/DEEP_ANALYSIS_REPORT.md`, `docs/LIMITATIONS_RESOLVED.md`, `docs/REAL_
+  WORLD_READINESS.md`, `docs/postgres-migration.md`, `docs/COMPLETE_
+  IMPROVEMENTS.md` and the `server/encryption.py` docstring now state exactly
+  what is true: account secrets (TOTP) AES-256-GCM at rest, location
+  plaintext-with-TLS until this release, no blanket "encryption at rest"
+  for telemetry, E2E = scaffold/not-shipped (roadmap items remain roadmap).
+  User-facing copy was already honest (2026-08-10); this pass closed the
+  docs gap.
+
+### Database (PostgreSQL path)
+
+- **Storage-interface conversion plan + ADR**: `docs/postgres-migration.md`
+  §6 now specifies the concrete Phase-2 design — a **sync facade over
+  asyncpg** (`SqliteStore`/`PgStore`, `get_db()` selects by env) with a
+  `?`→`$n` param translator, the audited portability-gap inventory
+  (`datetime()` string compares, `last_insert_rowid()` → `RETURNING`,
+  `INSERT OR REPLACE`, boolean 0/1, `LIKE`→`ILIKE`), phased delivery
+  (facade → portability pass → dual-write week), and a pg CI job.
+  New `docs/adr/0005-postgres-storage-interface.md` records the decision
+  (sync facade over asyncpg, not an async route rewrite) and the rejected
+  alternatives.
+
+---
+
+## [Unreleased] — 2026-08-11
+
+### Added
+
+- **SIM-change detection (Prey-class, permission-free)**: `SimChangeMonitor`
+  fingerprints the SIM with `TelephonyManager.getSimOperator()`/
+  `getSimOperatorName()` — NO `READ_PHONE_STATE`/`READ_PHONE_NUMBERS`, so it
+  works identically on the Play and sideload flavors. `SimChangeReceiver`
+  listens for `ACTION_SIM_STATE_CHANGED`; the telemetry + heartbeat paths
+  compare against a persisted baseline (first run baselines silently; a
+  reinstall never false-alerts) and report the change exactly once. Server:
+  `sim_changed` now fires its own **always-deliver** alert immediately from
+  both the location and heartbeat handlers (previously the alert type existed
+  but was never dispatched — a lone SIM swap scored 35/80 and alerted nobody),
+  with a 10-minute dedup so queued/offline replays can't re-alert. Sentinel
+  still scores it (+35). Tests: new `tests/test_sim_change.py` (immediate
+  alert, dedup, no false positives, heartbeat path). Version bumped to 1.4.1.
+
+### Fixed
+
+- **Download page was serving the sideload-flavor APK** (carrying
+  `RECEIVE_SMS`, the deterministic Play Protect hard-block trigger per
+  Google's Enhanced Fraud Protection criteria). The served build is restored
+  to the play flavor (no SMS/phone-state permissions, same signing key,
+  same device key) per the 2026-08-11 decision in
+  `docs/play-store-checklist.md`. See `docs/PLAY_POLICY_ANALYSIS.md` for the
+  full per-feature policy analysis.
+- **`docker-compose.yml` hardcoded `APP_VERSION=1.4.0`** as the server image
+  build arg — every rebuild baked a stale `/VERSION`, so `/api/config` and
+  the APK resolver (which prefers `magneetar-v{APP_VERSION}-release.apk`)
+  served stale files after a version bump. Now reads 1.4.1 (server arg +
+  dashboard `NEXT_PUBLIC_APP_VERSION` fallback); live checksum matches the
+  served play-clean v1.4.1 bytes.
+
+---
+
+## [Unreleased] — 2026-08-12
+
+### Fixed
+
+- **Alert retry storm (21s device-request stall)**: `_send_with_retry`
+  retried EVERY channel failure — including permanent credential rejections
+  (Twilio 401/403, SendGrid 401/403, stale FCM `NotRegistered` tokens) —
+  serially, with 1–2s backoff per attempt. With two misconfigured Twilio
+  channels, a single `sim_changed` alert blocked the device's location POST
+  for ~21s. New `ChannelPermanentError` (alerts.py) makes providers raise on
+  permanent rejections and the retry wrapper fail fast (still recording the
+  circuit-breaker failure); transient failures (timeouts, 5xx, network)
+  keep their existing retry. Live-verified: the request now completes in
+  Twilio's own round-trip latency instead of retry backoff. New
+  `tests/test_alert_retry.py` (7 tests) locks the contract; the
+  `test_reliability.py` SMS-rejection test updated to the new contract and
+  made robust to the test_e2e module-eviction collection order.
+
+### Operations
+
+- **Twilio 401 diagnosed (needs credentials)**: the SID/token pair in
+  `server/.env` is rejected at the Twilio API level (error 20003
+  "Authenticate") — a rotated token or changed SID, not a config-format
+  bug (format validates clean). SMS + WhatsApp alert delivery is currently
+  down; FCM push is the only working channel (email also has no
+  sender/recipient configured). `docs/PLAY_READINESS_VERDICT.md` records the
+  fix path: paste valid `MT_TWILIO_SID`/`MT_TWILIO_AUTH_TOKEN` from the
+  Twilio console.
+
+### Play Store readiness
+
+- **`docs/PLAY_READINESS_VERDICT.md` added** — honest, evidence-backed
+  verdict (~85% submission-ready): fresh v1.4.1 AAB now built
+  (`bundlePlayRelease`, signed, versionName 1.4.1), privacy page live (200),
+  play flavor permission-clean (zero SMS/phone-state, verified via aapt).
+  Remaining gaps: store-listing assets (feature graphic + 6–8 screenshots),
+  Play Console declaration forms, keystore off-machine backup + password
+  rotation.
+
+### Play Store readiness — executed (2026-08-12, round 2)
+
+- **G1 closed — fresh v1.4.1 AAB built + signature-proven**: `bundlePlayRelease`
+  re-run (5.9 MB, v1.4.1 / versionCode 7). `jarsigner -verify` → jar verified;
+  signer SHA-256 `02:4C:BB:34:DB:44:…` matches `android-app/release.keystore`
+  (alias `magneetar`, PKCS12 — NOT the stale `magneetar-release.keystore`).
+  Upload path + keystore warning documented in the verdict doc §G1.
+- **G2 closed — store-listing assets generated**: `docs/play-assets/` now has
+  `feature-graphic-1024x500.png` (aqua→emerald gradient, M logo, wordmark +
+  5 feature bullets — rebuilt with a fixed-row measured layout after two
+  overlapping drafts; verified in-browser, zero overlaps) and `icon-512.png`
+  (dark rounded tile, aqua ring, white M, emerald accent). Generator:
+  `scripts/gen-play-assets.py` (PIL, brand colors from tailwind config).
+  Remaining asset gap: 6–8 real-phone screenshots (cannot be generated).
+- **`docs/PLAY_STORE_LISTING.md` added** — copy-paste-ready short/full
+  descriptions, data-safety + permissions declaration answers, IARC rating
+  guidance, and the upload walkthrough.
+
+### Verification tooling
+
+- **`scripts/verify-sim-swap-live.py` (new) — one-shot live SIM-swap probe**:
+  registers a throwaway device through the public API (x-api-key =
+  `MT_DEVICE_KEY`, the same key the APK embeds), fires a `sim_changed=true`
+  location ping, polls the server DB (docker exec) for the always-deliver
+  alert rows, then **self-cleans every row it creates** — including the
+  `audit_log` `device_registered` entry (reviewer-caught leak) and all
+  device_id-keyed tables. Exit codes: 0 = all delivered, 1 = didn't fire,
+  2 = couldn't verify (docker unreachable), 3 = fired but channels failed.
+  **Live-proven in production**: push delivered=1; email/WhatsApp/SMS fail
+  only because the Twilio account is suspended (the known 20003 issue).
+  Used together with `scripts/twilio-config-check.py` +
+  `scripts/alert-smoke-test.py` to verify the full alert stack once Twilio
+  is recharged.
+
+---
+
+## [Unreleased] — 2026-08-10
+
+### Fixed
+
+- **Dashboard test suite green again (2 suites)**: `LandingPage.test.tsx`
+  asserted `24/7` as a single text node, but the premium redesign's
+  `AnimatedCounter` renders the value and suffix separately — the assertion
+  now targets the stable hero stat labels. `DashboardLayout.test.tsx`
+  failed with "expected app router to be mounted" because the layout now
+  calls `useRouter()` from `next/navigation` (mocked in the test) and
+  re-renders when `mounted` flips (data-layer spies now assert
+  `toHaveBeenCalled()`). Full dashboard suite: **173 passed**.
+
+### Security
+
+- **`MT_LEGACY_DEVICE_KEY` retired (rotation grace closed)**: the pre-split
+  master key is removed from `config.py` and `auth.py` — device-scope auth
+  now accepts the master and device keys ONLY. `generate-env.sh`, README,
+  `docs/deployment.md`, `docs/PROJECT_STATUS.md`, the secret-rotation
+  runbook, and ADR-0002 updated; `test_device_key_separation.py` now
+  asserts a legacy-style key is REJECTED for device scope and registration.
+  In-the-wild APKs still presenting the old master key must be upgraded to
+  an APK embedding `BuildConfig.DEVICE_KEY`.
+
+### Changed (honest security claims)
+
+- **Overstated encryption claims corrected**: location telemetry is stored
+  plaintext (only account secrets — TOTP — are AES-256-GCM encrypted at
+  rest), so the landing hero stat now reads SHA-256 chain-of-custody
+  hashing, the Security section's "encryption at rest" bullet and AES-256
+  chip were corrected (TLS in transit + bcrypt/AES-256-GCM for secrets +
+  TOTP 2FA), the dashboard loading badge and login page no longer claim
+  AES-256, the Terms page no longer claims location data is encrypted at
+  rest, and the Play Store listing's "end-to-end encryption for all data"
+  was replaced with the real mechanisms. `server/e2e_encryption.py` is
+  documented as experimental scaffold, not a shipped feature.
+
+### Infrastructure
+
+- **Dependabot added** (`.github/dependabot.yml`): weekly update PRs for
+  pip (server), npm (dashboard), GitHub Actions, and Gradle (android-app) —
+  CI gates every bump; Next/React majors are manual.
+
+### Database (PostgreSQL path)
+
+- **`database_postgres.py` schema re-synced with SQLite**: added the missing
+  `users`, `fcm_tokens`, `error_log`, `password_reset_tokens`,
+  `email_verify_tokens`, and `cell_location_cache` tables plus the drifted
+  devices/commands/media columns (`device_key_hash`, alert prefs, SMS
+  relay, `failure_reason`, `delivery_channel`, `file_path`, `file_size`).
+  New `tests/test_postgres_adapter_parity.py` enforces table + column
+  parity between the SQLite schema (CREATE + ALTER DDL) and the pg adapter,
+  so the adapter can never silently lag again. The adapter remains NOT
+  wired into application routes — the storage interface conversion is the
+  remaining migration work.
+
+---
+
 ## [Unreleased] — 2026-08-07
 
 ### Fixed

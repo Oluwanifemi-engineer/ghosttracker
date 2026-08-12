@@ -57,7 +57,10 @@ export default function RootLayout({
             __html: `
               if ('serviceWorker' in navigator) {
                 window.addEventListener('load', () => {
-                  navigator.serviceWorker.register('/sw.js').then((registration) => {
+                  // updateViaCache 'none': the browser must always revalidate
+                  // sw.js from the network, so cache-version bumps (which purge
+                  // stale static caches) reach every client on their next visit.
+                  navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).then((registration) => {
                     console.log('SW registered:', registration.scope);
                   }).catch((error) => {
                     console.log('SW registration failed:', error);

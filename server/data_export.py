@@ -19,6 +19,7 @@ from typing import Optional
 
 from config import settings
 from database import get_db_context
+from encryption import decrypt_location_row
 
 logger = logging.getLogger(__name__)
 
@@ -57,12 +58,21 @@ class DataExportService:
             for device in devices:
                 device_data = dict(device)
 
-                # Get location history
+                # Get location history (at-rest encryption: decrypt each ping
+                # so the GDPR export carries real coordinates, never 0.0
+                # placeholders or ciphertext).
                 locations = conn.execute(
                     "SELECT * FROM locations WHERE device_id=? ORDER BY server_timestamp DESC LIMIT 10000",
                     (device["id"],),
                 ).fetchall()
-                device_data["locations"] = [dict(loc) for loc in locations]
+                exported_locations = []
+                for loc in locations:
+                    loc_dict = dict(loc)
+                    loc_dict["lat"], loc_dict["lng"] = decrypt_location_row(loc_dict)
+                    # location_data is the raw ciphertext — never export it.
+                    loc_dict.pop("location_data", None)
+                    exported_locations.append(loc_dict)
+                device_data["locations"] = exported_locations
 
                 # Get commands
                 commands = conn.execute(
@@ -146,13 +156,17 @@ class DataExportService:
             device_data = dict(device)
 
             # Get all related data
-            device_data["locations"] = [
-                dict(loc)
-                for loc in conn.execute(
-                    "SELECT * FROM locations WHERE device_id=? ORDER BY server_timestamp DESC",
-                    (device_id,),
-                ).fetchall()
-            ]
+            exported_locations = []
+            for loc in conn.execute(
+                "SELECT * FROM locations WHERE device_id=? ORDER BY server_timestamp DESC",
+                (device_id,),
+            ).fetchall():
+                loc_dict = dict(loc)
+                loc_dict["lat"], loc_dict["lng"] = decrypt_location_row(loc_dict)
+                # location_data is the raw ciphertext — never export it.
+                loc_dict.pop("location_data", None)
+                exported_locations.append(loc_dict)
+            device_data["locations"] = exported_locations
 
             device_data["commands"] = [
                 dict(cmd)

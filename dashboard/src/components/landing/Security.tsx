@@ -31,7 +31,7 @@ const SECURITY_POINTS = [
     icon: Globe,
     title: 'Hardened transport',
     description:
-      'Rate-limited endpoints, request timeouts, CORS hardening in production, and AES-256 encryption at rest.',
+      'Rate-limited endpoints, request timeouts, CORS hardening in production, and TLS in transit. Account secrets are additionally protected with bcrypt + AES-256-GCM.',
   },
 ];
 
@@ -95,7 +95,7 @@ export function Security() {
 
             {/* Status chips */}
             <div className="absolute -top-2 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-full border border-white/10 bg-mag-panel/95 backdrop-blur-xl text-[10px] font-mono font-bold text-white/80 shadow-lg shadow-black/40">
-              AES-256
+              TOTP 2FA
             </div>
             <div className="absolute bottom-0 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-full border border-white/10 bg-mag-panel/95 backdrop-blur-xl text-[10px] font-mono font-bold text-mag-primary shadow-lg shadow-black/40">
               SHA-256 CHAIN

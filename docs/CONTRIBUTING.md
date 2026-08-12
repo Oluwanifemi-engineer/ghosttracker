@@ -255,7 +255,7 @@ magneetar/
 - **Defense in depth**: Multiple security layers
 - **Least privilege**: Device keys have minimal permissions
 - **Audit logging**: All security events are logged
-- **Encryption at rest**: Sensitive data encrypted with AES-256-GCM
+- **Encryption at rest**: Account secrets (TOTP 2FA) always AES-256-GCM; location telemetry AES-256-GCM with per-device HKDF keys when `MT_ENCRYPTION_KEY` is set (v1.5+); TLS in transit
 
 ## Reporting Issues
 

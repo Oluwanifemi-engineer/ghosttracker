@@ -125,8 +125,8 @@ Capacity Estimate:
 |---------|--------|---------|
 | Authentication | ✅ | JWT + 2FA |
 | Authorization | ✅ | Role-based access |
-| Encryption at Rest | ✅ | AES-256 |
-| E2E Encryption | ✅ | Client-side option |
+| Encryption at Rest | ✅ | Account secrets (TOTP) AES-256-GCM; location telemetry AES-256-GCM per-device keys when `MT_ENCRYPTION_KEY` set (v1.5+); SHA-256 evidence chain |
+| E2E Encryption | ❌ Scaffold | `server/e2e_encryption.py` is inert — corrected 2026-08-10 |
 | Rate Limiting | ✅ | Per-endpoint, per-user |
 | DDoS Protection | ✅ | Cloudflare + nginx |
 | Secrets Management | ✅ | Kubernetes Secrets |

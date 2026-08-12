@@ -27,6 +27,7 @@ from database import (
     get_db_context,
     log_audit,
 )
+from encryption import decrypt_location, decrypt_location_row
 from evidence import evidence_builder
 
 # Imported at MODULE level (not inside the route): under full-suite collection
@@ -179,10 +180,14 @@ async def list_devices(
 ):
     """List devices with latest location. Users see only their own devices."""
     user_id = _resolve_user_id(auth)
+    # location_encrypted/location_data ride along so each device's last fix
+    # can be decrypted below (v1.5 at-rest encryption — encrypted rows carry
+    # 0.0 placeholders in lat/lng).
     if user_id:
         devices = db.execute(
             """SELECT d.*,
-                      l.lat, l.lng, l.battery_percent, l.sentinel_score, l.threat_level
+                      l.lat, l.lng, l.location_encrypted, l.location_data,
+                      l.battery_percent, l.sentinel_score, l.threat_level
                FROM devices d
                LEFT JOIN locations l ON d.id = l.device_id
                    AND l.id = (SELECT MAX(id) FROM locations WHERE device_id = d.id)
@@ -193,7 +198,8 @@ async def list_devices(
     else:
         devices = db.execute(
             """SELECT d.*,
-                      l.lat, l.lng, l.battery_percent, l.sentinel_score, l.threat_level
+                      l.lat, l.lng, l.location_encrypted, l.location_data,
+                      l.battery_percent, l.sentinel_score, l.threat_level
                FROM devices d
                LEFT JOIN locations l ON d.id = l.device_id
                    AND l.id = (SELECT MAX(id) FROM locations WHERE device_id = d.id)
@@ -209,6 +215,9 @@ async def list_devices(
                 is_online = (datetime.now(timezone.utc) - last_seen).total_seconds() < 300
             except Exception:
                 pass
+        # At-rest encryption: decrypt the last fix (encrypted rows carry 0.0
+        # placeholders in lat/lng; plaintext legacy rows pass through).
+        lat, lng = decrypt_location(d["lat"], d["lng"], bool(d["location_encrypted"]), d["location_data"], d["id"])
 
         result.append(
             {
@@ -222,9 +231,10 @@ async def list_devices(
                 "is_stolen": bool(d["is_stolen"]),
                 "operating_mode": d["operating_mode"],
                 "sentinel_score": d["sentinel_score"] or 0,
-                "lat": d["lat"],
-                "lng": d["lng"],
+                "lat": lat,
+                "lng": lng,
                 "battery_percent": d["battery_percent"],
+                "location_encrypted": bool(d["location_encrypted"]),
                 "is_online": is_online,
                 "capture_armed": (
                     bool(d["capture_armed"]) if "capture_armed" in d.keys() and d["capture_armed"] is not None else None
@@ -741,6 +751,13 @@ async def get_device_history(
         (device_id,),
     ).fetchone()
 
+    # At-rest encryption: decrypt the latest fix before serializing it.
+    # location_data is the raw ciphertext — never ship it to the client.
+    latest_location = dict(location) if location else None
+    if latest_location:
+        latest_location["lat"], latest_location["lng"] = decrypt_location_row(latest_location)
+        latest_location.pop("location_data", None)
+
     cmd_stats = db.execute(
         "SELECT status, COUNT(*) as count FROM commands WHERE device_id=? GROUP BY status",
         (device_id,),
@@ -755,7 +772,7 @@ async def get_device_history(
 
     return {
         "device": dict(device),
-        "latest_location": dict(location) if location else None,
+        "latest_location": latest_location,
         "command_stats": {r["status"]: r["count"] for r in cmd_stats},
         "total_alerts": alert_count,
         "active_evidence": dict(evidence) if evidence else None,
@@ -779,7 +796,15 @@ async def get_locations(
         (device_id, limit),
     ).fetchall()
 
-    return {"locations": [dict(r) for r in rows]}
+    # At-rest encryption: decrypt every ping so the map renders real coords.
+    locations = []
+    for r in rows:
+        loc = dict(r)
+        loc["lat"], loc["lng"] = decrypt_location_row(loc)
+        # location_data is the raw ciphertext — never ship it to the client.
+        loc.pop("location_data", None)
+        locations.append(loc)
+    return {"locations": locations}
 
 
 @router.get("/api/dashboard/locations/{device_id}/live")
@@ -795,7 +820,13 @@ async def get_live_location(
         (device_id,),
     ).fetchone()
 
-    return {"location": dict(row) if row else None}
+    if not row:
+        return {"location": None}
+    loc = dict(row)
+    loc["lat"], loc["lng"] = decrypt_location_row(loc)
+    # location_data is the raw ciphertext — never ship it to the client.
+    loc.pop("location_data", None)
+    return {"location": loc}
 
 
 @router.get("/api/dashboard/replay/{device_id}")
@@ -821,7 +852,15 @@ async def get_replay_data(
     query += " ORDER BY server_timestamp ASC"
 
     rows = db.execute(query, params).fetchall()
-    return {"locations": [dict(r) for r in rows]}
+    # At-rest encryption: decrypt each ping for the trail.
+    locations = []
+    for r in rows:
+        loc = dict(r)
+        loc["lat"], loc["lng"] = decrypt_location_row(loc)
+        # location_data is the raw ciphertext — never ship it to the client.
+        loc.pop("location_data", None)
+        locations.append(loc)
+    return {"locations": locations}
 
 
 # ─── Media ───────────────────────────────────────────────────────────────────

@@ -44,11 +44,9 @@ MT_API_KEY=${API_KEY}
 # MT_DEVICE_KEY — the LOW-PRIVILEGE device key embedded in the public APK.
 # Device endpoints only; extracting it from the APK must buy nothing.
 MT_DEVICE_KEY=${DEVICE_KEY}
-# MT_LEGACY_DEVICE_KEY — OPTIONAL. The PRE-split master key, accepted for
-# device-scope auth only, so APKs built before the key split (which embedded
-# the old master key) keep working until users upgrade. Remove once the
-# installed fleet has upgraded.
-# MT_LEGACY_DEVICE_KEY=
+# NOTE: the pre-split master key grace credential (MT_LEGACY_DEVICE_KEY)
+# was RETIRED on 2026-08-10 — do not re-add it. Installed APKs must embed
+# MT_DEVICE_KEY (BuildConfig.DEVICE_KEY).
 MT_JWT_SECRET=${JWT_SECRET}
 MT_ENCRYPTION_KEY=${ENCRYPTION_KEY}
 
@@ -56,8 +54,9 @@ MT_ENCRYPTION_KEY=${ENCRYPTION_KEY}
 # script). MT_DB_PATH must point at the persisted volume in Docker:
 #   /app/data/magneetar.db
 MT_DB_PATH=magneetar.db
-# Optional PostgreSQL adapter (EXPERIMENTAL, schema may lag SQLite — see
-# database_postgres.py). Not needed for the Docker stack.
+# Optional PostgreSQL adapter — schema parity synced with SQLite (2026-08-10,
+# see database_postgres.py + test_postgres_adapter_parity.py) but still NOT
+# wired into application routes. Not needed for the Docker stack.
 # MT_DATABASE_URL=postgresql://magneetar:password@localhost:5432/magneetar
 
 # Environment

@@ -189,7 +189,7 @@ I've implemented critical infrastructure improvements to handle thousands of con
 1. 🟡 SQLite single-writer - Mitigated with write batching, but need PostgreSQL for >5000 users
 2. 🟡 Single-server deployment - Can handle 1000 users, but need horizontal scaling for 10,000+
 3. 🟡 No iOS app - Can't fix without significant development
-4. 🟡 No end-to-end encryption - Privacy concern, but data is encrypted at rest
+4. 🟡 No true end-to-end encryption - Server-side at-rest encryption (AES-256-GCM) since v1.5, but the server can still decrypt; device-side zero-knowledge keys remain future work
 
 ### Not Addressed (Requires Major Development)
 1. ❌ PostgreSQL migration - Need for >5000 concurrent users

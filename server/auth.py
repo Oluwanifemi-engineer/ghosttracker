@@ -166,25 +166,22 @@ def _key_matches(candidate: str, expected: str) -> bool:
 def api_key_is_authorized(x_api_key: str) -> bool:
     """True when x-api-key is a credential valid for DEVICE-SCOPE auth.
 
-    Accepts: the master key (operator bootstrap, back-compat), the
-    low-privilege device key (embedded in the public APK), or the legacy
-    pre-split master key (rotation grace for already-installed APKs).
+    Accepts: the master key (operator bootstrap, back-compat) or the
+    low-privilege device key (embedded in the public APK). The pre-split
+    master key grace credential (MT_LEGACY_DEVICE_KEY) was retired on
+    2026-08-10 — it is no longer accepted for any scope.
 
     IMPORTANT: this grants access to DEVICE endpoints only. Dashboard admin
     login (routes/dashboard.py) and admin-mode step-up compare against the
     master key ALONE, so the APK-embedded keys can never mint admin
     credentials.
     """
-    return (
-        _key_matches(x_api_key, settings.API_KEY)
-        or _key_matches(x_api_key, settings.DEVICE_KEY)
-        or _key_matches(x_api_key, settings.LEGACY_DEVICE_KEY)
-    )
+    return _key_matches(x_api_key, settings.API_KEY) or _key_matches(x_api_key, settings.DEVICE_KEY)
 
 
 def verify_api_key(x_api_key: str = Header(...)) -> str:
-    """Verify an x-api-key for DEVICE-SCOPE auth (master, device, or legacy
-    device key). Returns the key if valid.
+    """Verify an x-api-key for DEVICE-SCOPE auth (master or device key).
+    Returns the key if valid.
 
     NOTE: this dependency gates device endpoints (register etc.). The
     dashboard admin login and step-up paths are gated on the master key
@@ -328,7 +325,7 @@ def get_current_device_or_key(
     Combined device authentication — tries three methods in order:
     1. JWT Bearer token (from existing sessions)
     2. x-device-key header (per-device unique key)
-    3. x-api-key header (legacy shared API key)
+    3. x-api-key header (shared API key: master or device key)
     Returns the device_id (or 'api_key_user' for API key fallback).
     """
     # Method 1: JWT token
@@ -350,7 +347,7 @@ def get_current_device_or_key(
             if row:
                 return row["id"]
 
-    # Method 3: shared x-api-key (master / device / legacy-device key).
+    # Method 3: shared x-api-key (master / device key).
     # The returned 'api_key_user' identity is DEVICE-scope only — it is used
     # by device routes (register, location, media, fcm, command poll) and is
     # NEVER a dashboard/admin credential, which is minted exclusively by the

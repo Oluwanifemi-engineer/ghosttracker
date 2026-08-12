@@ -86,7 +86,7 @@ function PremiumLoadingScreen() {
         {/* Security badge */}
         <div className="mt-8 inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/10 bg-white/[0.03]">
           <div className="w-1.5 h-1.5 rounded-full bg-mag-primary animate-pulse" />
-          <span className="text-[9px] font-mono font-bold text-white/40 tracking-wider">AES-256 ENCRYPTED</span>
+          <span className="text-[9px] font-mono font-bold text-white/40 tracking-wider">SECURE CHANNEL</span>
         </div>
       </div>
     </div>

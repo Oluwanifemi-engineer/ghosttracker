@@ -1,7 +1,18 @@
 """
-Magneetar End-to-End Encryption Module
-Provides client-side encryption for sensitive location data.
-Server stores encrypted blobs - only client can decrypt.
+Magneetar End-to-End Encryption Module  ⚠️ EXPERIMENTAL SCAFFOLD — NOT WIRED
+
+STATUS (2026-08-11): this module remains INERT as a scaffold for TRUE
+end-to-end encryption (device-side keys, server never decrypts). Server-side
+at-rest encryption is implemented separately and live since v1.5
+(`encryption.py`: `encrypt_location_for_store()` / `decrypt_location_row()`
+set `locations.location_encrypted=1` and store AES-256-GCM ciphertext in
+`location_data` with per-device HKDF keys; account secrets — TOTP — are
+always encrypted via user_security.py).
+
+Do NOT reference this module as a shipped feature in user-facing copy, and do
+NOT wire it into routes without a full key-management design (key
+provisioning, recovery, and who can decrypt what). It is kept only as a
+starting point for that future work.
 """
 
 import hashlib

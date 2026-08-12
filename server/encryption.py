@@ -1,10 +1,17 @@
 """
-Magneetar Encryption
-AES-256-GCM field-level encryption for sensitive location data.
-Each location's lat/lng encrypted individually with per-device derived keys.
+Magneetar Encryption helpers (AES-256-GCM field-level).
+
+STATUS (2026-08-11): WIRED — location telemetry is now encrypted at rest via
+encrypt_location_for_store()/decrypt_location_row() when MT_ENCRYPTION_KEY is
+configured (per-device HKDF-derived keys; see routes/devices.py, the dashboard
+read paths, guardian, offline_monitor, data_export, evidence). Account secrets
+(TOTP 2FA) were already encrypted via user_security.py. Without a configured
+key the module degrades to NoOpEncryption and everything stores plaintext, so
+local/dev setups keep working unchanged.
 """
 
 import base64
+import logging
 import os
 
 from config import settings
@@ -89,6 +96,10 @@ class FieldEncryption:
         lat_str, lng_str = decrypted.split(",")
         return float(lat_str), float(lng_str)
 
+    def is_enabled(self) -> bool:
+        """True when this instance actually encrypts (vs the NoOp fallback)."""
+        return True
+
 
 # Singleton instance
 _encryption_instance = None
@@ -109,6 +120,9 @@ def get_encryption() -> FieldEncryption:
 class NoOpEncryption:
     """Fallback when encryption is not configured - stores plaintext."""
 
+    def is_enabled(self) -> bool:
+        return False
+
     def encrypt_location(self, lat: float, lng: float, device_id: str) -> dict:
         return {
             "location_encrypted": False,
@@ -118,3 +132,62 @@ class NoOpEncryption:
 
     def decrypt_location(self, encrypted_data: str, device_id: str) -> tuple[float, float]:
         raise NotImplementedError("Encryption not configured")
+
+
+# ── At-rest store/read helpers (the wired contract) ─────────────────────────
+
+
+def encrypt_location_for_store(lat, lng, device_id: str) -> tuple:
+    """Return (lat, lng, encrypted_flag, location_data) for a locations INSERT.
+
+    When the master encryption key is configured, the coordinates are
+    AES-256-GCM encrypted with a per-device HKDF-derived key: the row stores
+    0.0 placeholders in the NOT NULL lat/lng columns (plaintext never touches
+    the DB), location_encrypted=1, and the base64 ciphertext in
+    location_data. Without a key (NoOp mode) the row stores plaintext exactly
+    as before.
+    """
+    enc = get_encryption()
+    if enc.is_enabled() and lat is not None and lng is not None:
+        result = enc.encrypt_location(lat, lng, device_id)
+        return 0.0, 0.0, True, result["location_data"]
+    return lat, lng, False, None
+
+
+def decrypt_location(lat, lng, encrypted, location_data, device_id: str) -> tuple:
+    """Return (lat, lng) for one location row's coordinate columns.
+
+    Handles BOTH storage modes: encrypted rows (location_encrypted=1) decrypt
+    location_data with the per-device key; legacy plaintext rows pass through
+    unchanged. Returns (None, None) when decryption fails so every caller
+    degrades gracefully instead of crashing the dashboard/export/PDF.
+    """
+    if encrypted:
+        enc = get_encryption()
+        if not enc.is_enabled():
+            return None, None
+        try:
+            return enc.decrypt_location(location_data, device_id)
+        except Exception:
+            # Ops visibility: rows become (None, None) on the dashboard when
+            # MT_ENCRYPTION_KEY is rotated — log it so the silent degradation
+            # is distinguishable from an empty history.
+            logging.getLogger("magneetar").warning(
+                "Location decrypt failed for device %s (MT_ENCRYPTION_KEY rotated?)", device_id
+            )
+            return None, None
+    return lat, lng
+
+
+def decrypt_location_row(row) -> tuple:
+    """(lat, lng) from a locations row (dict or sqlite3.Row) that carries the
+    device_id/lat/lng/location_encrypted/location_data keys."""
+    if row is None:
+        return None, None
+    return decrypt_location(
+        row["lat"],
+        row["lng"],
+        bool(row["location_encrypted"]),
+        row["location_data"],
+        row["device_id"],
+    )

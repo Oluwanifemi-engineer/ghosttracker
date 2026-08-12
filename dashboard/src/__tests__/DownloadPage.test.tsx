@@ -14,6 +14,7 @@ jest.mock('next/link', () => {
 });
 
 import DownloadPage from '@/app/download/page';
+import { pickDownloadUrl } from '@/lib/downloadTicket';
 
 const CHECKSUM = {
   filename: 'Magneetar-v1.4.0-release.apk',
@@ -87,5 +88,28 @@ describe('Download Page', () => {
     await waitFor(() => {
       expect(screen.getByText(/unavailable/i)).toBeInTheDocument();
     });
+  });
+
+});
+
+describe('pickDownloadUrl (download ticket selection)', () => {
+  const FRESH = 'https://api.magneetar.me/apk/download?expires=9999999999&sig=fresh';
+  const OLD_VALID = 'https://api.magneetar.me/apk/download?expires=9999999999&sig=old';
+  const EXPIRED = 'https://api.magneetar.me/apk/download?expires=1&sig=old';
+
+  it('prefers a freshly minted URL over the pre-minted href', () => {
+    expect(pickDownloadUrl(FRESH, EXPIRED)).toBe(FRESH);
+  });
+
+  it('falls back to a still-valid pre-minted href when the re-mint fails', () => {
+    expect(pickDownloadUrl(null, OLD_VALID)).toContain('apk/download?expires=9999999999');
+  });
+
+  it('rejects an expired pre-minted href (regression: server 403 expired-ticket)', () => {
+    expect(pickDownloadUrl(null, EXPIRED)).toBeNull();
+  });
+
+  it('returns null when no ticket is available', () => {
+    expect(pickDownloadUrl(null, null)).toBeNull();
   });
 });

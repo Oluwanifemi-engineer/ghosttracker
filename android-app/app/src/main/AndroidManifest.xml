@@ -272,6 +272,21 @@
             </intent-filter>
         </receiver>
 
+        <!-- ─── SIM Change Receiver ─────────────────────────────────────── -->
+        <!-- Permission-free SIM swap detection: ACTION_SIM_STATE_CHANGED needs
+             no RECEIVE_SMS / READ_PHONE_STATE (Play-safe, works on both
+             flavors). Runs the compare-and-baseline logic; the change is
+             reported exactly once on the next telemetry/heartbeat and the
+             server fires the always-deliver sim_changed alert. -->
+        <receiver
+            android:name=".SimChangeReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.SIM_STATE_CHANGED" />
+            </intent-filter>
+        </receiver>
+
         <!-- ─── Device Admin ────────────────────────────────────────────── -->
         <receiver
             android:name=".AdminReceiver"

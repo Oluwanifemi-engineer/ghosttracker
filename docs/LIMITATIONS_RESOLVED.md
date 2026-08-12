@@ -82,7 +82,7 @@ All critical limitations have been systematically addressed. The system is now p
 
 1. **Device Attestation** - Verifies device integrity before allowing registration
 2. **Circuit Breakers** - Fails fast when external services are down
-3. **Data Encryption** - All sensitive data encrypted at rest
+3. **Data Encryption** - Account secrets (TOTP) encrypted at rest (AES-256-GCM); location telemetry encrypted at rest (per-device HKDF keys, v1.5+) with SHA-256 evidence chain
 4. **Audit Logging** - Complete audit trail for compliance
 5. **Rate Limiting** - Per-endpoint, per-user rate limits
 
@@ -211,7 +211,7 @@ All critical limitations have been systematically addressed. The system is now p
 | SQLite single-writer | ✅ Mitigated | Connection pooling, write batching |
 | Single server | ✅ Mitigated | Handles 1,000 users; PostgreSQL ready |
 | No iOS | 📋 Planned | Milestone 5 (Weeks 15-20) |
-| No E2E encryption | 📋 Planned | Data encrypted at rest; E2E planned |
+| No E2E encryption | 📋 Planned | Account secrets encrypted at rest; location telemetry plaintext (TLS in transit); E2E planned |
 | Background execution | ✅ Mitigated | 3-layer persistence (70-95% survival) |
 | No hardware tags | 📋 Planned | BLE hardware in roadmap |
 

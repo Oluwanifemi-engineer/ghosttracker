@@ -2,6 +2,15 @@
 Magneetar PostgreSQL Database Adapter
 Production-grade PostgreSQL backend with connection pooling.
 Falls back to SQLite when PostgreSQL is not configured.
+
+STATUS (2026-08-11): schema parity with the SQLite data plane is enforced by
+tests/test_postgres_adapter_parity.py — every SQLite table and column (from
+database.py CREATE/ALTER DDL) must be covered here or CI fails. The adapter is
+WIRED into application routes via the storage facade (ADR-0005 Phase 2a,
+server/storage.py): setting MT_DATABASE_URL makes get_db()/get_db_context()
+return the PgStore sync facade, so routes read/write Postgres. Remaining
+before production cutover: the Phase 2b SQL portability pass
+(docs/postgres-migration.md §6.4 — datetime() calls, INSERT OR REPLACE).
 """
 
 from typing import Optional
@@ -70,6 +79,7 @@ class PostgresDatabase:
                         model TEXT,
                         imei_hash TEXT,
                         sim_serial_hash TEXT,
+                        device_key_hash TEXT,
                         last_seen TIMESTAMPTZ,
                         registered TIMESTAMPTZ DEFAULT NOW(),
                         is_stolen BOOLEAN DEFAULT FALSE,
@@ -77,7 +87,17 @@ class PostgresDatabase:
                         operating_mode TEXT DEFAULT 'normal',
                         sentinel_score INTEGER DEFAULT 0,
                         capture_armed BOOLEAN,
-                        archived_at TIMESTAMP
+                        archived_at TIMESTAMP,
+                        -- Per-device alert recipients/preferences (NULL = global defaults)
+                        alert_phone TEXT,
+                        alert_email TEXT,
+                        alert_channels TEXT,
+                        enabled_types TEXT,
+                        quiet_hours_start INTEGER,
+                        quiet_hours_end INTEGER,
+                        -- Offline Command Relay (SMS)
+                        sms_phone TEXT,
+                        sms_commands_enabled BOOLEAN DEFAULT FALSE
                     );
 
                     CREATE TABLE IF NOT EXISTS locations (
@@ -115,7 +135,11 @@ class PostgresDatabase:
                         queued_at TIMESTAMPTZ,
                         queue_position INTEGER,
                         ping_sequence INTEGER,
-                        location_encrypted BOOLEAN DEFAULT FALSE
+                        location_encrypted BOOLEAN DEFAULT FALSE,
+                        -- At-rest encryption (v1.5): base64 AES-256-GCM ciphertext
+                        -- for encrypted rows (lat/lng hold 0.0 placeholders);
+                        -- readers decrypt via encryption.decrypt_location_row().
+                        location_data TEXT
                     );
 
                     CREATE TABLE IF NOT EXISTS media (
@@ -127,7 +151,9 @@ class PostgresDatabase:
                         lng DOUBLE PRECISION,
                         timestamp TIMESTAMPTZ DEFAULT NOW(),
                         evidence_case_id TEXT,
-                        sha256_hash TEXT
+                        sha256_hash TEXT,
+                        file_path TEXT,
+                        file_size BIGINT
                     );
 
                     CREATE TABLE IF NOT EXISTS commands (
@@ -139,7 +165,9 @@ class PostgresDatabase:
                         priority INTEGER DEFAULT 5,
                         issued_at TIMESTAMPTZ DEFAULT NOW(),
                         executed_at TIMESTAMPTZ,
-                        expires_at TIMESTAMPTZ
+                        expires_at TIMESTAMPTZ,
+                        failure_reason TEXT,
+                        delivery_channel TEXT
                     );
 
                     CREATE TABLE IF NOT EXISTS evidence_cases (
@@ -238,6 +266,76 @@ class PostgresDatabase:
                         details TEXT
                     );
 
+                    CREATE TABLE IF NOT EXISTS users (
+                        id TEXT PRIMARY KEY,
+                        email TEXT UNIQUE NOT NULL,
+                        password_hash TEXT NOT NULL,
+                        display_name TEXT,
+                        tier TEXT DEFAULT 'free',
+                        is_active BOOLEAN DEFAULT TRUE,
+                        email_verified BOOLEAN DEFAULT FALSE,
+                        created_at TIMESTAMPTZ DEFAULT NOW(),
+                        last_login TIMESTAMPTZ,
+                        totp_secret_enc TEXT,
+                        totp_enabled INTEGER DEFAULT 0,
+                        totp_last_period INTEGER DEFAULT 0
+                    );
+
+                    CREATE TABLE IF NOT EXISTS fcm_tokens (
+                        id BIGSERIAL PRIMARY KEY,
+                        device_id TEXT NOT NULL REFERENCES devices(id),
+                        fcm_token TEXT NOT NULL,
+                        platform TEXT DEFAULT 'android',
+                        created_at TIMESTAMPTZ DEFAULT NOW(),
+                        updated_at TIMESTAMPTZ DEFAULT NOW(),
+                        UNIQUE(device_id, fcm_token)
+                    );
+
+                    CREATE TABLE IF NOT EXISTS error_log (
+                        id BIGSERIAL PRIMARY KEY,
+                        timestamp TIMESTAMPTZ DEFAULT NOW(),
+                        level TEXT NOT NULL DEFAULT 'ERROR',
+                        source TEXT,
+                        message TEXT NOT NULL,
+                        traceback TEXT,
+                        request_method TEXT,
+                        request_path TEXT,
+                        request_ip TEXT,
+                        user_agent TEXT,
+                        device_id TEXT,
+                        resolved BOOLEAN DEFAULT FALSE,
+                        resolved_at TIMESTAMPTZ,
+                        resolved_by TEXT,
+                        notes TEXT
+                    );
+
+                    CREATE TABLE IF NOT EXISTS password_reset_tokens (
+                        id TEXT PRIMARY KEY,
+                        user_id TEXT NOT NULL,
+                        token_hash TEXT NOT NULL,
+                        expires_at TIMESTAMPTZ NOT NULL,
+                        used INTEGER DEFAULT 0,
+                        created_at TIMESTAMPTZ DEFAULT NOW()
+                    );
+
+                    CREATE TABLE IF NOT EXISTS email_verify_tokens (
+                        id TEXT PRIMARY KEY,
+                        user_id TEXT NOT NULL,
+                        token_hash TEXT NOT NULL,
+                        expires_at TIMESTAMPTZ NOT NULL,
+                        used INTEGER DEFAULT 0,
+                        created_at TIMESTAMPTZ DEFAULT NOW()
+                    );
+
+                    CREATE TABLE IF NOT EXISTS cell_location_cache (
+                        fingerprint TEXT PRIMARY KEY,
+                        lat DOUBLE PRECISION NOT NULL,
+                        lng DOUBLE PRECISION NOT NULL,
+                        accuracy_meters DOUBLE PRECISION,
+                        provider TEXT,
+                        resolved_at TIMESTAMPTZ DEFAULT NOW()
+                    );
+
                     CREATE TABLE IF NOT EXISTS rate_limits (
                         id BIGSERIAL PRIMARY KEY,
                         identifier TEXT NOT NULL,
@@ -265,6 +363,12 @@ class PostgresDatabase:
                     CREATE INDEX IF NOT EXISTS idx_geofences_device ON geofences(device_id);
                     CREATE INDEX IF NOT EXISTS idx_audit_timestamp ON audit_log(timestamp);
                     CREATE INDEX IF NOT EXISTS idx_rate_limits_identifier ON rate_limits(identifier, action);
+                    CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+                    CREATE INDEX IF NOT EXISTS idx_fcm_tokens_device ON fcm_tokens(device_id);
+                    CREATE INDEX IF NOT EXISTS idx_error_log_timestamp ON error_log(timestamp);
+                    CREATE INDEX IF NOT EXISTS idx_error_log_resolved ON error_log(resolved);
+                    CREATE INDEX IF NOT EXISTS idx_password_reset_user ON password_reset_tokens(user_id);
+                    CREATE INDEX IF NOT EXISTS idx_email_verify_user ON email_verify_tokens(user_id);
                 """
                 )
 

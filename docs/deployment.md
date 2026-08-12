@@ -177,10 +177,9 @@ cloudflared:
 |----------|----------|---------|-------------|
 | `MT_API_KEY` | ✅ Yes | — | Min 32 chars. **Master key** — dashboard `/api/auth/login` + admin step-up ONLY. Never embedded in the APK. |
 | `MT_DEVICE_KEY` | ✅ Yes (prod) | — | Min 32 chars, must differ from `MT_API_KEY`. **Low-privilege device key** — the only shared key embedded in the APK (`BuildConfig.DEVICE_KEY`); scoped to device endpoints. |
-| `MT_LEGACY_DEVICE_KEY` | No | — | The pre-split master key, accepted for device-scope auth only (rotation grace for installed APKs). Remove once the fleet has upgraded. |
 | `MT_JWT_SECRET` | ✅ Yes | — | Min 64 chars, JWT signing key |
 | `MT_ENCRYPTION_KEY` | ✅ Yes | — | 32 bytes hex, encryption key |
-| `MT_DATABASE_URL` | No | — | EXPERIMENTAL PostgreSQL adapter (schema may lag SQLite; logs a warning). Leave unset in the Docker stack. |
+| `MT_DATABASE_URL` | No | — | PostgreSQL via the storage facade (Phase 2a, ADR-0005): when set, routes read/write Postgres through `PgStore`. The Phase 2b SQL portability pass (§6.4 of docs/postgres-migration.md — `datetime()` calls, `INSERT OR REPLACE`) is NOT yet complete, so production use is not recommended. Leave unset in the Docker stack (SQLite). |
 | `MT_DB_PATH` | No | `magneetar.db` | SQLite database path — set to `/app/data/magneetar.db` (persisted volume) in production |
 | `MT_ENVIRONMENT` | No | `development` | `development` or `production` |
 | `MT_HOST` | No | `0.0.0.0` | Server bind address |
@@ -207,7 +206,7 @@ cloudflared:
 - [ ] HTTPS is enforced (via Cloudflare or reverse proxy)
 - [ ] Rate limiting is active (default: 5 login attempts/10 min)
 - [x] Single data plane (SQLite on persisted volume) — no database secrets to manage
-- [ ] All sensitive data is encrypted at rest
+- [x] At-rest encryption (AES-256-GCM): account secrets (TOTP) always; location telemetry when `MT_ENCRYPTION_KEY` is set (v1.5+) — see docs/security.md
 
 ### Monitoring
 

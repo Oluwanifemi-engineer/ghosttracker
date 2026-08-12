@@ -73,9 +73,8 @@ Even after the app is published on Play, users who sideload the same APK from
 `app.magneetar.me/download` still hit the Play Protect block — Play's install
 trust for Play-delivered apps does not extend to the identical binary
 sideloaded from a website (separate verification pipelines; Play App Signing
-stamps only apply to Play-delivered APKs). Consequence: **the download-page
-workaround (pause scanning → install → re-enable) stays the permanent
-sideload UX**, and Play is the friction-free channel once approved.
+stamps only apply to Play-delivered APKs). Consequence: **Play is the only
+friction-free channel**; the download page must serve a block-free build.
 
 ### Android App Bundle (AAB) — required (2026-08-06)
 
@@ -83,18 +82,66 @@ Play accepts **only AAB for new apps** (since 2021). `build-release.sh` and
 `build-apk.yml` now also build `bundleRelease` (same signing config) and ship
 `Magneetar-vX.Y.Z-bN.aab` / the `Magneetar-aab` CI artifact.
 
-### Consumer mitigation (implemented 2026-08-05)
+### Consumer mitigation (implemented 2026-08-05, **superseded 2026-08-11**)
 
-- The download page now has a **"Android says Play Protect blocked this app?"**
-guide: it explains the warning is generic for any sideloaded app with
-sensitive permissions, gives the exact **More details → Install anyway** flow,
-and points users to the SHA-256 + signature checks as the trust mechanism.
+- **2026-08-05:** the download page shipped a "Play Protect blocked this app?"
+  guide (why the warning appears, the **More details → Install anyway** flow,
+  checksum verification).
+- **2026-08-11 — the old workaround is DEAD on current Android:** Google now
+  shows the hard block as "App blocked to protect your device" with **only an
+  OK button** — the "Install anyway" path no longer exists for apps declaring
+  the sideload profile (SMS + phone-state + device-admin + background
+  location). Confirmed on-device by the user.
+- **2026-08-11 — the download page now serves the Play-clean build, but it is STILL hard-blocked.** The
+  served APK (`magneetar-latest.apk` and all aliases) is the **`play`-flavor
+  APK** (`assemblePlayRelease`): same signing key, same device key, **zero
+  SMS/phone-state permissions** (verified with `aapt`: no `RECEIVE_SMS` /
+  `SEND_SMS` / `READ_PHONE_STATE`). The old SMS-capable sideload APK is
+  backed up in `server/static/apk/magneetar-latest.apk.sideload-<ts>`.
+  Trade-off: the offline SMS command relay is unavailable in the served
+  build (network/FCM commands + the offline queue still work).
+- **2026-08-12 — served build refreshed to v1.4.1 (play-clean)**: the
+  download page serves the play-flavor **v1.4.1** APK (SIM-change detection
+  + the `capture_audio` setMaxDuration fix; SHA-256
+  `90aecc8a…670`, 7,506,381 bytes — live `/apk/checksum` MATCHES the bytes
+  `/apk/download` serves). All aliases (`magneetar-latest.apk`,
+  `magneetar.apk`, `magneetar-v1.4.0/1.4.1-release.apk`) point at the play
+  build; the SMS-capable sideload build is archived as
+  `magneetar-v1.4.1-sideload-release.apk`. `docker-compose.yml` now passes
+  `APP_VERSION=1.4.1` (it was hardcoded to `1.4.0`, so the server image
+  always reported a stale version and the APK resolver could serve stale
+  files after a version bump).
+- **⚠️ UPDATE (2026-08-11, user-verified on-device): the play-clean build is
+  STILL hard-blocked** — same "App blocked to protect your device" dialog,
+  OK button only, no "Install anyway". Root cause confirmed in the merged
+  `playRelease` manifest: **`BIND_DEVICE_ADMIN` (AdminReceiver) is kept in
+  BOTH flavors** (section C decision), and the remaining profile — led by the
+  device-admin declaration, alongside camera/mic, background location, and
+  overlay — is sufficient to keep the hard block; the SMS removal was
+  insufficient. **Conclusion: NO permission profile that keeps
+  Magneetar's anti-theft features (device admin, camera/mic, background
+  location, overlay) can be sideloaded on current Android.** The download
+  page notice was removed entirely (2026-08-11, owner decision) — a public
+  warning that the app gets blocked read like a scam move to would-be
+  installers. The install-workaround test paths below now live ONLY in this
+  checklist (internal), not on the download page.
+- **Test paths for the pre-Play release (internal — NOT on the download page):**
+  1. **Pause Play Protect scanning temporarily** (the reliable path):
+     `Settings → Security & privacy → App security → Google Play Protect → ⚙️ →
+     turn off "Scan apps with Play Protect"` (path varies by OEM) → install →
+     turn scanning back on.
+  2. **`adb install`** from a computer (may still be verified; pausing the
+     scan is the reliable path).
+  3. **Play Store release** — the only friction-free channel; Play-installed
+     apps inherit a trust baseline and the declarations give Google the
+     legitimate-use context.
 - The checksum + `apksigner` verification instructions already on the page let
 a cautious user confirm the file is the genuine, correctly-signed release.
 
 **Decision needed before Play submission:** option 1 (Play) is the only
-complete fix; options 2–3 are partial mitigations. See also section C (Device
-Admin EMM declaration) — the same submission gates apply.
+complete fix; the download page is now aligned with it (serving the same
+permission-clean build). See also section C (Device Admin EMM declaration) —
+the same submission gates apply.
 
 ---
 
@@ -132,8 +179,9 @@ Admin EMM declaration) — the same submission gates apply.
 ### C.2 SMS permissions — split builds implemented 2026-08-06
 - **Decision:** the Play Store build drops the restricted SMS/phone permissions; the sideload build keeps them.
 - **Implementation:** `sideload` / `play` product flavors (same applicationId, one codebase). `src/play/AndroidManifest.xml` removes `RECEIVE_SMS`, `SEND_SMS`, `READ_PHONE_STATE` via `tools:node="remove"`. Verified: the play merged manifest has ZERO SMS permission elements; the sideload manifest keeps all three. The app treats SMS as optional everywhere (denial never blocks onboarding; acks fall back to the network outbox) — no code changes required.
-- **Feature impact on Play:** the offline SMS command relay is unavailable in the Play build (network/FCM commands + the offline queue still work). The sideload APK on `/download` keeps the full relay.
-- **Artifacts:** `assembleSideloadRelease` → `app/build/outputs/apk/sideload/release/app-sideload-release.apk` (download page); `bundlePlayRelease` → `app/build/outputs/bundle/playRelease/app-play-release.aab` (Play upload). Both signed with the same release key, targetSdk 36.
+- **Feature impact on Play:** the offline SMS command relay is unavailable in the Play build (network/FCM commands + the offline queue still work).
+- **2026-08-11 — the download page serves the `play`-flavor APK** (not the sideload one): `assemblePlayRelease` → `app/build/outputs/apk/play/release/app-play-release.apk` is deployed to `server/static/apk/` (`magneetar-v1.4.0-release.apk` + `magneetar-latest.apk` + `magneetar.apk`) because the Play Protect hard block now has no bypass on current Android. The SMS-capable sideload APK stays buildable (`assembleSideloadRelease`) and is backed up in `server/static/apk/` for anyone who explicitly wants the SMS relay and can still sideload it.
+- **Artifacts:** `bundlePlayRelease` → `app/build/outputs/bundle/playRelease/app-play-release.aab` (Play upload); `assemblePlayRelease` → `app/build/outputs/apk/play/release/app-play-release.apk` (download page, since 2026-08-11); `assembleSideloadRelease` → `app/build/outputs/apk/sideload/release/app-sideload-release.apk` (SMS-capable, for direct sideloads that can bypass the block). All signed with the same release key, targetSdk 36.
 
 ### D. Restricted permissions — declaration form
 Play Console requires a **Permissions Declaration** for each of these (explain feature, user value, and how data is handled):
@@ -152,7 +200,7 @@ Complete with these answers:
 - **Location:** Approximate + Precise, "Yes" collected (device telemetry), shared with "No one" or "User-selected".
 - **Personal info:** Email (account), Name (display name), Phone number (only if user sets an alert phone).
 - **Photos / Audio:** "Yes" — captured ONLY during an active theft response for the device owner's evidence case.
-- **Security practices:** Encrypted in transit (TLS) and at rest (AES-256), data deletion requests supported (account/device deletion endpoint + 90-day retention purge).
+- **Security practices:** Encrypted in transit (TLS); account secrets hashed with bcrypt and encrypted with AES-256-GCM; TOTP 2FA; data deletion requests supported (account/device deletion endpoint + 90-day retention purge).
 - **Does the app allow data export?** Yes — evidence PDF generation + API data access.
 
 ### G. App content & audience
@@ -198,8 +246,8 @@ Policy facts researched 2026-08-07 from official Play/Android documentation:
   Approximate, collected in background, App Functionality, not shared), Photos
   + Audio (captured only during an armed theft response, stored for the
   owner's evidence case), Device/other IDs (Firebase instance id — linked to
-  the account), Security practices (TLS in transit, AES-256 at rest, data
-  deletion supported).
+  the account), Security practices (TLS in transit, bcrypt + AES-256-GCM for
+  account secrets, TOTP 2FA, data deletion supported).
 
 Console flow (one-time, ~45 min):
 
@@ -209,9 +257,8 @@ Console flow (one-time, ~45 min):
    - **Privacy policy:** URL of the live `/privacy` page
      (e.g. `https://magneetar.me/privacy`) — must be publicly reachable.
    - **Data safety:** answer per section F (location background = Yes,
-     photos/audio = Yes under "created by the user" + App Functionality,
-     device IDs = Yes; security practices: TLS + encryption at rest + data
-     deletion = Yes, documented at `/privacy`).
+     photos/audio = Yes under "created by the user" + App Functionality,      device IDs = Yes; security practices: TLS in transit, bcrypt + AES-256-GCM
+      for account secrets, data deletion = Yes, documented at `/privacy`).
    - **Permissions declaration:** add `ACCESS_BACKGROUND_LOCATION`,
      `SCHEDULE_EXACT_ALARM`, `SYSTEM_ALERT_WINDOW`, and `BIND_DEVICE_ADMIN`
      with per-permission feature/value explanations (sections C/E).

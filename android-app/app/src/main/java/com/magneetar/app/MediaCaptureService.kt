@@ -337,6 +337,12 @@ class MediaCaptureService : Service() {
      * is what makes camera/mic access legal while backgrounded; on older
      * versions ServiceCompat falls back to the plain two-arg startForeground.
      */
+    // Lint false positive (AGP 8.10.1, play flavor only): the merged manifest
+    // declares android:foregroundServiceType="camera|microphone" on
+    // MediaCaptureService, but the play overlay's tools:node="remove" trips the
+    // ForegroundServiceType check. Sideload variants lint clean with identical
+    // code + manifest; runtime is unaffected (type flags passed on API 29+).
+    @android.annotation.SuppressLint("ForegroundServiceType")
     private fun startForegroundCompat(text: String) {
         val notif = buildNotification(text)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -630,7 +636,16 @@ class MediaCaptureService : Service() {
                 setAudioSamplingRate(44100)
                 setAudioEncodingBitRate(128_000)  // Increased from 96kbps
                 setAudioChannels(2)  // Stereo for better ambient capture
-                setMaxDuration(AUDIO_CAPTURE_MS.toInt())
+                // NOTE: deliberately NO setMaxDuration(). The 30s recording
+                // window is already owned by the polling loop below (it waits
+                // exactly AUDIO_CAPTURE_MS before calling stop()). Setting BOTH
+                // maxDuration AND an app-side 30s stop() creates a race: when
+                // the OS auto-stops the recorder at maxDuration the moment the
+                // app calls stop(), Samsung's MediaRecorder finalizes the file
+                // and removes it, so the exists() check below fails with
+                // "Audio file not found after recording" (seen live on
+                // SM-A037F, 2026-08-11). The app-side loop alone means stop()
+                // is the only stop — the file is always kept.
                 setOutputFile(file.absolutePath)
                 Log.i(TAG, "Preparing MediaRecorder for audio capture")
                 prepare()

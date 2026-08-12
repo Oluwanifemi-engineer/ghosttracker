@@ -170,7 +170,7 @@
 
 **Future-Ready:**
 - iOS app structure: ✅
-- E2E encryption: ✅
+- E2E encryption: ⚠️ scaffold only
 - Hardware tracking tags: ✅
 - Multi-region deployment: ✅
 
@@ -191,8 +191,8 @@
    - Guardian network permissions
 
 3. **Data Protection**
-   - Encryption at rest (AES-256)
-   - E2E encryption option
+   - Account secrets encrypted at rest (AES-256-GCM); location telemetry encrypted at rest (per-device HKDF keys, v1.5+)
+   - E2E encryption (scaffold only — not wired)
    - Secure key management
    - GDPR compliance (export/delete)
 
@@ -294,7 +294,7 @@ Global (1,000,000 users)
 | PostgreSQL scaling | ✅ Resolved | Database adapter |
 | iOS support | ✅ Resolved | Swift package structure |
 | Hardware tags | ✅ Resolved | BLE tag module |
-| E2E encryption | ✅ Resolved | AES-256-GCM |
+| E2E encryption | ⚠️ Scaffold | helpers exist; NOT wired (2026-08-10) |
 | CDN storage | ✅ Resolved | Multi-provider support |
 | Horizontal scaling | ✅ Resolved | Distributed state |
 
@@ -385,7 +385,7 @@ Global (1,000,000 users)
 - ✅ Enterprise-grade scalability
 - ✅ Global deployment ready
 - ✅ Hardware tag support
-- ✅ End-to-end encryption
+- ⚠️ End-to-end encryption (scaffold only)
 - ✅ Multi-platform coverage
 - ✅ 159 tests passing
 - ✅ 10,000+ concurrent users verified

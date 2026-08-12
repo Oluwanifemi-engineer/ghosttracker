@@ -11,7 +11,6 @@ import {
   Copy,
   Check,
   BatteryCharging,
-  ExternalLink,
   ArrowLeft,
   MapPin,
   Camera,
@@ -23,8 +22,10 @@ import {
   Users,
   Zap,
   ArrowRight,
+  ChevronDown,
 } from 'lucide-react';
 import { APK_DOWNLOAD_URL, APK_CHECKSUM_URL } from '@/lib/utils';
+import { pickDownloadUrl } from '@/lib/downloadTicket';
 import { Reveal } from '@/hooks/useScrollReveal';
 
 type ChecksumInfo = {
@@ -40,6 +41,13 @@ type TicketInfo = {
 };
 
 const APK_TICKET_URL = `${APK_DOWNLOAD_URL.replace('/apk/download', '/apk/ticket')}`;
+
+// Server tickets live 10 minutes (APK_TICKET_TTL_SECONDS). The button's href
+// is pre-minted on page load, so it must be refreshed well inside the TTL —
+// otherwise a long-press / open-in-new-tab / returning-to-the-tab hits an
+// expired ticket and the server answers 403 "Missing or expired download
+// ticket".
+const TICKET_REFRESH_MS = 4 * 60 * 1000;
 
 const INSTALL_STEPS = [
   {
@@ -98,6 +106,25 @@ const OEM_NOTES = [
   },
 ];
 
+const INSTALL_FAQ = [
+  {
+    q: 'The download won\'t start',
+    a: 'Tap Download again — the page mints a fresh secure link every time, and links expire after a few minutes by design. If the page has been open a while, refresh it first so the button gets a fresh link.',
+  },
+  {
+    q: 'Android asks me to allow “Install unknown apps”',
+    a: 'That\'s the standard one-time permission for apps outside the Play Store: tap Settings → allow installs from your browser → then Install. Google may also show a “Play Protect” check for sideloaded apps — you can temporarily pause “Scan apps with Play Protect” in Settings → Security, install, then turn it back on. The Play Store version (coming soon) installs with no prompts.',
+  },
+  {
+    q: 'The app shows OFFLINE on my dashboard',
+    a: 'After setup, Magneetar minimizes itself by design (covert mode) — just open the app once more so protection starts. If it still shows offline, check the “Keep protection alive” section above for your phone brand\'s background settings; the device should appear ONLINE within a minute.',
+  },
+  {
+    q: 'How do I know the file is genuine?',
+    a: 'The SHA-256 checksum in the Verify section below is the fingerprint of the exact file served — compare it to the downloaded file, and it\'s also printed on this page.',
+  },
+];
+
 function formatBytes(bytes: number): string {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
@@ -142,10 +169,25 @@ export default function DownloadPage() {
 
   useEffect(() => {
     let cancelled = false;
-    mintTicket().then((url) => {
-      if (!cancelled && url) setDownloadUrl(url);
-    });
-    return () => { cancelled = true; };
+    const refresh = () => {
+      mintTicket().then((url) => {
+        if (!cancelled && url) setDownloadUrl(url);
+      });
+    };
+    refresh();
+    // Keep the pre-wired href fresh (see TICKET_REFRESH_MS) and re-mint
+    // immediately when the tab regains focus — background tabs freeze timers,
+    // so a phone locked for 15 minutes could otherwise leave a dead link.
+    const timer = setInterval(refresh, TICKET_REFRESH_MS);
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') refresh();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, [mintTicket]);
 
   useEffect(() => {
@@ -285,7 +327,12 @@ export default function DownloadPage() {
                 setMinting(true);
                 setTicketError(false);
                 mintTicket().then((url) => {
-                  if (url) { setDownloadUrl(url); window.location.href = url; }
+                  // Prefer the fresh ticket; fall back to the pre-minted href
+                  // only while it is still within its 10-minute TTL, so a
+                  // transient re-mint failure never dead-ends the user on the
+                  // server's 403 "Missing or expired download ticket" page.
+                  const target = pickDownloadUrl(url, downloadUrl);
+                  if (target) { setDownloadUrl(target); window.location.href = target; }
                   else { setTicketError(true); }
                 }).finally(() => setMinting(false));
               }}
@@ -298,7 +345,7 @@ export default function DownloadPage() {
 
             {ticketError && (
               <p className="mt-4 text-[13px] text-amber-400/80">
-                Download temporarily unavailable. Please try again in a moment.
+                Download link unavailable — tap Download again for a fresh link.
               </p>
             )}
 
@@ -315,6 +362,7 @@ export default function DownloadPage() {
                 </div>
               ))}
             </div>
+
           </div>
         </section>
 
@@ -375,6 +423,38 @@ export default function DownloadPage() {
                   ))}
                 </ul>
               </div>
+            ))}
+          </div>
+        </Reveal>
+
+        {/* ═══ Install FAQ ═══ */}
+        <Reveal delay={350} className="mt-20">
+          <div className="text-center mb-10">
+            <h2 className="text-3xl sm:text-4xl font-display font-extrabold tracking-tight">
+              Having trouble <span className="text-gradient-primary">installing?</span>
+            </h2>
+            <p className="mt-3 text-white/40 text-[15px]">Quick answers for the common hiccups</p>
+          </div>
+
+          <div className="max-w-3xl mx-auto space-y-3">
+            {INSTALL_FAQ.map((item) => (
+              <details
+                key={item.q}
+                className="group premium-card p-5 open:border-[#06B6D4]/25 open:bg-[#06B6D4]/[0.03] transition-all duration-300"
+              >
+                <summary className="flex items-center justify-between gap-4 cursor-pointer select-none list-none">
+                  <span className="text-[14px] font-bold text-white/80 group-hover:text-white transition-colors">
+                    {item.q}
+                  </span>
+                  <ChevronDown
+                    size={16}
+                    className="text-white/30 shrink-0 transition-transform duration-300 group-open:rotate-180 group-open:text-[#06B6D4]"
+                  />
+                </summary>
+                <p className="mt-3 text-[13px] leading-relaxed text-white/40">
+                  {item.a}
+                </p>
+              </details>
             ))}
           </div>
         </Reveal>

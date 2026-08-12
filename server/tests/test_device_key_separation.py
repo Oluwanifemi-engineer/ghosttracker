@@ -4,8 +4,12 @@ Magneetar Device-Key Separation Tests
 The public APK embeds a LOW-PRIVILEGE device key (MT_DEVICE_KEY). It must be
 able to register devices / use device endpoints, but must NEVER be able to log
 into the dashboard as platform admin — that requires the master key
-(MT_API_KEY), which lives server-side only. The pre-split master key is
-accepted for device-scope auth only (MT_LEGACY_DEVICE_KEY, rotation grace).
+(MT_API_KEY), which lives server-side only.
+
+The pre-split master key grace credential (MT_LEGACY_DEVICE_KEY) was RETIRED
+on 2026-08-10: device-scope auth now accepts the master and device keys ONLY,
+and a legacy-style key is rejected (locked by
+test_legacy_key_rejected_after_retirement below).
 
 These tests lock in the separation so a future refactor can't silently widen
 the APK key's powers again.
@@ -22,7 +26,6 @@ import tempfile
 # endpoint test 401 (the settings singleton carries the other file's key).
 os.environ["MT_API_KEY"] = "test-api-key-" + "a" * 32
 os.environ["MT_DEVICE_KEY"] = "test-device-key-" + "b" * 24
-os.environ["MT_LEGACY_DEVICE_KEY"] = "test-legacy-key-" + "c" * 22
 os.environ["MT_JWT_SECRET"] = "test-jwt-secret-" + "b" * 64
 os.environ["MT_ENCRYPTION_KEY"] = secrets.token_hex(32)
 
@@ -43,7 +46,9 @@ from main import app  # noqa: E402
 # expect — the tests are hermetic and order-independent.
 MASTER_KEY = "test-master-key-" + "a" * 21
 DEVICE_KEY = "test-device-key-" + "b" * 24
-LEGACY_KEY = "test-legacy-key-" + "c" * 22
+# A legacy-style key (the old master was a 32+ char secret not equal to either
+# current key). Post-retirement this must be REJECTED everywhere.
+LEGACY_STYLE_KEY = "test-legacy-key-" + "c" * 22
 
 
 @pytest.fixture(autouse=True)
@@ -51,7 +56,6 @@ def _pin_keys(monkeypatch):
     """Pin settings to this suite's keys for every test, then restore."""
     monkeypatch.setattr(settings, "API_KEY", MASTER_KEY)
     monkeypatch.setattr(settings, "DEVICE_KEY", DEVICE_KEY)
-    monkeypatch.setattr(settings, "LEGACY_DEVICE_KEY", LEGACY_KEY)
     init_db()
     yield
 
@@ -72,20 +76,33 @@ def _register_device(client: TestClient, x_api_key: str):
 class TestApiKeyScopeUnit:
     """The pure auth helpers enforce the key set correctly."""
 
-    def test_master_device_and_legacy_are_authorized(self):
+    def test_master_and_device_are_authorized(self):
         assert api_key_is_authorized(MASTER_KEY)
         assert api_key_is_authorized(DEVICE_KEY)
-        assert api_key_is_authorized(LEGACY_KEY)
+
+    def test_legacy_key_rejected_after_retirement(self):
+        # MT_LEGACY_DEVICE_KEY was retired 2026-08-10. The real pre-split
+        # master is just a long random secret — indistinguishable in shape
+        # from LEGACY_STYLE_KEY — so this named regression lock stands in for
+        # it (semantically identical to the random-key test, but documents
+        # the retirement explicitly).
+        assert not api_key_is_authorized(LEGACY_STYLE_KEY)
 
     def test_random_key_is_rejected(self):
         assert not api_key_is_authorized(secrets.token_hex(32))
         assert not api_key_is_authorized("")
         assert not api_key_is_authorized(MASTER_KEY[:-1])  # near-miss
 
-    def test_verify_api_key_accepts_all_three_keys(self):
+    def test_verify_api_key_accepts_master_and_device(self):
         assert verify_api_key(x_api_key=MASTER_KEY) == MASTER_KEY
         assert verify_api_key(x_api_key=DEVICE_KEY) == DEVICE_KEY
-        assert verify_api_key(x_api_key=LEGACY_KEY) == LEGACY_KEY
+
+    def test_verify_api_key_rejects_legacy_style_key(self):
+        from fastapi import HTTPException
+
+        with pytest.raises(HTTPException) as exc:
+            verify_api_key(x_api_key=LEGACY_STYLE_KEY)
+        assert exc.value.status_code == 401
 
     def test_verify_api_key_rejects_random(self):
         from fastapi import HTTPException
@@ -110,11 +127,6 @@ class TestDashboardLoginRejectsDeviceKeys:
             assert res.status_code == 401
             assert "token" not in res.text
 
-    def test_legacy_key_is_rejected(self):
-        with TestClient(app) as client:
-            res = client.post("/api/auth/login", json={"api_key": LEGACY_KEY})
-            assert res.status_code == 401
-
     def test_master_key_still_works_after_rejections(self):
         # Sanity: the rejections above are key-specific, not a broken route.
         with TestClient(app) as client:
@@ -123,7 +135,7 @@ class TestDashboardLoginRejectsDeviceKeys:
 
 
 class TestDeviceEndpointsAcceptDeviceKeys:
-    """Device-scope endpoints accept the device + legacy keys (and master)."""
+    """Device-scope endpoints accept the device key (and master bootstrap)."""
 
     def test_register_with_device_key(self):
         with TestClient(app) as client:
@@ -131,10 +143,12 @@ class TestDeviceEndpointsAcceptDeviceKeys:
             assert res.status_code == 200
             assert "token" in res.json()
 
-    def test_register_with_legacy_key(self):
+    def test_register_with_legacy_style_key_rejected(self):
+        # Post-retirement regression: a pre-split master can no longer
+        # register a device.
         with TestClient(app) as client:
-            res = _register_device(client, LEGACY_KEY)
-            assert res.status_code == 200
+            res = _register_device(client, LEGACY_STYLE_KEY)
+            assert res.status_code == 401
 
     def test_register_with_master_key(self):
         # Master stays a valid bootstrap for device flows (back-compat).
@@ -174,4 +188,3 @@ class TestAdminStepUpStillMasterOnly:
         src = inspect.getsource(dashboard_routes)
         assert "settings.API_KEY" in src
         assert "settings.DEVICE_KEY" not in src
-        assert "settings.LEGACY_DEVICE_KEY" not in src

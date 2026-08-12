@@ -304,6 +304,10 @@ class HeartbeatPacket(BaseModel):
     # Armed Watch state (see TelemetryPing.capture_armed) — sent on the
     # 60s heartbeat so an idle device still reports its capture posture.
     capture_armed: Optional[bool] = None
+    # SIM-change signal (see TelemetryPing.sim_changed): the device flags a
+    # permission-free operator-fingerprint change exactly once; the server
+    # fires the always-deliver sim_changed alert and lets Sentinel score it.
+    sim_changed: Optional[bool] = None
 
 
 # ─── Auth Models ─────────────────────────────────────────────────────────────

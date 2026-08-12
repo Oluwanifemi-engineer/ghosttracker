@@ -54,7 +54,7 @@ const SECTIONS = [
     body: [
       'By enabling theft detection on a device, you authorize Magneetar to capture photos and audio when an active theft response is triggered, and to store that evidence with a SHA-256 chain of custody for presentation to law enforcement.',
       'You confirm that you are the owner of (or are authorized to manage) the device on which you enable these features, and that the people reasonably expected to use it are aware it is protected by Magneetar.',
-      'Evidence is stored encrypted and retained per our Privacy Policy. You can purge evidence cases permanently from the command center at any time.',
+      'Evidence is stored with SHA-256 integrity hashing and retained per our Privacy Policy. You can purge evidence cases permanently from the command center at any time.',
       'You are responsible for how you use captured evidence. Magneetar does not provide legal advice; if you intend to use evidence in legal proceedings, we recommend involving law enforcement early.',
     ],
   },
@@ -65,7 +65,7 @@ const SECTIONS = [
       'We process personal data — including location data and evidence media — in accordance with our Privacy Policy, the Nigeria Data Protection Act and NDPR, and the GDPR where it applies to you.',
       'You have the right to access, export, correct, and delete your data, and to withdraw consent at any time. Exercise these rights from the dashboard or by emailing privacy@magneetar.me.',
       'We do not sell your data. We do not share it with third parties except as needed to operate the Service (for example, your chosen alert providers) or as required by law.',
-      'Because of the sensitivity of location data, we encrypt it at rest (AES-256-GCM, per-device keys) and in transit (TLS).',
+      'Because of the sensitivity of location data, we protect it in transit (TLS), hash account credentials with bcrypt, encrypt account secrets with AES-256-GCM, and require two-factor authentication for sensitive operations.',
     ],
   },
   {

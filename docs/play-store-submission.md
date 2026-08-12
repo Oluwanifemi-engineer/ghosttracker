@@ -57,7 +57,7 @@ HOW IT WORKS:
    - Wipe all data if recovery is impossible
 
 PRIVACY & SECURITY:
-• End-to-end encryption for all data
+• bcrypt password hashing, TOTP two-factor auth, and TLS transport
 • No ads, no tracking, no data selling
 • Open source and transparent
 • You control all your data
@@ -106,8 +106,8 @@ Create a privacy policy page at `https://magneetar.me/privacy` with:
 | App Activity | Theft detection | Yes | No |
 
 **Security Practices:**
-- [ ] Data is encrypted in transit
-- [ ] Data is encrypted at rest
+- [x] Data is encrypted in transit (TLS)
+- [x] At-rest encryption (AES-256-GCM) for account secrets and location telemetry (when `MT_ENCRYPTION_KEY` is set) + bcrypt hashing (stated honestly in the listing)
 - [ ] Users can request data deletion
 - [ ] Data is not sold to third parties
 

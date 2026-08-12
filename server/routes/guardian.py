@@ -24,6 +24,7 @@ from typing import Optional
 
 from auth import check_rate_limit, get_current_user
 from database import get_db, log_audit
+from encryption import decrypt_location_row
 from fastapi import APIRouter, Depends, HTTPException, Query
 from logging_config import get_logger
 from models import GuardianOptIn, GuardianProfile, RecoveryRequestCreate, RecoverySightingCreate
@@ -74,12 +75,15 @@ def _haversine_km(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
 def _device_last_location(db, device_id: str) -> tuple[Optional[float], Optional[float]]:
     """Return (lat, lng) of the device's most recent location, or (None, None)."""
     row = db.execute(
-        "SELECT lat, lng FROM locations WHERE device_id=? ORDER BY server_timestamp DESC LIMIT 1",
+        "SELECT device_id, lat, lng, location_encrypted, location_data FROM locations "
+        "WHERE device_id=? ORDER BY server_timestamp DESC LIMIT 1",
         (device_id,),
     ).fetchone()
     if not row:
         return None, None
-    return row["lat"], row["lng"]
+    # At-rest encryption: the recovery-request snapshot stores the real
+    # coordinates (encrypted rows carry 0.0 placeholders in lat/lng).
+    return decrypt_location_row(row)
 
 
 def _request_dict(db, row) -> dict:
@@ -88,9 +92,9 @@ def _request_dict(db, row) -> dict:
         "SELECT * FROM recovery_sightings WHERE request_id=? ORDER BY created_at DESC LIMIT 50",
         (row["id"],),
     ).fetchall()
-    count = db.execute(
-        "SELECT COUNT(*) as cnt FROM recovery_sightings WHERE request_id=?", (row["id"],)
-    ).fetchone()["cnt"]
+    count = db.execute("SELECT COUNT(*) as cnt FROM recovery_sightings WHERE request_id=?", (row["id"],)).fetchone()[
+        "cnt"
+    ]
     # Privacy contract: the owner sees each guardian's PUBLIC handle and the
     # sighting details, never the guardian's raw account id. Strip guardian_id.
     sighting_list = []
@@ -123,9 +127,7 @@ def _request_dict(db, row) -> dict:
 
 
 @router.get("/api/guardian/profile", response_model=GuardianProfile)
-async def get_guardian_profile(
-    db: sqlite3.Connection = Depends(get_db), user_id: str = Depends(get_current_user)
-):
+async def get_guardian_profile(db: sqlite3.Connection = Depends(get_db), user_id: str = Depends(get_current_user)):
     """Get the authenticated user's guardian profile (defaults to opted-out)."""
     user_id = _require_real_user(user_id)
     row = db.execute("SELECT * FROM guardian_profiles WHERE user_id=?", (user_id,)).fetchone()
@@ -195,9 +197,7 @@ async def launch_recovery_request(
     if device["owner_id"] != user_id:
         raise HTTPException(status_code=403, detail="Device not linked to your account")
     if device["operating_mode"] != "stolen":
-        raise HTTPException(
-            status_code=400, detail="Recovery requests can only be launched for stolen devices"
-        )
+        raise HTTPException(status_code=400, detail="Recovery requests can only be launched for stolen devices")
 
     active = db.execute(
         "SELECT id FROM recovery_requests WHERE device_id=? AND status='active'", (req.device_id,)
@@ -240,9 +240,7 @@ async def launch_recovery_request(
 
 
 @router.get("/api/recovery/requests")
-async def list_recovery_requests(
-    db: sqlite3.Connection = Depends(get_db), user_id: str = Depends(get_current_user)
-):
+async def list_recovery_requests(db: sqlite3.Connection = Depends(get_db), user_id: str = Depends(get_current_user)):
     """List the authenticated user's recovery requests (most recent first)."""
     user_id = _require_real_user(user_id)
     rows = db.execute(
@@ -374,9 +372,7 @@ async def report_sighting(
     The owner receives the sighting instantly over WebSocket.
     """
     user_id = _require_real_user(user_id)
-    profile = db.execute(
-        "SELECT opted_in, handle FROM guardian_profiles WHERE user_id=?", (user_id,)
-    ).fetchone()
+    profile = db.execute("SELECT opted_in, handle FROM guardian_profiles WHERE user_id=?", (user_id,)).fetchone()
     if not profile or not profile["opted_in"]:
         raise HTTPException(status_code=403, detail="Opt in as a guardian to report sightings")
 

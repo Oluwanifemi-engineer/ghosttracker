@@ -3,16 +3,19 @@
  * Provides offline support and caching for the dashboard.
  */
 
-const CACHE_NAME = 'magneetar-v1';
-const STATIC_CACHE = 'magneetar-static-v1';
-const DYNAMIC_CACHE = 'magneetar-dynamic-v1';
+const CACHE_NAME = 'magneetar-v2';
+const STATIC_CACHE = 'magneetar-static-v2';
+const DYNAMIC_CACHE = 'magneetar-dynamic-v2';
 
-// Assets to cache on install
+// Assets to cache on install. NOTE: /download is deliberately EXCLUDED —
+// its APK ticket logic must always come from the latest bundle, and a stale
+// cached copy of it broke the download button for clients running the old
+// service worker (the button looped back to the page). Network-first on
+// navigations serves it fresh instead.
 const STATIC_ASSETS = [
   '/',
   '/login',
   '/signup',
-  '/download',
   '/favicon.svg',
   '/logo.svg',
   '/m-logo.svg',

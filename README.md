@@ -84,7 +84,6 @@ Edit `server/.env`:
 # Required
 MT_API_KEY=your-secure-api-key-here     # MASTER key — dashboard admin ONLY, never in the APK
 MT_DEVICE_KEY=your-device-key-here      # LOW-PRIVILEGE key — the only key embedded in the APK
-MT_LEGACY_DEVICE_KEY=                   # optional: pre-split master key, device-scope grace for old APKs
 
 # Alert Services (at least one for theft notifications)
 MT_ALERT_EMAIL=your@email.com      # Where alerts go

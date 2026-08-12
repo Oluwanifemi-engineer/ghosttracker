@@ -31,6 +31,7 @@ from auth import (
 )
 from config import plan_device_limit, settings
 from database import get_db, log_audit
+from encryption import decrypt_location_row, encrypt_location_for_store
 from evidence import evidence_builder
 from fastapi import APIRouter, Depends, Header, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials
@@ -411,6 +412,12 @@ def _persist_location(
     batched path (runs on the write queue's dedicated connection). Keeping
     the SQL in one place guarantees the two paths can never drift.
     """
+    # At-rest encryption (v1.5): when MT_ENCRYPTION_KEY is configured, the
+    # coordinates are AES-256-GCM encrypted with the per-device HKDF key — the
+    # row stores 0.0 placeholders + ciphertext in location_data. Sentinel and
+    # the WebSocket feed already run on the in-memory `report` payload, so
+    # encrypting at the DB boundary never affects theft detection.
+    lat, lng, loc_enc, loc_data = encrypt_location_for_store(report.lat, report.lng, device_id)
     conn.execute(
         """INSERT INTO locations (device_id, lat, lng, altitude, accuracy_horizontal,
            accuracy_vertical, confidence_level, speed, bearing, activity_type,
@@ -419,12 +426,12 @@ def _persist_location(
            signal_strength_dbm, is_location_enabled, is_airplane_mode,
            sim_changed, sim_serial_hash, sentinel_score, threat_level, anomalies,
            device_timestamp, server_timestamp, was_queued, queued_at,
-           queue_position, ping_sequence)
-           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+           queue_position, ping_sequence, location_encrypted, location_data)
+           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
         (
             device_id,
-            report.lat,
-            report.lng,
+            lat,
+            lng,
             report.altitude,
             report.accuracy_horizontal,
             report.accuracy_vertical,
@@ -455,6 +462,8 @@ def _persist_location(
             report.queued_at,
             report.queue_position,
             report.ping_sequence,
+            loc_enc,
+            loc_data,
         ),
     )
 
@@ -464,6 +473,24 @@ def _persist_location(
         "UPDATE devices SET last_seen=?, sentinel_score=?, capture_armed=COALESCE(?, capture_armed) WHERE id=?",
         (now, score, report.capture_armed, device_id),
     )
+
+
+def _sim_changed_alert_recent(db, device_id: str) -> bool:
+    """True when a sim_changed alert was already logged for this device in the
+    last 10 minutes. Shared by the location and heartbeat paths so one incident
+    (including queued/offline replays of the same flag) = one always-deliver
+    alert.
+
+    sent_at is written by SQLite as CURRENT_TIMESTAMP (UTC, 'YYYY-MM-DD
+    HH:MM:SS') — comparing against datetime('now', '-10 minutes') is
+    apples-to-apples UTC.
+    """
+    recent = db.execute(
+        "SELECT 1 FROM alerts WHERE device_id=? AND alert_type='sim_changed' "
+        "AND datetime(sent_at) > datetime('now', '-10 minutes') LIMIT 1",
+        (device_id,),
+    ).fetchone()
+    return recent is not None
 
 
 @router.post("/api/device/location")
@@ -512,7 +539,15 @@ async def post_location(
         (device_id,),
     ).fetchall()
 
-    history_dicts = [dict(h) for h in history]
+    # Sentinel's haversine/geofence math runs on REAL coordinates — decrypt
+    # any encrypted history rows before compute_score (encrypted rows carry
+    # 0.0 placeholders in lat/lng; passing those through would poison the
+    # movement/velocity signals).
+    history_dicts = []
+    for h in history:
+        hd = dict(h)
+        hd["lat"], hd["lng"] = decrypt_location_row(hd)
+        history_dicts.append(hd)
     score, threat_level, anomalies = sentinel.compute_score(report, history_dicts)
 
     # Batched path (opt-in, MT_WRITE_BATCH_MS>0): defer the INSERT + device
@@ -562,6 +597,21 @@ async def post_location(
             device_id,
             "theft_detected",
             {"location": f"{report.lat},{report.lng}", "time": now, "score": score},
+        )
+
+    # SIM change fires its OWN always-deliver alert the instant it is
+    # reported — the owner must know a different SIM was inserted even when
+    # the theft score has not accumulated to the confirmation threshold
+    # (sim_changed alone scores 35/80). The device flags the change exactly
+    # once; the 10-minute dedup also absorbs queued/offline replays so one
+    # incident = one alert (tradeoff: two GENUINE swaps within 10 minutes are
+    # coalesced — the owner is still alerted to the first, and the SIM
+    # fingerprint is re-baselined on-device).
+    if report.sim_changed and not _sim_changed_alert_recent(db, device_id):
+        await alert_engine.send_all(
+            device_id,
+            "sim_changed",
+            {"location": f"{report.lat},{report.lng}", "time": now},
         )
 
     geofences = db.execute("SELECT * FROM geofences WHERE device_id=? AND active=1", (device_id,)).fetchall()
@@ -636,12 +686,14 @@ async def post_location_simple(
     # so every call 500'd with "no such column: accuracy". The request model
     # keeps its `accuracy` field for API compatibility; only the column name
     # is mapped to the real one.
+    lat, lng, loc_enc, loc_data = encrypt_location_for_store(report.lat, report.lng, device_id)
     db.execute(
         (
             "INSERT INTO locations (device_id, lat, lng, accuracy_horizontal, provider, "
-            "device_timestamp, server_timestamp) VALUES (?,?,?,?,?,?,?)"
+            "device_timestamp, server_timestamp, location_encrypted, location_data) "
+            "VALUES (?,?,?,?,?,?,?,?,?)"
         ),
-        (device_id, report.lat, report.lng, report.accuracy, report.provider, ts, now),
+        (device_id, lat, lng, report.accuracy, report.provider, ts, now, loc_enc, loc_data),
     )
     db.execute("UPDATE devices SET last_seen=? WHERE id=?", (now, device_id))
     db.commit()
@@ -870,6 +922,17 @@ async def post_heartbeat(
         )
         db.commit()
 
+    # SIM change over the heartbeat (belt-and-braces for devices whose
+    # location stream is quiet — e.g. location permission revoked): same
+    # always-deliver alert, same 10-minute dedup as the location path.
+    if hb.sim_changed and not _sim_changed_alert_recent(db, device_id):
+        last = db.execute(
+            "SELECT lat, lng FROM locations WHERE device_id=? " "ORDER BY server_timestamp DESC LIMIT 1",
+            (device_id,),
+        ).fetchone()
+        loc = f"{last['lat']},{last['lng']}" if last else "unknown"
+        await alert_engine.send_all(device_id, "sim_changed", {"location": loc, "time": now})
+
     device = db.execute("SELECT operating_mode FROM devices WHERE id=?", (device_id,)).fetchone()
 
     return {
@@ -912,20 +975,27 @@ async def upload_offline_queue(
             "SELECT * FROM locations WHERE device_id=? ORDER BY server_timestamp DESC LIMIT 10",
             (device_id,),
         ).fetchall()
-        history_dicts = [dict(h) for h in history]
+        # Same decryption-before-Sentinel contract as the live path (above):
+        # encrypted history rows must expose real coordinates to the scorer.
+        history_dicts = []
+        for h in history:
+            hd = dict(h)
+            hd["lat"], hd["lng"] = decrypt_location_row(hd)
+            history_dicts.append(hd)
         score, threat_level, anomalies = sentinel.compute_score(ping, history_dicts)
 
+        lat, lng, loc_enc, loc_data = encrypt_location_for_store(ping.lat, ping.lng, device_id)
         db.execute(
             """INSERT INTO locations (device_id, lat, lng, altitude, accuracy_horizontal,
                confidence_level, speed, bearing, activity_type, provider,
                battery_percent, is_charging, network_type, sentinel_score,
                threat_level, anomalies, device_timestamp, server_timestamp, was_queued,
-               queued_at, queue_position, ping_sequence)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+               queued_at, queue_position, ping_sequence, location_encrypted, location_data)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (
                 device_id,
-                ping.lat,
-                ping.lng,
+                lat,
+                lng,
                 ping.altitude,
                 ping.accuracy_horizontal,
                 ping.confidence_level,
@@ -945,6 +1015,8 @@ async def upload_offline_queue(
                 ping.queued_at,
                 ping.queue_position,
                 ping.ping_sequence,
+                loc_enc,
+                loc_data,
             ),
         )
         last_armed = ping.capture_armed

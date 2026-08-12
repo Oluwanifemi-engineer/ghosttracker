@@ -9,7 +9,9 @@ import { AnimatedCounter } from '@/components/ui/AnimatedCounter';
 const HERO_STATS = [
   { value: 381, label: 'automated tests', suffix: '' },
   { value: 24, label: 'stealth tracking', suffix: '/7' },
-  { value: 256, label: 'encrypted at rest', prefix: 'AES-', suffix: '-bit' },
+  // Honest claim: location telemetry is stored with integrity hashing (the
+  // evidence SHA-256 chain), not blanket AES encryption at rest.
+  { value: 256, label: 'chain-of-custody hashing', prefix: 'SHA-', suffix: '-bit' },
   { value: 3, label: 'background persistence', suffix: '-layer' },
 ];
 

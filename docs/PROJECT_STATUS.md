@@ -212,9 +212,9 @@ All **554 tests pass consistently** (381 backend + 173 dashboard). The latest ro
 |----------|----------|---------|
 | `MT_API_KEY` | ✅ Yes | **Master key** — dashboard admin login + step-up ONLY (min 32 chars, never in the APK) |
 | `MT_DEVICE_KEY` | ✅ Yes (prod) | **Low-privilege device key** — the only shared key embedded in the APK (`BuildConfig.DEVICE_KEY`), device-scope auth only, must differ from `MT_API_KEY` |
-| `MT_LEGACY_DEVICE_KEY` | ❌ No | Pre-split master key, device-scope grace for installed APKs (remove after fleet upgrade) |
+| `MT_LEGACY_DEVICE_KEY` | ❌ Retired (2026-08-10) | Removed from code/config — the fleet must run APKs embedding `MT_DEVICE_KEY` |
 | `MT_JWT_SECRET` | ✅ Yes | JWT signing secret (min 64 chars) |
-| `MT_ENCRYPTION_KEY` | ✅ Yes | Data encryption key (64 hex chars = 32 bytes) |
+| `MT_ENCRYPTION_KEY` | ✅ Yes | Data encryption key (64 hex = 32 bytes) — TOTP secrets + location at-rest encryption (v1.5) |
 | `MT_FIREBASE_KEY` | ❌ No | **Service-account JSON path** for firebase-admin (FCM HTTP v1) |
 | `MT_TWILIO_SID` / `MT_TWILIO_AUTH_TOKEN` | ❌ No | Twilio API credentials (SMS + WhatsApp) |
 | `MT_TWILIO_SMS_FROM` | ❌ No | Twilio SMS-capable sender number |

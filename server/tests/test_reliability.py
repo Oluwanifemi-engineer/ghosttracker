@@ -37,7 +37,7 @@ import database  # noqa: E402
 database.DB_PATH = test_db_path
 database.init_db(test_db_path)
 
-from alerts import AlertEngine, normalize_phone_to_e164  # noqa: E402
+from alerts import AlertEngine, ChannelPermanentError, normalize_phone_to_e164  # noqa: E402
 from auth import create_token  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 from main import app  # noqa: E402
@@ -871,8 +871,20 @@ class TestAlertEngineChannels:
 
     @pytest.mark.asyncio
     async def test_send_sms_false_when_twilio_rejects_and_termii_unconfigured(self):
-        """Twilio non-2xx AND no Termii key → send_sms returns False."""
+        """Twilio 401 AND no Termii key → permanent failure.
+
+        send_sms raises ChannelPermanentError (a credential rejection can
+        never succeed on retry), and the retry wrapper converts it to False
+        WITHOUT sleeping/retrying — the device request that triggered the
+        alert must not pay serial backoff for broken Twilio credentials.
+        """
         engine = AlertEngine()
+
+        # ChannelPermanentError is imported at MODULE level (same statement
+        # as AlertEngine), so it comes from the same alerts module instance
+        # as the engine regardless of the test_e2e / sim_change sys.modules
+        # eviction order — the class the engine raises is always the one
+        # pytest.raises checks.
         config.settings.TWILIO_SID = "AC" + "1" * 32
         config.settings.TWILIO_AUTH_TOKEN = "2" * 32
         config.settings.TWILIO_SMS_FROM = "+15551234567"
@@ -884,9 +896,15 @@ class TestAlertEngineChannels:
 
         with patch("alerts.httpx.AsyncClient") as mock_client:
             mock_client.return_value.__aenter__.return_value.post = AsyncMock(return_value=twilio_fail)
-            result = await engine.send_sms("+15557654321", "theft_detected", {"location": "0,0"})
+            with pytest.raises(ChannelPermanentError):
+                await engine.send_sms("+15557654321", "theft_detected", {"location": "0,0"})
 
+        # End-to-end contract: the retry wrapper fails fast (single attempt,
+        # no retry backoff) and reports the channel as failed.
+        send_fn = AsyncMock(side_effect=ChannelPermanentError("sms: auth"))
+        result = await engine._send_with_retry("sms", send_fn)
         assert result is False
+        send_fn.assert_awaited_once()
 
     @pytest.mark.asyncio
     async def test_send_sms_falls_back_to_termii_when_twilio_rejects(self):

@@ -1579,8 +1579,8 @@ class TestApkChecksum:
         checksum_resp = client.get("/apk/checksum")
         if checksum_resp.status_code == 404:
             # No APK staged: no ticket is mintable, and an anonymous (ticketless)
-            # download is rejected 403 (the gating itself), never served.
-            assert client.get("/apk/download").status_code == 403
+            # download is redirected (the gating itself), never served bytes.
+            assert client.get("/apk/download").status_code == 302
             assert self._mint_ticket() is None
             return
 
@@ -1598,25 +1598,51 @@ class TestApkChecksum:
         assert len(dl.content) == data["size_bytes"]
 
     def test_download_requires_valid_ticket(self):
-        """F-05 gating: /apk/download without a valid signed ticket is 403,
-        including forged/expired signatures."""
+        """F-05 gating: /apk/download without a valid signed ticket never
+        serves bytes. Since 2026-08-11 a missing/expired ticket is redirected
+        (302) to the download page — which mints a fresh ticket — instead of
+        a raw 403 JSON body, so stale links self-heal. Forged/expired
+        signatures must redirect too, never serve the APK."""
         import time
 
-        assert client.get("/apk/download").status_code == 403
-        assert client.get("/apk/download?expires=9999999999&sig=deadbeef").status_code == 403
-
-        # A genuinely signed URL is rejected once its window has lapsed.
         from main import _sign_apk_ticket
 
+        download_page = config.settings.DASHBOARD_URL.rstrip("/") + "/download"
+
+        def assert_redirects(resp):
+            assert resp.status_code == 302, f"expected 302 redirect, got {resp.status_code}"
+            assert resp.headers.get("location", "") == download_page, resp.headers.get("location")
+
+        # follow_redirects=False — the test app has no /download route, and the
+        # point is to assert the redirect itself, not its target page.
+        assert_redirects(client.get("/apk/download", follow_redirects=False))
+        assert_redirects(client.get("/apk/download?expires=9999999999&sig=deadbeef", follow_redirects=False))
+
+        # A genuinely signed URL is redirected once its window has lapsed.
         past = int(time.time()) - 3600
-        assert client.get(f"/apk/download?expires={past}&sig={_sign_apk_ticket(past)}").status_code == 403
+        assert_redirects(
+            client.get(f"/apk/download?expires={past}&sig={_sign_apk_ticket(past)}", follow_redirects=False)
+        )
+
+    def test_valid_ticket_still_downloads(self):
+        """A freshly minted ticket must still serve the APK bytes (the 302
+        only applies to INVALID tickets — valid ones bypass the redirect)."""
+        url = self._mint_ticket()
+        if url is None:
+            return  # no APK staged in this test environment
+        resp = client.get(url)
+        assert resp.status_code == 200
+        assert resp.headers["content-type"] == "application/vnd.android.package-archive"
+        assert resp.content[:2] == b"PK"  # zip magic — an APK, not a redirect/JSON
 
     def test_checksum_stable_across_requests(self):
         """Repeated calls return a stable checksum (cache-consistent), and both
         endpoints agree nothing is downloadable when no APK is staged."""
         first = client.get("/apk/checksum")
         if first.status_code == 404:
-            assert client.get("/apk/download").status_code == 403
+            # Ticketless download is redirected (302) to the download page;
+            # no ticket can be minted without an APK.
+            assert client.get("/apk/download", follow_redirects=False).status_code == 302
             assert client.get("/apk/ticket").status_code == 404
             return
         second = client.get("/apk/checksum")

@@ -51,12 +51,9 @@ class Settings:
     # ONLY; it must never mint dashboard/admin credentials. Distinct from the
     # master key so extracting it from the APK buys nothing.
     DEVICE_KEY: str = os.environ.get("MT_DEVICE_KEY", "")
-    # LEGACY device key — the PRE-split master key, accepted for DEVICE-scope
-    # auth only during the rotation grace period so already-installed APKs
-    # (which embedded the old master key) keep working until users upgrade.
-    # It grants no dashboard/admin access. Clear it once the installed fleet
-    # has upgraded.
-    LEGACY_DEVICE_KEY: str = os.environ.get("MT_LEGACY_DEVICE_KEY", "")
+    # NOTE: the pre-split master key (MT_LEGACY_DEVICE_KEY) was RETIRED on
+    # 2026-08-10 — installed APKs must embed MT_DEVICE_KEY. Do not re-add a
+    # legacy key: the old master was proven extractable from the APK.
     JWT_SECRET: str = os.environ.get("MT_JWT_SECRET", "")
     ENCRYPTION_KEY: str = os.environ.get("MT_ENCRYPTION_KEY", "")
 

@@ -1,5 +1,6 @@
 package com.magneetar.app
 
+import android.annotation.SuppressLint
 import android.app.*
 import android.content.ComponentName
 import android.content.Context
@@ -45,6 +46,11 @@ class PersistenceService : Service() {
 
     private fun isActive(): Boolean = scope.isActive
 
+    // Lint false positive (AGP 8.10.1, play flavor only): the merged manifest
+    // declares android:foregroundServiceType="dataSync" on PersistenceService,
+    // but the play overlay's tools:node="remove" trips the ForegroundServiceType
+    // check. Sideload variants lint clean with identical code + manifest.
+    @SuppressLint("ForegroundServiceType")
     override fun onCreate() {
         super.onCreate()
         Log.d(TAG, "Persistence service starting...")

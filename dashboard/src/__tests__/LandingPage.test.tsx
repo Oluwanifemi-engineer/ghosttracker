@@ -36,7 +36,12 @@ describe('Landing Page', () => {
     // Hero
     expect(screen.getByText('Protect what you own.')).toBeInTheDocument();
     expect(screen.getByText('Stay close to who you love.')).toBeInTheDocument();
-    expect(screen.getByText('24/7')).toBeInTheDocument();
+    // Hero stats — AnimatedCounter renders the value and suffix as separate
+    // text nodes (e.g. "24" + "/7"), so assert on the stable stat labels.
+    expect(screen.getByText('automated tests')).toBeInTheDocument();
+    expect(screen.getByText('stealth tracking')).toBeInTheDocument();
+    expect(screen.getByText('chain-of-custody hashing')).toBeInTheDocument();
+    expect(screen.getByText('background persistence')).toBeInTheDocument();
 
     // Features grid
     expect(screen.getByText('Sentinel AI')).toBeInTheDocument();

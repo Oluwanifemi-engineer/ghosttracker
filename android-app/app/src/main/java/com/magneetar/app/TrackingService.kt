@@ -183,6 +183,11 @@ class TrackingService : Service() {
         var isRunning: Boolean = false
     }
 
+    // Lint false positive (AGP 8.10.1, play flavor only): the merged manifest
+    // declares android:foregroundServiceType="location" on TrackingService, but
+    // the play overlay's tools:node="remove" trips the ForegroundServiceType
+    // check. Sideload variants lint clean with identical code + manifest.
+    @SuppressLint("ForegroundServiceType")
     override fun onCreate() {
         super.onCreate()
         connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
@@ -435,6 +440,9 @@ class TrackingService : Service() {
                 isRegistered = accessToken != null
 
                 if (isRegistered) {
+                    // Baseline the SIM fingerprint so a fresh install (or
+                    // reinstall on the same phone) never looks like a swap.
+                    SimChangeMonitor.baseline(this)
                     updateNotification("Connected")
                     // Save tokens
                     getSharedPreferences("mt", Context.MODE_PRIVATE).edit().apply {
@@ -658,6 +666,12 @@ class TrackingService : Service() {
      */
     private val locationFilter = LocationFilter()
 
+    // Fused requestLocationUpdates needs ACCESS_FINE_LOCATION (runtime-granted
+    // during onboarding). The call is wrapped in try/catch(Exception) below and
+    // the raw-LocationManager fallback catches SecurityException explicitly —
+    // lint cannot see either guard, so suppress (same pattern as the other
+    // permission-gated helpers in this file).
+    @SuppressLint("MissingPermission")
     private fun startLocationUpdates() {
         locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
 
@@ -816,6 +830,15 @@ class TrackingService : Service() {
 
         pingSequence++
 
+        // SIM-change REPORTING (permission-free — no READ_PHONE_STATE, works on
+        // the Play build): consume() delivers the change flag exactly once if
+        // SimChangeMonitor flagged it. DETECTION intentionally does NOT run on
+        // this 3s hot path (telephony binder reads ~20x/min would be wasted):
+        // the ACTION_SIM_STATE_CHANGED receiver detects swaps instantly, and
+        // the 60s heartbeat re-checks as belt-and-braces. The server fires the
+        // always-deliver sim_changed alert and Sentinel scores it (+35).
+        val simChanged = SimChangeMonitor.consume(this)
+
         // Use TelemetryPing format matching the server's schema. Position and
         // accuracy come from the KALMAN-FILTERED estimate (the fused GPS+
         // network track); speed/bearing from the filter's velocity state when
@@ -850,6 +873,7 @@ class TrackingService : Service() {
             // posture (armed → remote capture possible) instead of a phantom
             // 'executed' on unarmed devices.
             put("capture_armed", MediaCaptureService.isArmed)
+            put("sim_changed", simChanged)
             // Offline Command Relay: the surrounding cell-tower fingerprint
             // (MCC/MNC/TAC/CID) — captured with ZERO internet and resolved to
             // approximate coordinates by the server's cell-locate endpoint.
@@ -920,6 +944,11 @@ class TrackingService : Service() {
     private suspend fun heartbeatLoop() {
         while (true) {
             try {
+                // SIM-change detection (belt-and-braces: the heartbeat runs
+                // even when the location stream is quiet — e.g. location
+                // permission revoked — so a swap is still reported).
+                SimChangeMonitor.detect(this)
+                val simChanged = SimChangeMonitor.consume(this)
                 val body = JSONObject().apply {
                     put("device_id", deviceId)
                     put("battery_percent", currentBatteryPercent)
@@ -928,6 +957,7 @@ class TrackingService : Service() {
                     put("app_version", BuildConfig.VERSION_NAME)
                     put("device_admin_active", isDeviceAdminActive())
                     put("sim_hash", simSerialHash)
+                    put("sim_changed", simChanged)
                     put("pending_evidence_count", 0)
                     put("capture_armed", MediaCaptureService.isArmed)
                 }.toString().toRequestBody(JSON)

@@ -46,12 +46,28 @@ def _connect() -> sqlite3.Connection:
     return conn
 
 
+def _connect_store():
+    """Return the storage connection for the configured backend.
+
+    MT_DATABASE_URL set -> PgStore (sync facade over asyncpg, storage.py);
+    otherwise -> the unchanged sqlite3.Connection. Both expose the same
+    route-facing contract (execute/fetchone/fetchall/rowcount/lastrowid/
+    commit/close), so no route code changes for the switch itself
+    (ADR-0005 Phase 2a).
+    """
+    if settings.DATABASE_URL:
+        from storage import PgStore
+
+        return PgStore()
+    return _connect()
+
+
 def get_db():
     """FastAPI dependency - yields a database connection.
     Connection failures propagate to the caller for fast failure detection.
     SQLite contention is handled by busy_timeout=5000 in _connect().
     """
-    conn = _connect()
+    conn = _connect_store()
     try:
         yield conn
     finally:
@@ -61,7 +77,7 @@ def get_db():
 @contextmanager
 def get_db_context():
     """Context manager for non-FastAPI usage."""
-    conn = _connect()
+    conn = _connect_store()
     try:
         yield conn
     finally:
@@ -230,6 +246,14 @@ def init_db(db_path: str = None):
     except sqlite3.OperationalError:
         pass  # Column already exists
 
+    # Location at-rest encryption (v1.5): ciphertext column for encrypted
+    # telemetry rows (see the locations CREATE TABLE comment). Existing rows
+    # stay plaintext (flag 0) — dual-mode readers handle both.
+    try:
+        c.execute("ALTER TABLE locations ADD COLUMN location_data TEXT")
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+
     # Media storage refactor (v1.4): evidence bytes moved from the data_b64
     # blob to files on disk. New columns are NULL for legacy rows (they keep
     # their base64) and populated for new rows (data_b64 written as '').
@@ -324,6 +348,13 @@ def init_db(db_path: str = None):
             queue_position INTEGER,
             ping_sequence INTEGER,
             location_encrypted BOOLEAN DEFAULT FALSE,
+            -- At-rest encryption (v1.5): when MT_ENCRYPTION_KEY is set, lat/lng
+            -- hold 0.0 placeholders (NOT NULL constraint) and the base64
+            -- AES-256-GCM ciphertext (per-device HKDF key) lives here with
+            -- location_encrypted=1. ALL readers must go through
+            -- encryption.decrypt_location_row() — legacy plaintext rows keep
+            -- real coords in lat/lng with the flag 0 (dual-mode reads).
+            location_data TEXT,
             FOREIGN KEY (device_id) REFERENCES devices(id)
         );
 
@@ -824,7 +855,14 @@ def ensure_initialized() -> bool:
     enabled_types, quiet_hours_* were all silently missing). init_db() is
     fully idempotent (CREATE TABLE IF NOT EXISTS + guarded ALTER TABLE), so
     running it when anything is stale migrates forward safely.
+
+    PostgreSQL mode (MT_DATABASE_URL set) skips SQLite migration entirely —
+    the schema lives in database_postgres.init_schema() (parity-enforced by
+    tests/test_postgres_adapter_parity.py) and is applied by
+    storage.init_pg_store() at startup.
     """
+    if settings.DATABASE_URL:
+        return False
     if DB_PATH == ":memory:":
         init_db()
         return True
@@ -935,6 +973,47 @@ def ensure_initialized() -> bool:
         "totp_enabled",
         "totp_last_period",
     }
+    # At-rest encryption columns — location_data must exist before the write
+    # path can store ciphertext on a production DB (same no-such-column 500
+    # class that bit devices/commands/media historically).
+    expected_locations_columns = {
+        "id",
+        "device_id",
+        "lat",
+        "lng",
+        "altitude",
+        "accuracy_horizontal",
+        "accuracy_vertical",
+        "confidence_level",
+        "speed",
+        "bearing",
+        "activity_type",
+        "step_count",
+        "provider",
+        "gps_satellite_count",
+        "wifi_bssids",
+        "cell_tower_ids",
+        "ble_devices_nearby",
+        "battery_percent",
+        "is_charging",
+        "network_type",
+        "signal_strength_dbm",
+        "is_location_enabled",
+        "is_airplane_mode",
+        "sim_changed",
+        "sim_serial_hash",
+        "sentinel_score",
+        "threat_level",
+        "anomalies",
+        "device_timestamp",
+        "server_timestamp",
+        "was_queued",
+        "queued_at",
+        "queue_position",
+        "ping_sequence",
+        "location_encrypted",
+        "location_data",
+    }
     try:
         with get_db_context() as conn:
             present_tables = {
@@ -944,12 +1023,14 @@ def ensure_initialized() -> bool:
             commands_columns = {row["name"] for row in conn.execute("PRAGMA table_info(commands)").fetchall()}
             media_columns = {row["name"] for row in conn.execute("PRAGMA table_info(media)").fetchall()}
             users_columns = {row["name"] for row in conn.execute("PRAGMA table_info(users)").fetchall()}
+            locations_columns = {row["name"] for row in conn.execute("PRAGMA table_info(locations)").fetchall()}
         if (
             required_tables.issubset(present_tables)
             and expected_devices_columns.issubset(devices_columns)
             and expected_commands_columns.issubset(commands_columns)
             and expected_media_columns.issubset(media_columns)
             and expected_users_columns.issubset(users_columns)
+            and expected_locations_columns.issubset(locations_columns)
         ):
             return False
         init_db()

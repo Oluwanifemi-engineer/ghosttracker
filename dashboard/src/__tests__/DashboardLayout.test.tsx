@@ -17,6 +17,12 @@ const mockUseWebSocket = jest.fn();
 jest.mock('@/hooks/useDevices', () => ({ useDevices: () => mockUseDevices() }));
 jest.mock('@/hooks/useWebSocket', () => ({ useWebSocket: () => mockUseWebSocket() }));
 
+// The layout calls useRouter() from next/navigation — provide a router stub
+// so the component can mount without a Next.js router context.
+jest.mock('next/navigation', () => ({
+  useRouter: () => ({ push: jest.fn(), replace: jest.fn(), prefetch: jest.fn(), back: jest.fn() }),
+}));
+
 // ─── Store mock (authenticated) ─────────────────────────────────────────────
 let mockIsAuthenticated = true;
 jest.mock('@/store/useStore', () => ({
@@ -54,9 +60,11 @@ describe('DashboardLayout — data layer mount (regression)', () => {
     render(<Layout><div data-testid="child">content</div></Layout>);
 
     // The regression guard: if the layout ever stops mounting the data layer,
-    // these spies are never invoked and the test fails.
-    expect(mockUseDevices).toHaveBeenCalledTimes(1);
-    expect(mockUseWebSocket).toHaveBeenCalledTimes(1);
+    // these spies are never invoked and the test fails. (toHaveBeenCalled,
+    // not Times(1): the layout re-renders once when `mounted` flips true and
+    // the body mounts the data layer on every render.)
+    expect(mockUseDevices).toHaveBeenCalled();
+    expect(mockUseWebSocket).toHaveBeenCalled();
     // Children render through the authenticated layout.
     expect(document.querySelector('[data-testid="child"]')).not.toBeNull();
   });
