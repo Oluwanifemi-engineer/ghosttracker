@@ -90,13 +90,19 @@ def _parse_int(raw) -> Optional[int]:
 
 
 def _assert_device_access(db, device_id: str, auth: str):
-    """Admins can access any device; users only devices linked to their account."""
+    """Admins can access any device; users only devices linked to their account.
+
+    Existence is verified for BOTH scopes: a nonexistent device must be a
+    clean 404, never a 500 from a downstream FOREIGN KEY constraint (the
+    admin scope historically skipped the existence check, so admin-scope
+    writes like command/geofence blew up with an unhandled IntegrityError).
+    """
     user_id = _resolve_user_id(auth)
-    if user_id is None:
-        return
     row = db.execute("SELECT owner_id FROM devices WHERE id=?", (device_id,)).fetchone()
     if not row:
         raise HTTPException(status_code=404, detail="Device not found")
+    if user_id is None:
+        return
     if row["owner_id"] != user_id:
         raise HTTPException(status_code=403, detail="Access denied: device not linked to your account")
 

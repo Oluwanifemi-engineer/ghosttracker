@@ -505,6 +505,33 @@ class TestCommands:
         assert data["status"] == "queued"
         assert "command_id" in data
 
+    def test_admin_command_for_missing_device_is_404_not_500(self):
+        """Regression: the admin scope used to skip the device existence check
+        in _assert_device_access, so a command for a nonexistent device raised
+        an unhandled FOREIGN KEY IntegrityError (500). It must be a clean 404."""
+        response = client.post(
+            "/api/dashboard/command",
+            json={"device_id": "no-such-device-xyz", "command": "ping"},
+            headers=get_dashboard_headers(),
+        )
+        assert response.status_code == 404
+
+    def test_admin_geofence_for_missing_device_is_404_not_500(self):
+        """Same admin-existence regression for geofence creation."""
+        response = client.post(
+            "/api/dashboard/geofence",
+            json={
+                "device_id": "no-such-device-xyz",
+                "name": "Ghost",
+                "center_lat": 6.5,
+                "center_lng": 3.3,
+                "radius_meters": 100,
+                "is_safe_zone": True,
+            },
+            headers=get_dashboard_headers(),
+        )
+        assert response.status_code == 404
+
     def test_get_device_commands(self):
         # Issue a command first
         headers = get_dashboard_headers()

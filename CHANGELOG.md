@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased] — 2026-08-12
 
+### Fixed
+
+- **Admin-scope writes to a missing device return 404, not 500**: the admin
+  branch of `_assert_device_access` skipped the device-existence check, so
+  `POST /api/dashboard/command` and `/api/dashboard/geofence` for a
+  nonexistent device raised an unhandled `FOREIGN KEY constraint failed`
+  (500 + ASGI traceback) instead of a clean 404. Existence is now verified
+  for both scopes. Found by the live-system probe; regression tests added in
+  `test_api.py` (command + geofence on a missing device → 404).
+
 ### Distribution
 
 - **`docs/DISTRIBUTION_PLAN.md` added**: channel strategy (Play primary,
