@@ -20,13 +20,7 @@ from auth import (
     verify_password,
 )
 from config import settings
-from database import (
-    check_rate_limit,
-    delete_device_cascade,
-    get_db,
-    get_db_context,
-    log_audit,
-)
+from database import check_rate_limit, delete_device_cascade, get_db, get_db_context, log_audit
 from encryption import decrypt_location, decrypt_location_row
 from evidence import evidence_builder
 
@@ -223,7 +217,13 @@ async def list_devices(
                 pass
         # At-rest encryption: decrypt the last fix (encrypted rows carry 0.0
         # placeholders in lat/lng; plaintext legacy rows pass through).
-        lat, lng = decrypt_location(d["lat"], d["lng"], bool(d["location_encrypted"]), d["location_data"], d["id"])
+        lat, lng = decrypt_location(
+            d["lat"],
+            d["lng"],
+            bool(d["location_encrypted"]),
+            d["location_data"],
+            d["id"],
+        )
 
         result.append(
             {
@@ -592,14 +592,24 @@ async def resolve_cell_location(
         parts = t.split(":")
         if len(parts) < 5:
             continue
-        tower_type, mcc, mnc, tac, cid = parts[0], int(parts[1]), int(parts[2]), int(parts[3]), int(parts[4])
+        tower_type, mcc, mnc, tac, cid = (
+            parts[0],
+            int(parts[1]),
+            int(parts[2]),
+            int(parts[3]),
+            int(parts[4]),
+        )
         key = {"lte": "lte", "gsm": "gsm", "wcdma": "wcdma", "nr": "nr"}.get(tower_type, "lte")
         entry = {"radio": key, "mcc": mcc, "mnc": mnc, "lac": tac, "cid": cid}
         if tower_type in ("lte", "nr"):
             entry["tac"] = tac
         parsed.append(entry)
     if not parsed:
-        return {"resolved": False, "reason": "unparseable_fingerprint", "cell_tower_ids": tower_ids}
+        return {
+            "resolved": False,
+            "reason": "unparseable_fingerprint",
+            "cell_tower_ids": tower_ids,
+        }
 
     try:
         with httpx.Client(timeout=8) as client:
@@ -625,10 +635,18 @@ async def resolve_cell_location(
                 "provider": "unwiredlabs",
                 "cached": False,
             }
-        return {"resolved": False, "reason": "provider_no_fix", "cell_tower_ids": tower_ids}
+        return {
+            "resolved": False,
+            "reason": "provider_no_fix",
+            "cell_tower_ids": tower_ids,
+        }
     except Exception as e:
         logger.warning(f"Cell lookup failed: {e}")
-        return {"resolved": False, "reason": "provider_error", "cell_tower_ids": tower_ids}
+        return {
+            "resolved": False,
+            "reason": "provider_error",
+            "cell_tower_ids": tower_ids,
+        }
 
 
 # NOTE: /archived is a STATIC path and MUST be registered before
@@ -655,7 +673,10 @@ async def delete_archived_devices(
 
     user_id = _resolve_user_id(auth)
     if user_id:
-        rows = db.execute("SELECT id FROM devices WHERE archived_at IS NOT NULL AND owner_id=?", (user_id,)).fetchall()
+        rows = db.execute(
+            "SELECT id FROM devices WHERE archived_at IS NOT NULL AND owner_id=?",
+            (user_id,),
+        ).fetchall()
     else:
         rows = db.execute("SELECT id FROM devices WHERE archived_at IS NOT NULL").fetchall()
 
@@ -811,6 +832,90 @@ async def get_locations(
         loc.pop("location_data", None)
         locations.append(loc)
     return {"locations": locations}
+
+
+@router.get("/api/dashboard/locations/{device_id}/export/csv")
+async def export_locations_csv(
+    device_id: str,
+    db: sqlite3.Connection = Depends(get_db),
+    auth: str = Depends(require_dashboard_auth),
+    limit: int = Query(10000, ge=1, le=50000),
+):
+    """Export a device's location history as CSV (Prey-parity: portable history
+    for law-enforcement handover, insurance claims, or local analysis).
+
+    Same ownership gate as every other dashboard endpoint. Timestamps sort
+    oldest-first; coordinates are decrypted from the at-rest ciphertext
+    before export (encrypted rows carry 0.0 placeholders in lat/lng, and
+    shipping those would poison the file). The response carries a UTF-8 BOM
+    so Excel opens the file with correct encoding, and an attachment
+    Content-Disposition so browsers download rather than render it.
+
+    The endpoint caps at `limit` rows (default 10,000) so a long-lived
+    device can't balloon memory on one request.
+    """
+    import csv as _csv
+    import io as _io
+
+    from fastapi.responses import Response
+
+    _assert_device_access(db, device_id, auth)
+    rows = db.execute(
+        "SELECT device_id, server_timestamp, device_timestamp, lat, lng, location_encrypted, location_data, "
+        "accuracy_horizontal, altitude, speed, bearing, provider, battery_percent, "
+        "threat_level, sentinel_score, was_queued FROM locations "
+        "WHERE device_id=? ORDER BY server_timestamp ASC LIMIT ?",
+        (device_id, limit),
+    ).fetchall()
+
+    buf = _io.StringIO()
+    writer = _csv.writer(buf)
+    writer.writerow(
+        [
+            "server_timestamp",
+            "device_timestamp",
+            "lat",
+            "lng",
+            "accuracy_m",
+            "altitude_m",
+            "speed_ms",
+            "bearing_deg",
+            "provider",
+            "battery_percent",
+            "threat_level",
+            "sentinel_score",
+            "was_queued",
+        ]
+    )
+    for r in rows:
+        row = dict(r)
+        lat, lng = decrypt_location_row(row)
+        writer.writerow(
+            [
+                row["server_timestamp"],
+                row.get("device_timestamp"),
+                lat,
+                lng,
+                row.get("accuracy_horizontal"),
+                row.get("altitude"),
+                row.get("speed"),
+                row.get("bearing"),
+                row.get("provider"),
+                row.get("battery_percent"),
+                row.get("threat_level"),
+                row.get("sentinel_score"),
+                row.get("was_queued"),
+            ]
+        )
+
+    csv_text = "\ufeff" + buf.getvalue()  # UTF-8 BOM for Excel
+    return Response(
+        content=csv_text,
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": f'attachment; filename="magneetar-locations-{device_id}.csv"',
+        },
+    )
 
 
 @router.get("/api/dashboard/locations/{device_id}/live")
@@ -1054,7 +1159,14 @@ async def issue_command(
     # (Computed for BOTH channels up-front: a failed SMS send falls back to
     # the poll channel and must re-stamp the poll expiry, not keep 24h.)
     sms_expires_at = (datetime.now(timezone.utc) + timedelta(minutes=24 * 60)).isoformat()
-    poll_expires_minutes = 5 if cmd.command in ("wipe", "lock", "alarm") else 30
+    # Expiry policy: wipe/lock/alarm are sensitive and fast-acting (5 min);
+    # lost_mode gets a FULL 24h window — a lost phone is exactly the scenario
+    # where it may be offline/stolen longer than 30 minutes, and the command
+    # must survive until the device next polls (the SMS relay path already
+    # gets 24h for the same reason). Everything else: 30 min.
+    poll_expires_minutes = (
+        5 if cmd.command in ("wipe", "lock", "alarm") else (24 * 60 if cmd.command == "lost_mode" else 30)
+    )
     poll_expires_at = (datetime.now(timezone.utc) + timedelta(minutes=poll_expires_minutes)).isoformat()
     expires_at = sms_expires_at if delivery_channel == "sms" else poll_expires_at
 
@@ -1064,7 +1176,16 @@ async def issue_command(
     # only when it is already more urgent than the forced value.
     priority = cmd.priority
     if (
-        cmd.command in ("wipe", "lock", "alarm", "capture_photo", "capture_photo_front", "capture_audio")
+        cmd.command
+        in (
+            "wipe",
+            "lock",
+            "alarm",
+            "capture_photo",
+            "capture_photo_front",
+            "capture_audio",
+            "lost_mode",
+        )
         and priority > 1
     ):
         priority = 1
@@ -1072,7 +1193,15 @@ async def issue_command(
     cur = db.execute(
         "INSERT INTO commands (device_id, command, params, priority, issued_at, expires_at, delivery_channel) "
         "VALUES (?, ?, ?, ?, ?, ?, ?)",
-        (cmd.device_id, cmd.command, cmd.params, priority, now, expires_at, delivery_channel),
+        (
+            cmd.device_id,
+            cmd.command,
+            cmd.params,
+            priority,
+            now,
+            expires_at,
+            delivery_channel,
+        ),
     )
     db.commit()
 
@@ -1333,7 +1462,7 @@ async def create_geofence(
     cur = db.execute(
         (
             "INSERT INTO geofences (device_id, name, center_lat, center_lng, "
-            "radius_meters, is_safe_zone) VALUES (?, ?, ?, ?, ?, ?)"
+            "radius_meters, is_safe_zone, auto_action) VALUES (?, ?, ?, ?, ?, ?, ?)"
         ),
         (
             fence.device_id,
@@ -1342,11 +1471,16 @@ async def create_geofence(
             fence.center_lng,
             fence.radius_meters,
             fence.is_safe_zone,
+            fence.auto_action,
         ),
     )
     db.commit()
 
-    return {"status": "ok", "geofence_id": cur.lastrowid}
+    return {
+        "status": "ok",
+        "geofence_id": cur.lastrowid,
+        "auto_action": fence.auto_action,
+    }
 
 
 @router.delete("/api/dashboard/geofence/{geofence_id}")

@@ -68,6 +68,24 @@ For details on Magneetar's security design, see:
 - **Audit logging** for all sensitive operations
 - **Security headers** — HSTS, CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy
 
+## Residual Risks (documented, accepted)
+
+- **The shared device key is public** (`MT_DEVICE_KEY` ships inside every
+  APK). Anyone with the APK can register UNOWNED devices (capped by
+  `MAX_UNOWNED_DEVICES`) and write telemetry under the device-scope
+  `api_key_user` identity. This is the accepted trade-off of keyless
+  self-hosted onboarding; mitigations: unowned-registration cap, no row
+  creation on the FCM-token path, `device_id` mismatch checks, and the
+  per-device `x-device-key` secret for real devices. An unowned device's
+  authenticity is therefore NOT cryptographic — **link devices to an account
+  (or pair them) before relying on their alerts.** A future hardening option
+  (not yet implemented): suppress theft-mode auto-alerts for unowned
+  devices.
+- **Location/command data is only as secure as the deployment host.**
+  SQLite at-rest encryption covers coordinates (AES-256-GCM, per-device
+  HKDF keys when `MT_ENCRYPTION_KEY` is set); hosts should still encrypt
+  disks and rotate `MT_ENCRYPTION_KEY` with a migration plan.
+
 ## Responsible Disclosure
 
 We follow [ISO 29147](https://www.iso.org/standard/72704.html) guidelines for vulnerability disclosure. We request:

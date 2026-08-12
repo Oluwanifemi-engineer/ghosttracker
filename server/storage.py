@@ -1,6 +1,11 @@
 """
 Magneetar Storage Interface (ADR-0005, Phase 2a — 2026-08-11).
 
+STATUS (2026-08-12): **EXPERIMENTAL — NOT THE PRODUCTION DATA PLANE.**
+Production runs SQLite (server/database.py); this PgStore facade is only
+wired when MT_DATABASE_URL is set, which is unsupported in production until
+Phase 2b (SQL portability pass) lands. See docs/postgres-migration.md.
+
 Two implementations of ONE synchronous interface, so every route, helper and
 background loop keeps using the connection exactly as it did with SQLite:
 
@@ -227,12 +232,20 @@ def _coerce_bool_params(sql: str, params: tuple) -> tuple:
         return params
     stripped = sql.lstrip()
     table, cols = None, None
-    m = re.match(r"INSERT\s+(?:OR\s+REPLACE\s+)?INTO\s+(\w+)\s*\(([^)]*)\)", stripped, re.IGNORECASE)
+    m = re.match(
+        r"INSERT\s+(?:OR\s+REPLACE\s+)?INTO\s+(\w+)\s*\(([^)]*)\)",
+        stripped,
+        re.IGNORECASE,
+    )
     if m:
         table = m.group(1).lower()
         cols = [c.strip().strip('"') for c in m.group(2).split(",")]
     else:
-        m = re.match(r"UPDATE\s+(\w+)\s+SET\s+(.*?)(?:\s+WHERE|\s*$)", stripped, re.IGNORECASE | re.DOTALL)
+        m = re.match(
+            r"UPDATE\s+(\w+)\s+SET\s+(.*?)(?:\s+WHERE|\s*$)",
+            stripped,
+            re.IGNORECASE | re.DOTALL,
+        )
         if m:
             table = m.group(1).lower()
             cols = [a.split("=", 1)[0].strip().strip('"') for a in m.group(2).split(",")]
@@ -259,12 +272,20 @@ def _coerce_timestamp_params(sql: str, params: tuple) -> tuple:
         return params
     stripped = sql.lstrip()
     table, cols = None, None
-    m = re.match(r"INSERT\s+(?:OR\s+REPLACE\s+)?INTO\s+(\w+)\s*\(([^)]*)\)", stripped, re.IGNORECASE)
+    m = re.match(
+        r"INSERT\s+(?:OR\s+REPLACE\s+)?INTO\s+(\w+)\s*\(([^)]*)\)",
+        stripped,
+        re.IGNORECASE,
+    )
     if m:
         table = m.group(1).lower()
         cols = [c.strip().strip('"') for c in m.group(2).split(",")]
     else:
-        m = re.match(r"UPDATE\s+(\w+)\s+SET\s+(.*?)(?:\s+WHERE|\s*$)", stripped, re.IGNORECASE | re.DOTALL)
+        m = re.match(
+            r"UPDATE\s+(\w+)\s+SET\s+(.*?)(?:\s+WHERE|\s*$)",
+            stripped,
+            re.IGNORECASE | re.DOTALL,
+        )
         if m:
             table = m.group(1).lower()
             cols = [a.split("=", 1)[0].strip().strip('"') for a in m.group(2).split(",")]

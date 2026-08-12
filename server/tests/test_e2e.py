@@ -363,3 +363,127 @@ class TestGeofenceBasic:
         # Delete
         resp = client.delete(f"/api/dashboard/geofence/{gf_id}", headers=dash_headers)
         assert resp.status_code == 200
+
+
+class TestGeofenceExitFlow:
+    """End-to-end: the v1.5 persisted last_inside state makes a safe-zone EXIT
+    fire BOTH the geofence_exit alert (real alert engine, real DB) and the
+    per-zone auto-action command queue — exactly once."""
+
+    DEVICE_ID = "geo-exit-dev"
+    CENTER = (6.5244, 3.3792)
+    OUTSIDE = (9.0579, 7.4951)  # ~600 km away — far beyond any test radius
+
+    def setup_method(self):
+        assert ensure_device(self.DEVICE_ID)
+        self._seed_current_db_device()
+
+    def _seed_current_db_device(self):
+        """Seed the device row into the CURRENT database module's DB.
+
+        send_all resolves `from database import get_db_context` at call time,
+        so its alert-row INSERT (FK -> devices.id) lands in whichever database
+        module is live in sys.modules — in the full suite that can be a
+        DIFFERENT instance than the one the app's TestClient binds to (the
+        documented test_e2e eviction hazard). Without this seed the INSERT
+        fails its foreign key and the alert row never appears. Mirrors
+        test_alert_settings.seed_device_row.
+        """
+        import database as db_module
+
+        with db_module.get_db_context() as conn:
+            conn.execute(
+                "INSERT OR REPLACE INTO devices "
+                "(id, device_fingerprint, model, app_version, registered, last_seen) "
+                "VALUES (?, ?, ?, ?, datetime('now'), datetime('now'))",
+                (self.DEVICE_ID, "fingerprint-geo-exit", "Geo Exit Phone", "1.5.0"),
+            )
+            conn.commit()
+
+    def _post_location(self, lat, lng):
+        resp = client.post(
+            "/api/device/location",
+            json={
+                "device_id": self.DEVICE_ID,
+                "lat": lat,
+                "lng": lng,
+                "accuracy_horizontal": 7.5,
+                "provider": "gps",
+            },
+            headers=get_device_headers(self.DEVICE_ID),
+        )
+        assert resp.status_code == 200, resp.text
+
+    def _alert_count(self, device_id: str) -> int:
+        # send_all writes alert rows via the CURRENT module (documented
+        # full-suite eviction hazard — see test_api.TestGeofenceAutoActions
+        # _alerts helper), so query the call-time binding, not the module-
+        # level db_module captured at import.
+        import database as _current_db
+
+        with _current_db.get_db_context() as conn:
+            row = conn.execute(
+                "SELECT COUNT(*) AS n FROM alerts WHERE device_id=? AND alert_type='geofence_exit'",
+                (device_id,),
+            ).fetchone()
+        return row["n"]
+
+    def test_exit_queues_capture_auto_action_and_alerts(self):
+        dash = get_dash_headers()
+        resp = client.post(
+            "/api/dashboard/geofence",
+            json={
+                "device_id": self.DEVICE_ID,
+                "name": "Home",
+                "center_lat": self.CENTER[0],
+                "center_lng": self.CENTER[1],
+                "radius_meters": 500,
+                "is_safe_zone": True,
+                "auto_action": "capture",
+            },
+            headers=dash,
+        )
+        assert resp.status_code == 200
+
+        # Entry first, then exit.
+        self._post_location(*self.CENTER)
+        self._post_location(*self.OUTSIDE)
+
+        # Transition state persisted: the device is now OUTSIDE the zone.
+        zones = client.get(f"/api/dashboard/geofences/{self.DEVICE_ID}", headers=dash).json()["geofences"]
+        assert zones, "geofence must exist"
+        assert zones[0]["last_inside"] == 0, zones[0]
+
+        # The capture auto-action queued front-photo + audio evidence commands.
+        cmds = client.get(f"/api/dashboard/commands/{self.DEVICE_ID}", headers=dash).json()["commands"]
+        pending = [c["command"] for c in cmds if c["status"] == "pending"]
+        assert "capture_photo_front" in pending, pending
+        assert "capture_audio" in pending, pending
+
+        # The geofence_exit alert was written through the real alert engine.
+        assert self._alert_count(self.DEVICE_ID) >= 1
+
+    def test_restricted_zone_exit_stays_silent(self):
+        # v1.5 semantics: exits from RESTRICTED zones don't alert, and with no
+        # auto_action nothing is queued.
+        dash = get_dash_headers()
+        before = self._alert_count(self.DEVICE_ID)
+
+        resp = client.post(
+            "/api/dashboard/geofence",
+            json={
+                "device_id": self.DEVICE_ID,
+                "name": "Restricted",
+                "center_lat": 6.1,
+                "center_lng": 3.1,
+                "radius_meters": 300,
+                "is_safe_zone": False,
+            },
+            headers=dash,
+        )
+        assert resp.status_code == 200
+
+        self._post_location(6.1, 3.1)
+        self._post_location(8.0, 6.0)
+
+        assert self._alert_count(self.DEVICE_ID) == before, "restricted exit must not alert"

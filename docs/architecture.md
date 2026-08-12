@@ -469,7 +469,7 @@ The Magneetar ecosystem uses carefully selected technologies that prioritize sec
 |-----------|--------------------|-----------|
 | Mobile Application | Kotlin | Native Android development with modern language features |
 | Backend Services | FastAPI (Python) | High-performance APIs, strong typing, and rapid development |
-| Database | PostgreSQL (planned) | Reliable relational database with strong consistency |
+| Database | **SQLite (primary)** · PostgreSQL (experimental) | SQLite (WAL) is the production data plane; the Postgres adapter is frozen/experimental pending a real scale requirement (see `docs/postgres-migration.md` DECISION) |
 | Dashboard | React + TypeScript | Maintainable and scalable web interface |
 | Containerization | Docker | Consistent development and deployment environments |
 | Version Control | Git & GitHub | Source control and collaboration |

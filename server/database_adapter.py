@@ -2,6 +2,10 @@
 Magneetar Unified Database Adapter
 Provides a consistent interface across SQLite and PostgreSQL backends.
 Enables seamless migration from SQLite to PostgreSQL for scaling.
+
+STATUS (2026-08-12): **EXPERIMENTAL — NOT THE PRODUCTION DATA PLANE.**
+Production runs SQLite (server/database.py). See docs/postgres-migration.md
+(DECISION: migration frozen pending a real multi-tenant / HA requirement).
 """
 
 import logging
@@ -188,9 +192,16 @@ class SchemaMigrator:
         """Record a completed migration."""
         try:
             if db_adapter.is_postgres:
-                conn.execute("INSERT INTO schema_version (version, description) VALUES ($1, $2)", version, description)
+                conn.execute(
+                    "INSERT INTO schema_version (version, description) VALUES ($1, $2)",
+                    version,
+                    description,
+                )
             else:
-                conn.execute("INSERT INTO schema_version (version, description) VALUES (?, ?)", (version, description))
+                conn.execute(
+                    "INSERT INTO schema_version (version, description) VALUES (?, ?)",
+                    (version, description),
+                )
         except Exception as e:
             logger.warning(f"Could not record migration: {e}")
 

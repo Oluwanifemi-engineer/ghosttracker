@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from 'react';
 import { useStore } from '@/store/useStore';
 import { cn, relativeTime, formatCoordinate, deviceDisplayName, stepUpPasswordHint } from '@/lib/utils';
-import { BellRing, MapPin, LocateFixed, Navigation, ExternalLink, Save, Check, Trash2, X, Pencil, MessageSquareText } from 'lucide-react';
+import { BellRing, MapPin, LocateFixed, Navigation, ExternalLink, Download, Save, Check, Trash2, X, Pencil, MessageSquareText } from 'lucide-react';
 import { CoordDisplay } from '@/components/ui/CoordDisplay';
 import { getAPI } from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
@@ -65,6 +65,26 @@ export function DevicePanel() {
   const [nameDraft, setNameDraft] = useState('');
   const [nameSaving, setNameSaving] = useState(false);
   const [nameError, setNameError] = useState('');
+  // Location-history CSV export (v1.5 — Prey-parity portable history)
+  const [exporting, setExporting] = useState(false);
+
+  const exportCsv = async () => {
+    if (!device || exporting) return;
+    setExporting(true);
+    try {
+      const blob = await getAPI().exportLocationsCSV(device.id);
+      // (up to 10k rows) — a 0-byte file means no history recorded yet
+      if (blob.size === 0) {
+        toast('No location history to export yet', 'error');
+      } else {
+        toast('Location history exported', 'success');
+      }
+    } catch (e: any) {
+      toast(e?.message || 'Failed to export location history', 'error');
+    } finally {
+      setExporting(false);
+    }
+  };
 
   // Sync form fields when the selected device changes
   const deviceKey = device?.id;
@@ -379,6 +399,17 @@ export function DevicePanel() {
           Open in Google Maps
         </a>
       )}
+
+      {/* Export location history (CSV) */}
+      <button
+        onClick={exportCsv}
+        disabled={exporting}
+        title="Download the full location history as CSV (law-enforcement handover, insurance claims, local analysis)"
+        className="flex items-center justify-center gap-2 py-3 rounded-xl border border-mag-border/40 text-mag-text-dim hover:text-mag-text hover:border-mag-accent/50 hover:bg-mag-accent/[0.04] transition-all text-xs font-bold disabled:opacity-50"
+      >
+        <Download size={14} />
+        {exporting ? 'Exporting…' : 'Export Location History (CSV)'}
+      </button>
 
       {/* Alert Settings (per-device recipients) */}
       <div className="bg-mag-surface/30 border border-mag-border/30 rounded-xl p-4 space-y-3">

@@ -243,6 +243,7 @@ export function getCommandLabel(command: string): string {
     lock: 'LOCK',
     wipe: 'WIPE',
     alarm: 'SIREN',
+    lost_mode: 'LOST MODE',
   };
   return labels[command] || command.toUpperCase();
 }

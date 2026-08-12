@@ -8,16 +8,18 @@ import { MediaGallery } from '@/components/media/MediaGallery';
 import { DevicePanel } from '@/components/devices/DevicePanel';
 import { SentinelPanel } from '@/components/panels/SentinelPanel';
 import { EvidencePanel } from '@/components/panels/EvidencePanel';
+import { GeofencePanel } from '@/components/panels/GeofencePanel';
 import { ErrorPanel } from '@/components/panels/ErrorPanel';
 import { GuardianPanel } from '@/components/panels/GuardianPanel';
 import { Tabs } from '@/components/ui/Tabs';
 import { TabId } from '@/types';
-import { Shield, Terminal, MapPin, Camera, ClipboardList, Bug, ShieldCheck } from 'lucide-react';
+import { Shield, Terminal, MapPin, Fence, Camera, ClipboardList, Bug, ShieldCheck } from 'lucide-react';
 
 const PANEL_TABS = [
   { id: 'sentinel' as TabId, label: 'Sentinel', icon: Shield },
   { id: 'commands' as TabId, label: 'Commands', icon: Terminal },
   { id: 'location' as TabId, label: 'Location', icon: MapPin },
+  { id: 'zones' as TabId, label: 'Zones', icon: Fence },
   { id: 'media' as TabId, label: 'Media', icon: Camera },
   { id: 'evidence' as TabId, label: 'Evidence', icon: ClipboardList },
   { id: 'guardian' as TabId, label: 'Guardian', icon: ShieldCheck },
@@ -68,6 +70,7 @@ export default function DashboardPage() {
               {activeTab === 'sentinel' && <SentinelPanel />}
               {activeTab === 'commands' && <CommandPanel />}
               {activeTab === 'location' && <DevicePanel />}
+              {activeTab === 'zones' && <GeofencePanel />}
               {activeTab === 'media' && <MediaGallery />}
               {activeTab === 'evidence' && <EvidencePanel />}
               {activeTab === 'guardian' && <GuardianPanel />}

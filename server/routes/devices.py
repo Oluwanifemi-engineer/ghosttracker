@@ -8,7 +8,7 @@ import hashlib
 import json
 import re
 import sqlite3
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from functools import partial
 from typing import Optional
 
@@ -475,6 +475,32 @@ def _persist_location(
     )
 
 
+def _queue_auto_action(db, device_id: str, command: str):
+    """Queue one geofence auto-action command (priority 1, poll delivery),
+    deduplicated against an identical already-pending row.
+
+    The exit transition fires exactly once (last_inside is persisted below),
+    but the device may keep pinging from outside the zone — without this
+    guard each ping would queue another capture/siren until the first one
+    expired.
+    """
+    pending = db.execute(
+        "SELECT 1 FROM commands WHERE device_id=? AND command=? AND status='pending' LIMIT 1",
+        (device_id, command),
+    ).fetchone()
+    if pending:
+        return
+    now = datetime.now(timezone.utc).isoformat()
+    # Mirror issue_command's expiry policy: the alarm is sensitive (5 min),
+    # the evidence captures get the standard 30-minute window.
+    expires = (datetime.now(timezone.utc) + timedelta(minutes=5 if command == "alarm" else 30)).isoformat()
+    db.execute(
+        "INSERT INTO commands (device_id, command, params, status, priority, issued_at, expires_at, delivery_channel) "
+        "VALUES (?, ?, '', 'pending', 1, ?, ?, 'poll')",
+        (device_id, command, now, expires),
+    )
+
+
 def _sim_changed_alert_recent(db, device_id: str) -> bool:
     """True when a sim_changed alert was already logged for this device in the
     last 10 minutes. Shared by the location and heartbeat paths so one incident
@@ -618,17 +644,56 @@ async def post_location(
 
     if geofences:
         triggered = sentinel.check_geofences(report, [dict(g) for g in geofences])
+        # Collect the exits that need an alert so the alert fires AFTER the
+        # transaction below is committed — send_all() opens its OWN connection
+        # and writes alert rows; calling it while this request connection still
+        # holds uncommitted writes makes it block on our lock and raise
+        # "database is locked" after busy_timeout (same hazard the heartbeat
+        # path documents — see post_heartbeat's "Commit BEFORE any nested
+        # writes" note).
+        exits_to_alert = []
         for event in triggered:
-            if event["event"] == "exited" and not event["is_safe_zone"]:
-                await alert_engine.send_all(
-                    device_id,
-                    "geofence_exit",
-                    {
-                        "zone_name": event["name"],
-                        "location": f"{report.lat},{report.lng}",
-                        "time": now,
-                    },
-                )
+            # Persist the per-zone inside/outside state so the SAME transition
+            # is never re-reported on later pings. This write is what makes
+            # check_geofences' was_inside truthful: without it every ping saw
+            # was_inside=False and 'exited' events (and the exit alert) could
+            # never fire — dead code in production (v1.5 fix).
+            db.execute(
+                "UPDATE geofences SET last_inside=? WHERE id=?",
+                (1 if event["event"] == "entered" else 0, event["geofence_id"]),
+            )
+            if event["event"] != "exited":
+                continue
+            # Geofence exit alert — fires for SAFE-ZONE exits (the product
+            # meaning: "your device left the safe zone"). The template says
+            # 'safe zone' but the old condition checked `not is_safe_zone`, so
+            # exiting HOME never alerted while exiting a restricted zone did —
+            # inverted vs. the product intent (v1.5 fix).
+            if event["is_safe_zone"]:
+                exits_to_alert.append(event)
+            # Per-zone auto-actions (owner-set policy): react on the device
+            # itself, regardless of safe/restricted classification (the owner
+            # chose this reaction for THIS zone). 'capture' = front-camera
+            # photo + ambient audio (the theft-mode evidence pair); 'siren' =
+            # max-volume alarm. Deduped against already-pending identical
+            # commands so one exit never piles up repeats.
+            action = event.get("auto_action")
+            if action == "capture":
+                _queue_auto_action(db, device_id, "capture_photo_front")
+                _queue_auto_action(db, device_id, "capture_audio")
+            elif action == "siren":
+                _queue_auto_action(db, device_id, "alarm")
+        db.commit()
+        for event in exits_to_alert:
+            await alert_engine.send_all(
+                device_id,
+                "geofence_exit",
+                {
+                    "zone_name": event["name"],
+                    "location": f"{report.lat},{report.lng}",
+                    "time": now,
+                },
+            )
 
     # Accuracy is a core part of a tracking UI ("±12m" vs "±500m" changes
     # what the operator trusts). The dashboard's live map/panel reads
@@ -693,7 +758,17 @@ async def post_location_simple(
             "device_timestamp, server_timestamp, location_encrypted, location_data) "
             "VALUES (?,?,?,?,?,?,?,?,?)"
         ),
-        (device_id, lat, lng, report.accuracy, report.provider, ts, now, loc_enc, loc_data),
+        (
+            device_id,
+            lat,
+            lng,
+            report.accuracy,
+            report.provider,
+            ts,
+            now,
+            loc_enc,
+            loc_data,
+        ),
     )
     db.execute("UPDATE devices SET last_seen=? WHERE id=?", (now, device_id))
     db.commit()

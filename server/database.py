@@ -246,6 +246,18 @@ def init_db(db_path: str = None):
     except sqlite3.OperationalError:
         pass  # Column already exists
 
+    # Geofence auto-actions + persisted transition state (v1.5). auto_action
+    # is NULL (no reaction beyond the alert) until an owner sets a policy;
+    # last_inside is NULL until the device is first observed inside the zone.
+    try:
+        c.execute("ALTER TABLE geofences ADD COLUMN auto_action TEXT")
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+    try:
+        c.execute("ALTER TABLE geofences ADD COLUMN last_inside BOOLEAN")
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+
     # Location at-rest encryption (v1.5): ciphertext column for encrypted
     # telemetry rows (see the locations CREATE TABLE comment). Existing rows
     # stay plaintext (flag 0) — dual-mode readers handle both.
@@ -454,6 +466,19 @@ def init_db(db_path: str = None):
             is_safe_zone BOOLEAN DEFAULT TRUE,
             active BOOLEAN DEFAULT TRUE,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            -- Per-zone automated action fired on an EXIT transition (once, at
+            -- the entry→exit boundary): 'capture' queues a front-camera photo
+            -- + audio capture, 'siren' queues the max-volume alarm, 'alert'
+            -- fires the geofence_exit alert only. NULL = alert only.
+            -- (v1.5 auto-actions — P0 gap-closer #1 from COMPETITOR_AUDIT.md)
+            auto_action TEXT,
+            -- Persisted inside/outside state so a transition is reported
+            -- EXACTLY ONCE. NULL = unknown (device never observed inside);
+            -- an exit can only fire after an observed entry. The old code
+            -- never persisted this, so check_geofences always saw
+            -- was_inside=False and 'exited' events (and the exit alert) could
+            -- never fire — dead code in production. (v1.5 fix)
+            last_inside BOOLEAN,
             FOREIGN KEY (device_id) REFERENCES devices(id)
         );
 
@@ -945,6 +970,22 @@ def ensure_initialized() -> bool:
         "failure_reason",
         "delivery_channel",
     }
+    # Geofence columns — a DB that predates auto_action/last_inside must not
+    # take the no-op fast path or the ALTER migrations never run (same
+    # no-such-column 500 class documented above for devices/commands).
+    expected_geofences_columns = {
+        "id",
+        "device_id",
+        "name",
+        "center_lat",
+        "center_lng",
+        "radius_meters",
+        "is_safe_zone",
+        "active",
+        "created_at",
+        "auto_action",
+        "last_inside",
+    }
     # Media refactor columns — a DB that predates them stores base64 blobs
     # only; new rows carry file_path/file_size (see media_store.py).
     expected_media_columns = {
@@ -1024,6 +1065,7 @@ def ensure_initialized() -> bool:
             media_columns = {row["name"] for row in conn.execute("PRAGMA table_info(media)").fetchall()}
             users_columns = {row["name"] for row in conn.execute("PRAGMA table_info(users)").fetchall()}
             locations_columns = {row["name"] for row in conn.execute("PRAGMA table_info(locations)").fetchall()}
+            geofences_columns = {row["name"] for row in conn.execute("PRAGMA table_info(geofences)").fetchall()}
         if (
             required_tables.issubset(present_tables)
             and expected_devices_columns.issubset(devices_columns)
@@ -1031,6 +1073,7 @@ def ensure_initialized() -> bool:
             and expected_media_columns.issubset(media_columns)
             and expected_users_columns.issubset(users_columns)
             and expected_locations_columns.issubset(locations_columns)
+            and expected_geofences_columns.issubset(geofences_columns)
         ):
             return False
         init_db()

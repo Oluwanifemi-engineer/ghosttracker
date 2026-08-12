@@ -3,6 +3,12 @@ Magneetar PostgreSQL Database Adapter
 Production-grade PostgreSQL backend with connection pooling.
 Falls back to SQLite when PostgreSQL is not configured.
 
+STATUS (2026-08-12): **EXPERIMENTAL — NOT THE PRODUCTION DATA PLANE.**
+Production runs SQLite (WAL) on a persisted volume; this adapter is kept for
+future scale-out (ADR-0005 Phase 2a) with CI-enforced schema parity, but the
+SQL portability pass (Phase 2b) is NOT scheduled and MT_DATABASE_URL must
+not be enabled in production (see docs/postgres-migration.md DECISION).
+
 STATUS (2026-08-11): schema parity with the SQLite data plane is enforced by
 tests/test_postgres_adapter_parity.py — every SQLite table and column (from
 database.py CREATE/ALTER DDL) must be covered here or CI fails. The adapter is
@@ -216,7 +222,12 @@ class PostgresDatabase:
                         radius_meters DOUBLE PRECISION NOT NULL,
                         is_safe_zone BOOLEAN DEFAULT TRUE,
                         active BOOLEAN DEFAULT TRUE,
-                        created_at TIMESTAMPTZ DEFAULT NOW()
+                        created_at TIMESTAMPTZ DEFAULT NOW(),
+                        -- v1.5 auto-actions + persisted transition state
+                        -- (parity with the SQLite schema — enforced by
+                        -- tests/test_postgres_adapter_parity.py).
+                        auto_action TEXT,
+                        last_inside BOOLEAN
                     );
 
                     CREATE TABLE IF NOT EXISTS guardian_profiles (

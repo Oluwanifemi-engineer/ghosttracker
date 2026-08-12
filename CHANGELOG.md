@@ -9,6 +9,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased] — 2026-08-12
 
+### Added (v1.5 — expert review round)
+
+- **Geofence auto-actions (P0 gap-closer #1)**: per-zone `auto_action`
+  policy (`capture` = queue front-photo + audio evidence commands, `siren` =
+  queue the max-volume alarm) fired exactly once on an EXIT transition, plus
+  the alert. `POST /api/dashboard/geofence` accepts `auto_action`
+  (validated), `GET .../geofences` returns it. Includes schema migration +
+  Postgres-parity column.
+- **Geofence Zones dashboard UI (P0 gap-closer #1, UI)**: new "Zones" tab
+  (`GeofencePanel`) to manage per-device zones — create (name, center
+  prefilled from the latest fix, radius, safe/restricted toggle, auto-action
+  policy picker), list with policy + safe-zone badges, and two-click-confirm
+  delete. `createGeofence` now types/sends `auto_action`; `getGeofences` is
+  fully typed.
+- **Geofence exit detection FIXED (previously dead code)**: the persisted
+  `last_inside` state now makes `check_geofences` report an exit transition
+  exactly once. The old code never wrote the state, so `was_inside` was
+  always False and `exited` events — and the exit alert — could never fire.
+  The alert condition was also inverted (`not is_safe_zone` vs the template's
+  'safe zone'): safe-zone exits now alert as the template and product
+  semantics intend.
+- **Location history CSV export (P0 gap-closer #5)**: `GET
+  /api/dashboard/locations/{device_id}/export/csv` — ownership-gated,
+  decrypted coordinates (at-rest-encryption safe), UTF-8 BOM for Excel,
+  capped at 10k rows; dashboard "Export Location History (CSV)" button.
+- **Lost Mode (P0 gap-closer #2)**: new `lost_mode` command end-to-end —
+  server (validated, priority-1, not step-up gated), dashboard LOST MODE
+  button, Android `LostModeActivity` (full-screen `showWhenLocked` recovery
+  message + one-tap call button) driven by `LostModeManager` (persistent
+  state, high-priority notification as the reliable background path per
+  Android 10+ activity-start rules, re-posts on service restart).
+- **Postgres migration formally FROZEN**: `docs/postgres-migration.md`
+  carries an explicit DECISION (SQLite is the production architecture; the
+  adapter is experimental, Phase 2b not scheduled); ADR-0005 status, the
+  `kubernetes/` README, and the adapter module docstrings all say so.
+
+### Fixed (v1.5)
+
+- **Command queue/alert lock contention**: the geofence block now commits
+  state + queued auto-action commands BEFORE `alert_engine.send_all()`
+  (whose nested connection writes alert rows), mirroring the heartbeat
+  path's documented "commit before nested writes" rule — previously the
+  nested writes blocked on the request transaction and "database is
+  locked"-failed silently after busy_timeout.
+
+### Changed (v1.5)
+
+- **Repo hygiene**: stale root build artifacts (`magneetar.db`, v1.0 release
+  APKs) moved to `backups/dev-artifacts-2026-08-12/`; all three remain
+  gitignored.
+
 ### Fixed
 
 - **Admin-scope writes to a missing device return 404, not 500**: the admin

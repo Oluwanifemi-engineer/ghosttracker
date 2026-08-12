@@ -4,7 +4,7 @@
 > Military-grade anti-theft tracking and live location circles for Android — track, protect, and recover your devices while keeping family, coworkers, and teams in sync.
 
 ![Status](https://img.shields.io/badge/status-production-green)
-![Tests](https://img.shields.io/badge/tests-395%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-467%20backend%20%2B%20179%20dashboard-brightgreen)
 ![Python](https://img.shields.io/badge/python-3.12-blue)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.115-green)
 ![Kotlin](https://img.shields.io/badge/kotlin-Android-orange)
@@ -39,7 +39,9 @@
 | **🧠 Sentinel AI** | ✅ Live | Smart theft detection with false-positive prevention |
 | **📍 Real-time Tracking** | ✅ Live | GPS + network location with 3-second intervals |
 | **📸 Evidence Capture** | ✅ Live | Remote photo/audio capture with SHA-256 chain of custody |
-| **📡 Geofencing** | ✅ Live | Safe zones with exit alerts |
+| **📡 Geofencing** | ✅ Live | Safe zones with exit alerts **+ per-zone auto-actions** (auto photo/audio capture or siren on exit) |
+| **🛰️ Location Export** | ✅ Live | Full history as CSV (law-enforcement handover, Excel-friendly) |
+| **🔒 Lost Mode** | ✅ Live | Remote full-screen recovery lock with one-tap call button |
 | **🔔 Push Notifications** | ✅ Live | FCM push alerts on theft, SIM change, geofence exit |
 | **📊 Dashboard** | ✅ Live | Next.js tactical command center |
 | **🔌 Offline Queue** | ✅ Live | Queues pings when offline, uploads when reconnected |
@@ -116,7 +118,7 @@ make validate      # full CI-equivalent gate: lint + typecheck + test + pre-comm
 make test-all      # everything — same as make test (alias kept for compatibility)
 ```
 
-> **395 backend tests + 173 dashboard tests** should pass. `make validate` runs
+> **467 backend tests + 179 dashboard tests** should pass. `make validate` runs
 > every gate that CI enforces, so a green local `make validate` predicts a green
 > GitHub Actions run.
 
@@ -319,7 +321,7 @@ magneetar/
 │   ├── sentinel.py          # Theft detection AI
 │   ├── alerts.py            # Push/SMS/Email alerts
 │   ├── models.py            # Pydantic models
-│   └── tests/               # 131 unit + E2E tests
+│   └── tests/               # 467 unit + E2E tests
 ├── dashboard/               # Next.js web dashboard
 │   ├── src/app/             # Pages & layouts
 │   ├── src/components/      # UI components

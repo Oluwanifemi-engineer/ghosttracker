@@ -68,6 +68,15 @@ init_db(test_db_path)
 
 from auth import create_dashboard_tokens, create_device_tokens  # noqa: E402
 
+# Pre-eviction binding for the at-rest-encryption helper (same convention as
+# evidence_builder above): test_e2e re-imports config with ITS OWN
+# MT_ENCRYPTION_KEY, so encrypting with the live (post-eviction) module and
+# decrypting through the app's (pre-eviction) module fails with
+# "Location decrypt failed ... (MT_ENCRYPTION_KEY rotated?)". The CSV-export
+# encrypted-row test must mint ciphertext with the SAME instance the app's
+# read paths use.
+from encryption import encrypt_location_for_store as _encrypt_location_for_store  # noqa: E402
+
 # Bind evidence_builder at MODULE level (pre-eviction). test_e2e evicts
 # evidence/database/routes from sys.modules mid-collection; a function-local
 # `from evidence import evidence_builder` at test-run time would resolve the
@@ -457,7 +466,12 @@ class TestEvidencePdf:
         for lat in (9.08, 9.09):
             client.post(
                 "/api/device/location",
-                json={"device_id": TEST_DEVICE_ID, "lat": lat, "lng": 8.67, "accuracy": 10.0},
+                json={
+                    "device_id": TEST_DEVICE_ID,
+                    "lat": lat,
+                    "lng": 8.67,
+                    "accuracy": 10.0,
+                },
                 headers=dev_headers,
             )
 
@@ -647,7 +661,13 @@ class TestCommands:
         'failed', so the dashboard could queue commands that could NEVER work.
         The valid set must match what TrackingService.handleCommand implements."""
         headers = get_dashboard_headers()
-        for dead in ("phantom_on", "phantom_off", "fake_shutdown", "location_burst_stop", "capture_photo_rear"):
+        for dead in (
+            "phantom_on",
+            "phantom_off",
+            "fake_shutdown",
+            "location_burst_stop",
+            "capture_photo_rear",
+        ):
             resp = client.post(
                 "/api/dashboard/command",
                 json={"device_id": TEST_DEVICE_ID, "command": dead},
@@ -662,7 +682,11 @@ class TestCommands:
         headers = get_dashboard_headers()
         resp = client.post(
             "/api/dashboard/command",
-            json={"device_id": TEST_DEVICE_ID, "command": "wipe", "params": "CONFIRMED_WIPE"},
+            json={
+                "device_id": TEST_DEVICE_ID,
+                "command": "wipe",
+                "params": "CONFIRMED_WIPE",
+            },
             headers=headers,
         )
         assert resp.status_code == 400  # password required
@@ -705,7 +729,13 @@ class TestCommands:
         """wipe/lock/alarm/capture must jump the queue (device poll orders by
         priority ASC) so they execute before pings in a burst."""
         dash = get_dashboard_headers()
-        for cmd_name in ("lock", "alarm", "capture_photo", "capture_audio", "capture_photo_front"):
+        for cmd_name in (
+            "lock",
+            "alarm",
+            "capture_photo",
+            "capture_audio",
+            "capture_photo_front",
+        ):
             resp = client.post(
                 "/api/dashboard/command",
                 json={"device_id": TEST_DEVICE_ID, "command": cmd_name},
@@ -713,7 +743,10 @@ class TestCommands:
             )
             assert resp.status_code == 200, resp.text
             with database.get_db_context() as conn:
-                row = conn.execute("SELECT priority FROM commands WHERE id=?", (resp.json()["command_id"],)).fetchone()
+                row = conn.execute(
+                    "SELECT priority FROM commands WHERE id=?",
+                    (resp.json()["command_id"],),
+                ).fetchone()
             assert row["priority"] == 1, f"{cmd_name} should be priority 1, got {row['priority']}"
 
         # Non-urgent commands keep the default priority.
@@ -757,7 +790,10 @@ class TestCommands:
         with database.get_db_context() as conn:
             conn.execute(
                 "UPDATE devices SET last_seen=? WHERE id=?",
-                ((datetime.now(timezone.utc) - timedelta(hours=2)).isoformat(), device_id),
+                (
+                    (datetime.now(timezone.utc) - timedelta(hours=2)).isoformat(),
+                    device_id,
+                ),
             )
             conn.commit()
 
@@ -806,7 +842,11 @@ class TestCommands:
         device_id = "sms-relay-online"
         client.post(
             "/api/device/register",
-            json={"device_id": device_id, "fingerprint": "fp-sms-online", "model": "SMS"},
+            json={
+                "device_id": device_id,
+                "fingerprint": "fp-sms-online",
+                "model": "SMS",
+            },
             headers=get_auth_headers(),
         )
         client.patch(
@@ -851,7 +891,10 @@ class TestCommands:
         with database.get_db_context() as conn:
             conn.execute(
                 "UPDATE devices SET last_seen=? WHERE id=?",
-                ((datetime.now(timezone.utc) - timedelta(hours=2)).isoformat(), device_id),
+                (
+                    (datetime.now(timezone.utc) - timedelta(hours=2)).isoformat(),
+                    device_id,
+                ),
             )
             conn.commit()
 
@@ -879,7 +922,12 @@ class TestCommands:
         device_id = "sms-relay-fail"
         client.post(
             "/api/device/register",
-            json={"device_id": device_id, "fingerprint": "fp-sms-fail", "model": "SMS", "device_key": "fail-key"},
+            json={
+                "device_id": device_id,
+                "fingerprint": "fp-sms-fail",
+                "model": "SMS",
+                "device_key": "fail-key",
+            },
             headers=get_auth_headers(),
         )
         client.patch(
@@ -892,7 +940,10 @@ class TestCommands:
         with database.get_db_context() as conn:
             conn.execute(
                 "UPDATE devices SET last_seen=? WHERE id=?",
-                ((datetime.now(timezone.utc) - timedelta(hours=2)).isoformat(), device_id),
+                (
+                    (datetime.now(timezone.utc) - timedelta(hours=2)).isoformat(),
+                    device_id,
+                ),
             )
             conn.commit()
 
@@ -941,7 +992,12 @@ class TestCommands:
         device_id = "sms-relay-ratelimit"
         client.post(
             "/api/device/register",
-            json={"device_id": device_id, "fingerprint": "fp-sms-rl", "model": "SMS", "device_key": "rl-key"},
+            json={
+                "device_id": device_id,
+                "fingerprint": "fp-sms-rl",
+                "model": "SMS",
+                "device_key": "rl-key",
+            },
             headers=get_auth_headers(),
         )
         client.patch(
@@ -954,7 +1010,10 @@ class TestCommands:
         with database.get_db_context() as conn:
             conn.execute(
                 "UPDATE devices SET last_seen=? WHERE id=?",
-                ((datetime.now(timezone.utc) - timedelta(hours=2)).isoformat(), device_id),
+                (
+                    (datetime.now(timezone.utc) - timedelta(hours=2)).isoformat(),
+                    device_id,
+                ),
             )
             conn.commit()
 
@@ -993,7 +1052,11 @@ class TestCommands:
         # Register WITHOUT a device_key → device_key_hash stays NULL.
         client.post(
             "/api/device/register",
-            json={"device_id": device_id, "fingerprint": "fp-sms-keyless", "model": "SMS"},
+            json={
+                "device_id": device_id,
+                "fingerprint": "fp-sms-keyless",
+                "model": "SMS",
+            },
             headers=get_auth_headers(),
         )
         client.patch(
@@ -1006,7 +1069,10 @@ class TestCommands:
         with database.get_db_context() as conn:
             conn.execute(
                 "UPDATE devices SET last_seen=? WHERE id=?",
-                ((datetime.now(timezone.utc) - timedelta(hours=2)).isoformat(), device_id),
+                (
+                    (datetime.now(timezone.utc) - timedelta(hours=2)).isoformat(),
+                    device_id,
+                ),
             )
             conn.commit()
 
@@ -1153,7 +1219,11 @@ class TestMediaStorageRefactor:
         png = b"\x89PNG\r\n\x1a\n" + b"\x00" * 200
         resp = client.post(
             "/api/device/media",
-            json={"device_id": TEST_DEVICE_ID, "type": "photo", "data_b64": base64.b64encode(png).decode()},
+            json={
+                "device_id": TEST_DEVICE_ID,
+                "type": "photo",
+                "data_b64": base64.b64encode(png).decode(),
+            },
             headers=get_device_headers(),
         )
         assert resp.status_code == 200, resp.text
@@ -1180,7 +1250,11 @@ class TestMediaStorageRefactor:
         png = b"\x89PNG\r\n\x1a\n" + b"\x00" * 300
         media_id = client.post(
             "/api/device/media",
-            json={"device_id": TEST_DEVICE_ID, "type": "photo", "data_b64": base64.b64encode(png).decode()},
+            json={
+                "device_id": TEST_DEVICE_ID,
+                "type": "photo",
+                "data_b64": base64.b64encode(png).decode(),
+            },
             headers=get_device_headers(),
         ).json()["media_id"]
 
@@ -1215,7 +1289,11 @@ class TestMediaStorageRefactor:
         huge = b"\x89PNG\r\n\x1a\n" + b"\x00" * (15 * 1024 * 1024)  # > 15MB photo cap
         resp = client.post(
             "/api/device/media",
-            json={"device_id": TEST_DEVICE_ID, "type": "photo", "data_b64": base64.b64encode(huge).decode()},
+            json={
+                "device_id": TEST_DEVICE_ID,
+                "type": "photo",
+                "data_b64": base64.b64encode(huge).decode(),
+            },
             headers=get_device_headers(),
         )
         assert resp.status_code == 413, resp.text
@@ -1242,7 +1320,11 @@ class TestMediaStorageRefactor:
         mp3 = b"ID3\x04\x00\x00\x00" + b"\x00" * 100
         resp = client.post(
             "/api/device/media",
-            json={"device_id": TEST_DEVICE_ID, "type": "audio", "data_b64": base64.b64encode(mp3).decode()},
+            json={
+                "device_id": TEST_DEVICE_ID,
+                "type": "audio",
+                "data_b64": base64.b64encode(mp3).decode(),
+            },
             headers=get_device_headers(),
         )
         assert resp.status_code == 200, resp.text
@@ -1267,14 +1349,20 @@ class TestUnownedDeviceCap:
             for i in range(2):
                 resp = client.post(
                     "/api/device/register",
-                    json={"device_id": f"unowned-cap-{i}", "fingerprint": f"fp-unowned-{i}"},
+                    json={
+                        "device_id": f"unowned-cap-{i}",
+                        "fingerprint": f"fp-unowned-{i}",
+                    },
                     headers=get_auth_headers(),
                 )
                 assert resp.status_code == 200, resp.text
             # One over the cap → 403, and NO row created.
             resp = client.post(
                 "/api/device/register",
-                json={"device_id": "unowned-cap-overflow", "fingerprint": "fp-unowned-overflow"},
+                json={
+                    "device_id": "unowned-cap-overflow",
+                    "fingerprint": "fp-unowned-overflow",
+                },
                 headers=get_auth_headers(),
             )
             assert resp.status_code == 403
@@ -1301,7 +1389,10 @@ class TestUnownedDeviceCap:
             resp = client.post(
                 "/api/device/register",
                 json={"device_id": "cap-owned-device", "fingerprint": "fp-cap-owned"},
-                headers={"Authorization": f"Bearer {user_token}", "x-api-key": TEST_API_KEY},
+                headers={
+                    "Authorization": f"Bearer {user_token}",
+                    "x-api-key": TEST_API_KEY,
+                },
             )
         finally:
             config.settings.MAX_UNOWNED_DEVICES = saved
@@ -1648,7 +1739,10 @@ class TestApkChecksum:
         # A genuinely signed URL is redirected once its window has lapsed.
         past = int(time.time()) - 3600
         assert_redirects(
-            client.get(f"/apk/download?expires={past}&sig={_sign_apk_ticket(past)}", follow_redirects=False)
+            client.get(
+                f"/apk/download?expires={past}&sig={_sign_apk_ticket(past)}",
+                follow_redirects=False,
+            )
         )
 
     def test_valid_ticket_still_downloads(self):
@@ -1797,7 +1891,10 @@ class TestDeleteArchivedDevices:
         assert resp.status_code == 200
         # Soft-archive it the same way archive_monitor does.
         with database.get_db_context() as conn:
-            conn.execute("UPDATE devices SET archived_at=datetime('now') WHERE id=?", (device_id,))
+            conn.execute(
+                "UPDATE devices SET archived_at=datetime('now') WHERE id=?",
+                (device_id,),
+            )
             conn.commit()
 
     def _exists(self, device_id: str) -> bool:
@@ -1934,7 +2031,10 @@ class TestSmsInboundWebhook:
         with database.get_db_context() as conn:
             conn.execute(
                 "UPDATE devices SET last_seen=? WHERE id=?",
-                ((datetime.now(timezone.utc) - timedelta(hours=2)).isoformat(), device_id),
+                (
+                    (datetime.now(timezone.utc) - timedelta(hours=2)).isoformat(),
+                    device_id,
+                ),
             )
             conn.commit()
 
@@ -2013,7 +2113,10 @@ class TestSmsInboundWebhook:
             cmd_id = self._issue_sms_command(device_id, "in-foreign-key")
 
             url = "http://testserver/api/sms/inbound"
-            form = {"From": "+15551234567", "Body": f"MT-ACK #{cmd_id} executed"}  # NOT the owner's number
+            form = {
+                "From": "+15551234567",
+                "Body": f"MT-ACK #{cmd_id} executed",
+            }  # NOT the owner's number
             sig = self._sign(url, form, "B" * 32)
             resp = client.post(
                 "/api/sms/inbound",
@@ -2207,7 +2310,12 @@ class TestCellLocate:
         def fake_client(*args, **kwargs):
             class FakeResp:
                 def json(self):
-                    return {"status": "ok", "lat": 9.0765, "lon": 7.3986, "accuracy": 95}
+                    return {
+                        "status": "ok",
+                        "lat": 9.0765,
+                        "lon": 7.3986,
+                        "accuracy": 95,
+                    }
 
             class FakeCtx:
                 def __enter__(self):
@@ -2466,6 +2574,360 @@ class TestGeofences:
         response = client.get(f"/api/dashboard/geofences/{TEST_DEVICE_ID}", headers=headers)
         assert response.status_code == 200
         assert "geofences" in response.json()
+
+
+# ─── Geofence auto-actions (v1.5 — COMPETITOR_AUDIT P0 gap-closer #1) ───────
+
+
+class TestGeofenceAutoActions:
+    """Owner-set per-zone reactions on an EXIT transition: 'capture' queues
+    front-photo + audio evidence commands, 'siren' queues the alarm. The
+    exit alert fires for SAFE-ZONE exits (the template says 'safe zone'; the
+    old condition was inverted, so exits never alerted and auto-actions had
+    no trigger — see the v1.5 fix notes in routes/devices.py)."""
+
+    CENTER = (9.0820, 8.6753)
+    OUTSIDE = (9.2000, 8.8000)
+
+    def _register(self, device_id: str) -> str:
+        resp = client.post(
+            "/api/device/register",
+            json={
+                "device_id": device_id,
+                "fingerprint": f"fp-geoact-{device_id}",
+                "model": "Geofence Action",
+                "device_key": f"key-{device_id}",
+            },
+            headers=get_auth_headers(),
+        )
+        assert resp.status_code == 200, resp.text
+        return resp.json()["token"]
+
+    def _create_fence(
+        self,
+        device_id: str,
+        auto_action: str = None,
+        is_safe_zone: bool = True,
+        name: str = "Home",
+    ) -> int:
+        body = {
+            "device_id": device_id,
+            "name": name,
+            "center_lat": self.CENTER[0],
+            "center_lng": self.CENTER[1],
+            "radius_meters": 100,
+            "is_safe_zone": is_safe_zone,
+        }
+        if auto_action is not None:
+            body["auto_action"] = auto_action
+        resp = client.post("/api/dashboard/geofence", json=body, headers=get_dashboard_headers())
+        assert resp.status_code == 200, resp.text
+        return resp.json()["geofence_id"]
+
+    def _post_location(self, device_id: str, token: str, lat: float, lng: float):
+        resp = client.post(
+            "/api/device/location",
+            json={
+                "device_id": device_id,
+                "lat": lat,
+                "lng": lng,
+                "accuracy_horizontal": 7.5,
+                "provider": "gps",
+            },
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert resp.status_code == 200, resp.text
+        return resp
+
+    def _pending(self, device_id: str, command: str = None) -> list:
+        # Commands are written by the app's routers, which hold PRE-eviction
+        # module references — the module-level `database` binding matches.
+        with database.get_db_context() as conn:
+            if command:
+                rows = conn.execute(
+                    "SELECT command, priority FROM commands WHERE device_id=? AND command=? AND status='pending'",
+                    (device_id, command),
+                ).fetchall()
+            else:
+                rows = conn.execute(
+                    "SELECT command, priority FROM commands WHERE device_id=? AND status='pending'",
+                    (device_id,),
+                ).fetchall()
+        return [dict(r) for r in rows]
+
+    def _seed_current_db_device(self, device_id: str) -> None:
+        """alert_engine.send_all resolves `from database import get_db_context`
+        at CALL time, so under full-suite runs it reads/writes the CURRENT
+        (post-eviction) database module. Seed the device row there too, or the
+        prefs lookup misses and the alert row's FK fails silently (same
+        convention as test_alert_settings.py's seed_device_row)."""
+        import database as _current_db
+
+        with _current_db.get_db_context() as conn:
+            conn.execute(
+                "INSERT OR IGNORE INTO devices (id, model, alert_phone, alert_email) "
+                "VALUES (?, 'Geofence Action', '+2348000000000', 'geofence-test@example.com')",
+                (device_id,),
+            )
+            conn.commit()
+
+    def _alerts(self, device_id: str, alert_type: str = "geofence_exit") -> list:
+        # send_all writes alert rows via the CURRENT module (see above).
+        import database as _current_db
+
+        with _current_db.get_db_context() as conn:
+            rows = conn.execute(
+                "SELECT alert_type, delivered FROM alerts WHERE device_id=? AND alert_type=?",
+                (device_id, alert_type),
+            ).fetchall()
+        return [dict(r) for r in rows]
+
+    def test_capture_auto_action_queues_evidence_commands_on_exit(self):
+        device_id = "geo-act-capture"
+        token = self._register(device_id)
+        self._seed_current_db_device(device_id)
+        self._create_fence(device_id, auto_action="capture")
+
+        # Enter the safe zone (first observation → entered, state persisted)
+        self._post_location(device_id, token, *self.CENTER)
+        assert self._pending(device_id) == [], "entry must not queue anything"
+
+        # Exit the safe zone → alert + capture_photo_front + capture_audio
+        self._post_location(device_id, token, *self.OUTSIDE)
+        pending = self._pending(device_id)
+        commands = {p["command"] for p in pending}
+        assert {"capture_photo_front", "capture_audio"} <= commands
+        assert all(p["priority"] == 1 for p in pending), "auto-actions must jump the queue"
+        # send_all logs one row per configured channel (email/whatsapp/sms/push)
+        # — one incident = len(channels) rows, all undelivered (no creds here).
+        alert_rows = self._alerts(device_id)
+        assert len(alert_rows) >= 1 and all(a["alert_type"] == "geofence_exit" for a in alert_rows)
+
+        # Still outside, pinging again → no duplicate commands, no repeat alert
+        self._post_location(device_id, token, *self.OUTSIDE)
+        assert len(self._pending(device_id)) == 2, "exit transition must fire exactly once"
+        assert len(self._alerts(device_id)) == len(alert_rows), "second ping must not re-alert"
+
+    def test_siren_auto_action_queues_alarm_on_exit(self):
+        device_id = "geo-act-siren"
+        token = self._register(device_id)
+        self._create_fence(device_id, auto_action="siren")
+
+        self._post_location(device_id, token, *self.CENTER)
+        self._post_location(device_id, token, *self.OUTSIDE)
+
+        pending = self._pending(device_id, command="alarm")
+        assert len(pending) == 1 and pending[0]["priority"] == 1
+
+    def test_alert_only_fence_fires_alert_without_commands(self):
+        device_id = "geo-act-alert"
+        token = self._register(device_id)
+        self._seed_current_db_device(device_id)
+        self._create_fence(device_id, auto_action=None)
+
+        self._post_location(device_id, token, *self.CENTER)
+        self._post_location(device_id, token, *self.OUTSIDE)
+
+        assert self._pending(device_id) == []
+        assert len(self._alerts(device_id)) >= 1
+
+    def test_non_safe_zone_exit_does_not_alert_but_acts(self):
+        # v1.5 semantic fix: the geofence_exit alert fires for SAFE-ZONE exits
+        # ("your device left home"); restricted-zone exits stay silent. The
+        # owner-set auto_action still fires — the policy is per-zone, not
+        # per-classification.
+        device_id = "geo-act-restricted"
+        token = self._register(device_id)
+        self._seed_current_db_device(device_id)
+        self._create_fence(device_id, auto_action="capture", is_safe_zone=False, name="Restricted")
+
+        self._post_location(device_id, token, *self.CENTER)
+        self._post_location(device_id, token, *self.OUTSIDE)
+
+        # Seeded into the current DB, so [] genuinely means no alert fired.
+        assert self._alerts(device_id) == []
+        commands = {p["command"] for p in self._pending(device_id)}
+        assert {"capture_photo_front", "capture_audio"} <= commands
+
+    def test_invalid_auto_action_rejected(self):
+        resp = client.post(
+            "/api/dashboard/geofence",
+            json={
+                "device_id": TEST_DEVICE_ID,
+                "name": "Bad",
+                "center_lat": 6.5,
+                "center_lng": 3.3,
+                "radius_meters": 100,
+                "auto_action": "nuke",
+            },
+            headers=get_dashboard_headers(),
+        )
+        assert resp.status_code == 422
+
+
+# ─── Location history CSV export (v1.5 — Prey-parity) ───────────────────────
+
+
+class TestLocationCsvExport:
+    def _register(self, device_id: str) -> str:
+        resp = client.post(
+            "/api/device/register",
+            json={
+                "device_id": device_id,
+                "fingerprint": f"fp-csv-{device_id}",
+                "model": "CSV Phone",
+            },
+            headers=get_auth_headers(),
+        )
+        assert resp.status_code == 200, resp.text
+        return resp.json()["token"]
+
+    def _post_location(self, device_id: str, token: str, lat: float, lng: float, battery: int = 88):
+        resp = client.post(
+            "/api/device/location",
+            json={
+                "device_id": device_id,
+                "lat": lat,
+                "lng": lng,
+                "accuracy_horizontal": 7.5,
+                "provider": "gps",
+                "speed": 1.2,
+                "battery_percent": battery,
+            },
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert resp.status_code == 200, resp.text
+
+    def test_export_returns_rows_oldest_first(self):
+        device_id = "csv-device-001"
+        token = self._register(device_id)
+        self._post_location(device_id, token, 6.5244, 3.3792)
+        self._post_location(device_id, token, 6.5245, 3.3793, battery=80)
+
+        resp = client.get(
+            f"/api/dashboard/locations/{device_id}/export/csv",
+            headers=get_dashboard_headers(),
+        )
+        assert resp.status_code == 200, resp.text
+        assert resp.headers["content-type"].startswith("text/csv")
+        assert "attachment" in resp.headers.get("content-disposition", "")
+
+        text = resp.text
+        # UTF-8 BOM so Excel decodes correctly (rides on the header row)
+        lines = text.splitlines()
+        assert lines[0].startswith("\ufeff")
+        assert lines[0].lstrip("\ufeff") == (
+            "server_timestamp,device_timestamp,lat,lng,accuracy_m,altitude_m,"
+            "speed_ms,bearing_deg,provider,battery_percent,threat_level,sentinel_score,was_queued"
+        )
+        assert len(lines) == 3  # header + 2 pings
+        # Oldest first + real coordinates survive (not the 0.0 placeholders)
+        assert lines[1].split(",")[2] == "6.5244"
+        assert lines[2].split(",")[2] == "6.5245"
+        assert lines[2].split(",")[9] == "80"
+
+    def test_export_encrypted_rows_decrypted(self):
+        """With at-rest encryption configured, the exported lat/lng must be the
+        real coordinates, never the 0.0 ciphertext placeholders."""
+        device_id = "csv-device-enc"
+        self._register(device_id)
+        # Module-level (pre-eviction) binding — see the note above the import.
+        lat, lng, enc, data = _encrypt_location_for_store(6.5244, 3.3792, device_id)
+        assert enc is True
+        with database.get_db_context() as conn:
+            conn.execute(
+                "INSERT INTO locations (device_id, lat, lng, accuracy_horizontal, provider, "
+                "device_timestamp, server_timestamp, location_encrypted, location_data) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)",
+                (
+                    device_id,
+                    lat,
+                    lng,
+                    5.0,
+                    "gps",
+                    "2026-08-01T10:00:00+00:00",
+                    "2026-08-01T10:00:00+00:00",
+                    data,
+                ),
+            )
+            conn.commit()
+
+        resp = client.get(
+            f"/api/dashboard/locations/{device_id}/export/csv",
+            headers=get_dashboard_headers(),
+        )
+        assert resp.status_code == 200, resp.text
+        lines = resp.text.splitlines()
+        assert len(lines) == 2
+        row_lat = float(lines[1].split(",")[2])
+        row_lng = float(lines[1].split(",")[3])
+        assert abs(row_lat - 6.5244) < 1e-6
+        assert abs(row_lng - 3.3792) < 1e-6
+
+    def test_export_missing_device_is_404(self):
+        resp = client.get(
+            "/api/dashboard/locations/ghost-csv-device/export/csv",
+            headers=get_dashboard_headers(),
+        )
+        assert resp.status_code == 404
+
+    def test_export_requires_dashboard_auth(self):
+        resp = client.get(f"/api/dashboard/locations/{TEST_DEVICE_ID}/export/csv")
+        assert resp.status_code == 401
+
+
+# ─── Lost Mode command (v1.5 — COMPETITOR_AUDIT P0 gap-closer #2) ───────────
+
+
+class TestLostModeCommand:
+    def _register(self, device_id: str) -> None:
+        resp = client.post(
+            "/api/device/register",
+            json={
+                "device_id": device_id,
+                "fingerprint": f"fp-lostmode-{device_id}",
+                "model": "Lost Mode Phone",
+            },
+            headers=get_auth_headers(),
+        )
+        assert resp.status_code == 200, resp.text
+
+    def test_lost_mode_accepted_and_prioritized(self):
+        device_id = "lostmode-device-001"
+        self._register(device_id)
+        resp = client.post(
+            "/api/dashboard/command",
+            json={
+                "device_id": device_id,
+                "command": "lost_mode",
+                "params": "This phone is lost — call +2348012345678",
+            },
+            headers=get_dashboard_headers(),
+        )
+        assert resp.status_code == 200, resp.text
+        command_id = resp.json()["command_id"]
+
+        with database.get_db_context() as conn:
+            row = conn.execute(
+                "SELECT command, params, priority, status, delivery_channel FROM commands WHERE id=?",
+                (command_id,),
+            ).fetchone()
+        assert row["command"] == "lost_mode"
+        assert row["params"] == "This phone is lost — call +2348012345678"
+        assert row["priority"] == 1, "lost mode must jump the command queue"
+        assert row["status"] == "pending"
+
+    def test_lost_mode_is_not_stepup_gated(self):
+        # Lost mode locks the screen to a recovery message — reversible on the
+        # device, so unlike wipe it must NOT require the step-up password.
+        device_id = "lostmode-device-002"
+        self._register(device_id)
+        resp = client.post(
+            "/api/dashboard/command",
+            json={"device_id": device_id, "command": "lost_mode"},
+            headers=get_dashboard_headers(),
+        )
+        assert resp.status_code == 200, resp.text
 
 
 # ─── Schema migrations on existing databases ────────────────────────────────

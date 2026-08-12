@@ -1,6 +1,17 @@
 # Magneetar Kubernetes Deployment
 
-Production-grade Kubernetes deployment for horizontal scaling.
+> ⚠️ **ASPIRATIONAL REFERENCE — NOT THE LIVE DEPLOYMENT.**
+>
+> The production stack today is **Docker Compose + SQLite** (see
+> `docker-compose.yml` and `docs/deployment.md`). This Kubernetes manifest set
+> describes a future Postgres + Redis + HA architecture that is **not
+> running anywhere** and is not maintained in sync with the live schema. Do
+> not apply it to a production cluster. It exists to document the target
+> architecture for the day Magneetar outgrows a single instance — revisit it
+> together with `docs/postgres-migration.md` when (and only when) that day
+> arrives.
+
+Production-grade Kubernetes deployment for horizontal scaling (aspirational).
 
 ## Architecture
 

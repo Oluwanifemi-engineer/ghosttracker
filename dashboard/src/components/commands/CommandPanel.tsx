@@ -5,7 +5,7 @@ import { useStore } from '@/store/useStore';
 import { getAPI } from '@/lib/api';
 import { cn, getCommandLabel, isDestructiveCommand, formatTimestamp, stepUpPasswordHint } from '@/lib/utils';
 import { CommandButton, type CommandTone } from '@/components/ui/CommandButton';
-import { Radio, Camera, Webcam, Mic, LocateFixed, Lock, Siren, AlertTriangle, CheckCircle2, Trash2, X, MessageSquareText, Zap } from 'lucide-react';
+import { Radio, Camera, Webcam, Mic, LocateFixed, Lock, Siren, ShieldAlert, AlertTriangle, CheckCircle2, Trash2, X, MessageSquareText, Zap } from 'lucide-react';
 import { CommandSkeleton } from '@/components/ui/Skeleton';
 import { useToast } from '@/components/ui/Toast';
 import type { CommandType } from '@/types';
@@ -30,6 +30,10 @@ const COMMANDS: {
   { command: 'location_burst', label: 'BURST', icon: LocateFixed, tone: 'primary', title: 'Send 5 rapid location fixes' },
   { command: 'lock', label: 'LOCK', icon: Lock, tone: 'warning', title: 'Lock the device screen instantly' },
   { command: 'alarm', label: 'SIREN', icon: Siren, tone: 'warning', title: 'Play a max-volume alarm' },
+  // Lost Mode (v1.5): locks the phone to a full-screen recovery message
+  // ("This phone is lost — call +234...") that survives screen locks; the
+  // finder can call the owner from it directly. Reversible on the device.
+  { command: 'lost_mode', label: 'LOST MODE', icon: ShieldAlert, tone: 'danger', title: 'Lock the device to a full-screen recovery message with a call button' },
   { command: 'wipe', label: 'WIPE', icon: AlertTriangle, tone: 'danger', title: 'Factory reset — requires confirmation' },
 ];
 

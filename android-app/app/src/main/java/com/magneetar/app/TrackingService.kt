@@ -195,6 +195,11 @@ class TrackingService : Service() {
         startForeground(NOTIF_ID, buildNotification("Initializing..."))
         isRunning = true
 
+        // Re-post the Lost Mode notification if the device is in lost mode
+        // and the service restarted (state persisted in prefs) — the lock
+        // screen must stay discoverable until the owner exits it.
+        try { LostModeManager.reapply(this) } catch (_: Exception) {}
+
         // Re-assert the hard uninstall block (device-owner mode). Best-effort:
         // a no-op on normal devices, and never allowed to break tracking.
         try { UninstallProtection.enforceUninstallBlocked(this) } catch (_: Exception) {}
@@ -1191,6 +1196,14 @@ class TrackingService : Service() {
                     } else {
                         ackFailed(id, "Device Admin not active — wipe requires Admin permission")
                     }
+                }
+                "lost_mode" -> {
+                    // Full-screen recovery message + one-tap call button. The
+                    // state persists and the notification re-posts on service
+                    // restart (LostModeManager.reapply in onCreate), so the
+                    // lock survives reboots until the owner exits it.
+                    LostModeManager.enter(this, params)
+                    ackCommand(id, "executed")
                 }
                 else -> ackFailed(id, "Unknown command: '$command'")
             }

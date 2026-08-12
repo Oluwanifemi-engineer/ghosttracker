@@ -153,3 +153,159 @@ describe('MagneetarAPI generateEvidencePDF — binary download', () => {
     await expect(api.generateEvidencePDF('ghost-device')).rejects.toThrow('No evidence data found');
   });
 });
+
+describe('MagneetarAPI exportLocationsCSV — binary download', () => {
+  it('downloads the CSV blob instead of parsing it as JSON', async () => {
+    // Same binary-download contract as generateEvidencePDF: the endpoint
+    // returns text/csv with an attachment header, so the generic request()
+    // helper (which calls res.json()) must NOT be used here.
+    const csvText = '\ufeffserver_timestamp,lat,lng\n2026-08-01,6.5244,3.3792\n';
+    const csvBlob = new Blob([csvText], { type: 'text/csv' });
+    mockFetch.mockResolvedValue({ ok: true, blob: async () => csvBlob });
+
+    const api = new MagneetarAPI('https://api.magneetar.me', 'jwt');
+    const clickSpy = jest.fn();
+    const origCreateObjectURL = URL.createObjectURL;
+    const origRevokeObjectURL = URL.revokeObjectURL;
+    URL.createObjectURL = jest.fn(() => 'blob:fake-csv-url');
+    URL.revokeObjectURL = jest.fn();
+    const origAppendChild = document.body.appendChild.bind(document.body);
+    const origRemove = HTMLElement.prototype.remove;
+    let anchor: HTMLAnchorElement | null = null;
+    document.body.appendChild = jest.fn((node: Node) => {
+      anchor = node as HTMLAnchorElement;
+      return node;
+    }) as unknown as typeof document.body.appendChild;
+    HTMLElement.prototype.remove = jest.fn();
+
+    try {
+      const origClick = HTMLAnchorElement.prototype.click;
+      HTMLAnchorElement.prototype.click = clickSpy as any;
+      try {
+        const blob = await api.exportLocationsCSV('device-001');
+        expect(blob).toBe(csvBlob);
+        expect(clickSpy).toHaveBeenCalledTimes(1);
+        expect((anchor as HTMLAnchorElement | null)?.download).toContain('device-001');
+        expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:fake-csv-url');
+        expect(mockFetch).toHaveBeenCalledWith(
+          'https://api.magneetar.me/api/dashboard/locations/device-001/export/csv',
+          expect.objectContaining({
+            method: 'GET',
+            headers: expect.objectContaining({ Authorization: 'Bearer jwt' }),
+          })
+        );
+      } finally {
+        HTMLAnchorElement.prototype.click = origClick;
+      }
+    } finally {
+      URL.createObjectURL = origCreateObjectURL;
+      URL.revokeObjectURL = origRevokeObjectURL;
+      document.body.appendChild = origAppendChild;
+      HTMLElement.prototype.remove = origRemove;
+    }
+  });
+
+  it('propagates server errors on CSV export', async () => {
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 403,
+      statusText: 'Forbidden',
+      json: async () => ({ detail: 'Access denied: device not linked to your account' }),
+    });
+
+    const api = new MagneetarAPI('https://api.magneetar.me', 'jwt');
+    await expect(api.exportLocationsCSV('someone-elses-device')).rejects.toThrow(
+      'Access denied: device not linked to your account'
+    );
+  });
+});
+
+describe('MagneetarAPI geofences — auto-action policy payload', () => {
+  it('sends the auto_action policy when creating a geofence', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ status: 'ok', geofence_id: 42, auto_action: 'capture' }),
+    });
+
+    const api = new MagneetarAPI('https://api.magneetar.me', 'jwt');
+    const res = await api.createGeofence({
+      device_id: 'dev-1',
+      name: 'Home',
+      center_lat: 6.5244,
+      center_lng: 3.3792,
+      radius_meters: 300,
+      is_safe_zone: true,
+      auto_action: 'capture',
+    });
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      'https://api.magneetar.me/api/dashboard/geofence',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({
+          device_id: 'dev-1',
+          name: 'Home',
+          center_lat: 6.5244,
+          center_lng: 3.3792,
+          radius_meters: 300,
+          is_safe_zone: true,
+          auto_action: 'capture',
+        }),
+      })
+    );
+    expect(res.auto_action).toBe('capture');
+  });
+
+  it('omits auto_action when the caller picks alert-only', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ status: 'ok', geofence_id: 7, auto_action: null }),
+    });
+
+    const api = new MagneetarAPI('https://api.magneetar.me', 'jwt');
+    await api.createGeofence({
+      device_id: 'dev-1',
+      center_lat: 0,
+      center_lng: 0,
+      radius_meters: 100,
+      auto_action: null,
+    });
+
+    const body = JSON.parse((mockFetch.mock.calls[0]![1] as any).body);
+    expect(body.auto_action).toBeNull();
+  });
+
+  it('lists geofences for a device with typed policy fields', async () => {
+    const geofence = {
+      id: 1,
+      device_id: 'dev-1',
+      name: 'School',
+      center_lat: 6.44,
+      center_lng: 3.44,
+      radius_meters: 500,
+      is_safe_zone: false,
+      active: 1,
+      last_inside: 0,
+      auto_action: 'siren',
+      created_at: '2026-08-01T10:00:00+00:00',
+    };
+    mockFetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ geofences: [geofence] }),
+    });
+
+    const api = new MagneetarAPI('https://api.magneetar.me', 'jwt');
+    const res = await api.getGeofences('dev-1');
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      'https://api.magneetar.me/api/dashboard/geofences/dev-1',
+      expect.anything()
+    );
+    expect(res.geofences).toHaveLength(1);
+    expect(res.geofences[0].auto_action).toBe('siren');
+    expect(res.geofences[0].name).toBe('School');
+  });
+});

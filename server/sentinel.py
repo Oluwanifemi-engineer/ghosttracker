@@ -11,7 +11,6 @@ from config import settings
 from database import get_db_context, log_audit
 from models import TelemetryPing
 
-
 # ─── Threat-level boundaries (shared) ─────────────────────────────────────────
 # Single source of truth so compute_score()'s level thresholds and the
 # false-positive confirmation gate can never drift apart.
@@ -30,17 +29,32 @@ class SentinelEngine:
     THEFT_SIGNALS = {
         "sim_changed": {"weight": 35, "description": "SIM card changed"},
         "admin_disabled": {"weight": 40, "description": "Device admin deactivated"},
-        "factory_reset_attempted": {"weight": 50, "description": "Factory reset initiated"},
-        "location_disabled": {"weight": 20, "description": "Location services disabled"},
+        "factory_reset_attempted": {
+            "weight": 50,
+            "description": "Factory reset initiated",
+        },
+        "location_disabled": {
+            "weight": 20,
+            "description": "Location services disabled",
+        },
         "airplane_mode_on": {"weight": 15, "description": "Airplane mode activated"},
         "velocity_vehicle": {"weight": 25, "description": "Moving at vehicle speed"},
         "velocity_running": {"weight": 10, "description": "Moving at running speed"},
         "battery_critical": {"weight": 10, "description": "Battery below 5%"},
-        "unknown_network": {"weight": 10, "description": "Connected to unknown network"},
+        "unknown_network": {
+            "weight": 10,
+            "description": "Connected to unknown network",
+        },
         "was_queued_long": {"weight": 10, "description": "Data queued >10 minutes"},
-        "failed_unlocks": {"weight": 20, "description": "Multiple failed unlock attempts"},
+        "failed_unlocks": {
+            "weight": 20,
+            "description": "Multiple failed unlock attempts",
+        },
         "new_google_account": {"weight": 15, "description": "New Google account added"},
-        "outside_known_locations": {"weight": 15, "description": "Outside all known locations"},
+        "outside_known_locations": {
+            "weight": 15,
+            "description": "Outside all known locations",
+        },
         "unusual_time": {"weight": 10, "description": "Activity at unusual hour"},
     }
 
@@ -234,7 +248,11 @@ class SentinelEngine:
             conn.commit()
 
             # Log the theft activation
-            log_audit(action="theft_mode_activated", actor=device_id, details=f"Score: {score}, Case: {case_id}")
+            log_audit(
+                action="theft_mode_activated",
+                actor=device_id,
+                details=f"Score: {score}, Case: {case_id}",
+            )
 
     def check_geofences(self, ping: TelemetryPing, geofences: list[dict]) -> list[dict]:
         """
@@ -251,8 +269,14 @@ class SentinelEngine:
 
             is_inside = distance <= fence["radius_meters"]
 
-            # Check if this is a new entry or exit
-            was_inside = fence.get("was_inside", False)
+            # Check if this is a new entry or exit. The live database rows
+            # carry the PERSISTED state in last_inside (v1.5 — the device
+            # route writes it after every observed transition); the unit-test
+            # dicts use was_inside. Prefer last_inside, fall back to was_inside
+            # so both callers agree on the transition semantics. NULL (never
+            # observed inside) counts as outside: an 'exited' event can only
+            # fire after an observed 'entered' event has set last_inside=1.
+            was_inside = fence.get("last_inside", fence.get("was_inside", False))
 
             if is_inside and not was_inside:
                 triggered.append(
@@ -262,6 +286,7 @@ class SentinelEngine:
                         "event": "entered",
                         "is_safe_zone": fence.get("is_safe_zone", True),
                         "distance_meters": distance,
+                        "auto_action": fence.get("auto_action"),
                     }
                 )
             elif not is_inside and was_inside:
@@ -272,6 +297,7 @@ class SentinelEngine:
                         "event": "exited",
                         "is_safe_zone": fence.get("is_safe_zone", True),
                         "distance_meters": distance,
+                        "auto_action": fence.get("auto_action"),
                     }
                 )
 

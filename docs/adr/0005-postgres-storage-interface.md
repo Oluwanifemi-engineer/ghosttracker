@@ -1,7 +1,10 @@
 # ADR-0005: PostgreSQL storage interface — sync facade over asyncpg
 
-- **Status:** Accepted — Phase 2a delivered (2026-08-11); Phase 2b (SQL
-  portability pass) is the remaining work before production cutover.
+- **Status:** Accepted (Phase 2a delivered 2026-08-11) → **FROZEN
+  (2026-08-12)**. Production data plane is SQLite; the Postgres adapter is an
+  experimental, unsupported path. Phase 2b (SQL portability pass) is **not
+  scheduled** — it will be revisited only if a real multi-tenant / HA /
+  multi-instance requirement appears. See `docs/postgres-migration.md`.
 - **Related:** ADR-0001 (SQLite as primary database), ADR-0002
   (backend single source of truth), ADR-0003 (API-first),
   `docs/postgres-migration.md`

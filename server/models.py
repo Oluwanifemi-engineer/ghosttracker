@@ -257,6 +257,7 @@ class CommandRequest(BaseModel):
             "lock",
             "alarm",
             "wipe",
+            "lost_mode",
         }
         if v not in valid:
             raise ValueError(f"command must be one of {valid}")
@@ -477,6 +478,22 @@ class GeofenceRequest(BaseModel):
     center_lng: float = Field(..., ge=-180, le=180)
     radius_meters: float = Field(..., gt=0, le=50000)
     is_safe_zone: bool = True
+    # Per-zone automated reaction fired on an EXIT transition (exactly once,
+    # at the entry→exit boundary): 'capture' queues a front-camera photo +
+    # audio capture, 'siren' queues the max-volume alarm, 'alert' (or None)
+    # fires the geofence_exit alert only. The alert always fires for safe-zone
+    # exits regardless; auto_action ADDS the on-device reaction
+    # (COMPETITOR_AUDIT P0 gap-closer #1).
+    auto_action: Optional[str] = None
+
+    @field_validator("auto_action")
+    @classmethod
+    def validate_auto_action(cls, v):
+        if v is None:
+            return v
+        if v not in {"capture", "siren", "alert"}:
+            raise ValueError("auto_action must be one of: capture, siren, alert")
+        return v
 
 
 class Geofence(BaseModel):

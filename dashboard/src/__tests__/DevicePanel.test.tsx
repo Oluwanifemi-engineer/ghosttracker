@@ -38,6 +38,7 @@ jest.mock('lucide-react', () => {
     LocateFixed: stub('LocateFixed'),
     Navigation: stub('Navigation'),
     ExternalLink: stub('ExternalLink'),
+    Download: stub('Download'),
     Save: stub('Save'),
     Check: stub('Check'),
     Trash2: stub('Trash2'),

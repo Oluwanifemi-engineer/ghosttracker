@@ -7,6 +7,23 @@ the switch can be scheduled deliberately.
 
 Status date: **2026-08-07** · Production data plane: **SQLite** (unchanged).
 
+> ## DECISION (2026-08-12) — migration FROZEN; SQLite is the production architecture
+>
+> The product's production data plane is **SQLite** (WAL, single instance,
+> `scripts/backup-db.sh` online backups). The PostgreSQL adapter
+> (`database_postgres.py` + `storage.py`, ADR-0005 Phase 2a) is an
+> **experimental, unsupported** path: it is kept for future scale-out and its
+> schema parity is CI-enforced, but **Phase 2b (the SQL portability pass) is
+> NOT scheduled** and `MT_DATABASE_URL` must not be enabled in production.
+> Route SQL still contains SQLite dialect (e.g. `datetime('now', ?)`, `INSERT
+> OR REPLACE`) that Phase 2b would port.
+>
+> **This decision will be revisited only when a real requirement appears** —
+> multi-tenant scale, HA/failover, or multi-instance deployment. Until then,
+> the Docker stack (`docker-compose.yml`) runs SQLite on a persisted volume
+> and the `kubernetes/` manifests are an aspirational reference, not the live
+> deployment. No code changes here are required to ship features.
+
 ---
 
 ## 1. Why migrate (measured, this session)

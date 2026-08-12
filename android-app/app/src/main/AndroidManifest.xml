@@ -159,6 +159,21 @@
             android:theme="@style/AppTheme"
             android:windowSoftInputMode="adjustResize" />
 
+        <!-- ─── Lost Mode ───────────────────────────────────────────────── -->
+        <!-- Full-screen recovery lock (v1.5). showWhenLocked + turnScreenOn
+             surface the message over a locked screen; excludeFromRecents
+             keeps it off the recents list; singleTask prevents stacking.
+             Launched by a LostModeManager notification tap (user action —
+             exempt from background-activity limits on Android 10+). -->
+        <activity
+            android:name=".LostModeActivity"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:excludeFromRecents="true"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true"
+            android:theme="@style/AppTheme" />
+
         <!-- ─── Background Tracking Service ─────────────────────────────── -->
         <service
             android:name=".TrackingService"

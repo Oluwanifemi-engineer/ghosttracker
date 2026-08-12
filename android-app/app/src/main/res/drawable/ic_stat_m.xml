@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Notification small icon: monochrome white M on transparent. Small icons
+     must be a single-color silhouette (launcher mipmaps render as a solid
+     square blob in the status bar) — this reuses the exact M path from
+     ic_launcher_foreground without the background fill. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+
+    <!-- Ultra-bold capital M — straight edges, no curves -->
+    <path
+        android:pathData="M 28 92 L 28 28 L 48 28 L 60 58 L 72 28 L 92 28 L 92 92 L 76 92 L 76 52 L 60 82 L 44 52 L 44 92 Z"
+        android:fillColor="#FFFFFF"
+        android:strokeWidth="0"
+        android:strokeColor="#00000000"/>
+</vector>

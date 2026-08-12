@@ -1,4 +1,4 @@
-import { Device, Location, Command, MediaItem, MediaDetail, ErrorLogResponse, GuardianProfile, RecoveryRequest, NearbyRecoveryRequest, UserProfile } from '@/types';
+import { Device, Location, Command, MediaItem, MediaDetail, ErrorLogResponse, GuardianProfile, RecoveryRequest, NearbyRecoveryRequest, UserProfile, Geofence, GeofenceAutoAction } from '@/types';
 
 // ─── Configuration ───────────────────────────────────────────────────────────
 
@@ -242,6 +242,35 @@ class MagneetarAPI {
     return blob;
   }
 
+  /**
+   * Export a device's location history as CSV and trigger a browser download.
+   *
+   * Same binary-download pattern as generateEvidencePDF: the server returns
+   * text/csv with an attachment header — the generic request() helper would
+   * try res.json() and throw. Fetches the blob, creates an object URL, and
+   * clicks an anchor to save it. Returns the blob so callers can also parse.
+   */
+  async exportLocationsCSV(deviceId: string): Promise<Blob> {
+    const res = await fetch(`${this.serverUrl}/api/dashboard/locations/${deviceId}/export/csv`, {
+      method: 'GET',
+      headers: this.headers(),
+    });
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ detail: res.statusText }));
+      throw new Error(extractErrorMessage(error) || `HTTP ${res.status}`);
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `magneetar-locations-${deviceId}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    return blob;
+  }
+
   // ── Alerts ──────────────────────────────────────────────────────────────
 
   async getAlerts(deviceId: string): Promise<{ alerts: any[] }> {
@@ -263,7 +292,7 @@ class MagneetarAPI {
 
   // ── Geofences ───────────────────────────────────────────────────────────
 
-  async getGeofences(deviceId: string): Promise<{ geofences: any[] }> {
+  async getGeofences(deviceId: string): Promise<{ geofences: Geofence[] }> {
     return this.request(`/api/dashboard/geofences/${deviceId}`);
   }
 
@@ -274,7 +303,8 @@ class MagneetarAPI {
     center_lng: number;
     radius_meters: number;
     is_safe_zone?: boolean;
-  }): Promise<{ status: string; geofence_id: number }> {
+    auto_action?: GeofenceAutoAction;
+  }): Promise<{ status: string; geofence_id: number; auto_action?: GeofenceAutoAction }> {
     return this.request('/api/dashboard/geofence', 'POST', data);
   }
 

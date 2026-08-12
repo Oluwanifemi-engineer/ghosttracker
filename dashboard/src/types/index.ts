@@ -95,7 +95,11 @@ export type CommandType =
   | 'wipe'
   // Wire command for the siren — the server (models.CommandRequest) and the
   // Android app (TrackingService.handleCommand) only accept 'alarm'.
-  | 'alarm';
+  | 'alarm'
+  // Lost Mode (v1.5) — locks the device to a full-screen recovery message
+  // (Android LostModeActivity + LostModeManager). Implemented end-to-end on
+  // all three sides: server validate_command, this type, TrackingService.
+  | 'lost_mode';
 
 export interface Command {
   id: number;
@@ -169,9 +173,32 @@ export interface MapState {
   showGeofence: boolean;
 }
 
+// ─── Geofences ────────────────────────────────────────────────────────────────
+
+// Per-zone automated reaction fired exactly once on an EXIT transition
+// (server models.GeofenceRequest.validate_auto_action). 'alert' / null →
+// geofence_exit alert only; 'capture' → front-camera photo + audio capture;
+// 'siren' → the max-volume alarm. Mirror of the server's valid set.
+export type GeofenceAutoAction = 'capture' | 'siren' | 'alert' | null;
+
+export interface Geofence {
+  id: number;
+  device_id: string;
+  name: string | null;
+  center_lat: number;
+  center_lng: number;
+  radius_meters: number;
+  is_safe_zone: boolean;
+  active: boolean;
+  // NULL = not yet observed inside (or legacy row) — no exit event fires.
+  last_inside: boolean | null;
+  auto_action: GeofenceAutoAction;
+  created_at: string;
+}
+
 // ─── UI State ────────────────────────────────────────────────────────────────
 
-export type TabId = 'sentinel' | 'commands' | 'location' | 'media' | 'evidence' | 'guardian' | 'alerts' | 'errors';
+export type TabId = 'sentinel' | 'commands' | 'location' | 'zones' | 'media' | 'evidence' | 'guardian' | 'alerts' | 'errors';
 
 export interface UIState {
   sidebarOpen: boolean;
