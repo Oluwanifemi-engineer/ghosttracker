@@ -1279,6 +1279,40 @@ class TestDeviceSharing:
         resp = client.get("/api/dashboard/locations/share-do-device", headers=user_headers(grantee["token"]))
         assert resp.status_code == 403, resp.text
 
+    def test_device_only_share_cannot_export_dossier_pdf(self):
+        """The recovery dossier (generate-pdf) is a viewer+ capability. A
+        device_only share — the privacy tier that sees no coordinates — must
+        get 403, not the PDF."""
+        owner = register_user("share-pdf-owner@example.com")
+        grantee = register_user("share-pdf-grantee@example.com")
+        register_device("share-pdf-device", user_token=owner["token"])
+        self._seed_location("share-pdf-device")
+        self._share(owner["token"], "share-pdf-device", "share-pdf-grantee@example.com", "device_only")
+
+        resp = client.post(
+            "/api/dashboard/evidence/share-pdf-device/generate-pdf",
+            headers=user_headers(grantee["token"]),
+        )
+        assert resp.status_code == 403, resp.text
+
+    def test_viewer_share_can_export_dossier_pdf(self):
+        """Viewer shares may download the recovery dossier — it's read-only
+        (no commands, no destructive actions), so the same access floor as
+        locations/evidence applies."""
+        owner = register_user("share-pdfv-owner@example.com")
+        grantee = register_user("share-pdfv-grantee@example.com")
+        register_device("share-pdfv-device", user_token=owner["token"])
+        self._seed_location("share-pdfv-device")
+        self._share(owner["token"], "share-pdfv-device", "share-pdfv-grantee@example.com", "viewer")
+
+        resp = client.post(
+            "/api/dashboard/evidence/share-pdfv-device/generate-pdf",
+            headers=user_headers(grantee["token"]),
+        )
+        assert resp.status_code == 200, resp.text
+        assert resp.headers["content-type"].startswith("application/pdf")
+        assert resp.content.startswith(b"%PDF")
+
     def test_invite_unknown_email_404(self):
         owner = register_user("share-404-owner@example.com")
         register_device("share-404-device", user_token=owner["token"])

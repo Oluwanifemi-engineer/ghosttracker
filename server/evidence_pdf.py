@@ -156,6 +156,7 @@ class EvidencePDFGenerator:
         locations = data.get("locations", [])
         media_items = data.get("media", [])
         alerts = data.get("alerts", [])
+        commands = data.get("commands", [])
 
         # ── Cover Section ──────────────────────────────────────────────────
         elements.append(Paragraph(f"Evidence Case: {case_id}", styles["CaseTitle"]))
@@ -183,6 +184,10 @@ class EvidencePDFGenerator:
             ["OS Version", device.get("os_version", "Unknown")],
             ["IMEI Hash", device.get("imei_hash", "N/A")],
         ]
+        # A friendly alias (e.g. "Mum's phone") is the first thing a police
+        # officer or insurer wants to see next to a case number.
+        if device.get("alias"):
+            device_data.insert(0, ["Alias", device["alias"]])
         t = Table(device_data, colWidths=[40 * mm, 110 * mm])
         t.setStyle(
             TableStyle(
@@ -289,6 +294,61 @@ class EvidencePDFGenerator:
                 )
             elements.append(Spacer(1, 3 * mm))
 
+        # ── Command Timeline (owner action record) ──────────────────────────
+        if commands:
+            elements.append(PageBreak())
+            elements.append(Paragraph("COMMAND TIMELINE", styles["SectionHeader"]))
+            elements.append(
+                HRFlowable(width="100%", thickness=0.5, color=EvidencePDFGenerator.BORDER, spaceAfter=2 * mm)
+            )
+            elements.append(
+                Paragraph(
+                    "Remote actions issued by the owner (lock, siren, wipe, capture) " "and their delivery outcomes.",
+                    styles["Monospace"],
+                )
+            )
+            elements.append(Spacer(1, 2 * mm))
+
+            cmd_preview = commands[:50]
+            cmd_header = ["#", "Issued", "Command", "Status", "Executed"]
+            cmd_data = [cmd_header]
+            for i, cmd in enumerate(cmd_preview, 1):
+                cmd_data.append(
+                    [
+                        str(i),
+                        str(cmd.get("issued_at", "") or "")[:19],
+                        str(cmd.get("command", "unknown")).replace("_", " ").upper(),
+                        str(cmd.get("status", "unknown")).upper(),
+                        str(cmd.get("executed_at", "") or "")[:19] or "—",
+                    ]
+                )
+
+            cmd_widths = [8 * mm, 38 * mm, 45 * mm, 30 * mm, 38 * mm]
+            t = Table(cmd_data, colWidths=cmd_widths, repeatRows=1)
+            t.setStyle(
+                TableStyle(
+                    [
+                        ("BACKGROUND", (0, 0), (-1, 0), EvidencePDFGenerator.PRIMARY),
+                        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                        ("FONTSIZE", (0, 0), (-1, 0), 7),
+                        ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
+                        ("FONTSIZE", (0, 1), (-1, -1), 7),
+                        ("FONTNAME", (0, 1), (-1, -1), "Courier"),
+                        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                        ("GRID", (0, 0), (-1, -1), 0.5, EvidencePDFGenerator.BORDER),
+                        ("TOPPADDING", (0, 0), (-1, -1), 2 * mm),
+                        ("BOTTOMPADDING", (0, 0), (-1, -1), 2 * mm),
+                    ]
+                )
+            )
+            elements.append(t)
+            if len(commands) > 50:
+                elements.append(
+                    Paragraph(f"... and {len(commands) - 50} more commands (see dashboard)", styles["Monospace"])
+                )
+            elements.append(Spacer(1, 3 * mm))
+
         # ── Media Evidence ─────────────────────────────────────────────────
         if media_items:
             elements.append(PageBreak())
@@ -297,6 +357,14 @@ class EvidencePDFGenerator:
                 HRFlowable(width="100%", thickness=0.5, color=EvidencePDFGenerator.BORDER, spaceAfter=2 * mm)
             )
 
+            # Fetch full media rows once (bytes may be reconstructed from
+            # disk) so every photo can be embedded — not just the first.
+            try:
+                media_rows = {m.get("id"): m for m in evidence_builder.get_media_for_case(case_id)}
+            except Exception:
+                media_rows = {}
+
+            photos_embedded = 0
             for item in media_items:
                 media_type = item.get("type", "unknown")
                 media_time = str(item.get("timestamp", ""))[:19]
@@ -305,21 +373,31 @@ class EvidencePDFGenerator:
                 elements.append(Paragraph(f"<b>{media_type.upper()}</b> — {media_time}", styles["Value"]))
                 elements.append(Paragraph(f"SHA-256: {media_hash}", styles["Monospace"]))
 
-                # Include first photo inline as base64-decoded image
-                if media_type == "photo" and item.get("sha256_hash"):
+                # Embed the photo inline (base64-decoded) when bytes exist.
+                # Cap at 12 inline images — a photo burst of dozens would
+                # otherwise balloon the PDF (same cap philosophy as the 50-row
+                # location/command previews); metadata + hashes still list all.
+                if media_type == "photo" and photos_embedded < 12:
                     try:
-                        media_rows = evidence_builder.get_media_for_case(case_id)
-                        for m in media_rows:
-                            if m.get("id") == item.get("id") and m.get("data_b64"):
-                                img_data = base64.b64decode(m["data_b64"])
-                                img_buffer = BytesIO(img_data)
-                                img = Image(img_buffer, width=80 * mm, height=60 * mm)
-                                elements.append(img)
-                                break
+                        row = media_rows.get(item.get("id"))
+                        if row and row.get("data_b64"):
+                            img_data = base64.b64decode(row["data_b64"])
+                            img_buffer = BytesIO(img_data)
+                            img = Image(img_buffer, width=80 * mm, height=60 * mm)
+                            elements.append(img)
+                            photos_embedded += 1
                     except Exception:
                         pass
 
                 elements.append(Spacer(1, 2 * mm))
+
+            if photos_embedded >= 12 and len(media_items) > 12:
+                elements.append(
+                    Paragraph(
+                        f"... {len(media_items) - 12} more media items (hashes above; " "full files in the dashboard)",
+                        styles["Monospace"],
+                    )
+                )
 
         # ── Alert History ──────────────────────────────────────────────────
         if alerts:

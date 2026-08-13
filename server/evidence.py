@@ -227,10 +227,23 @@ class EvidenceBuilder:
                 (summary["device_id"],),
             ).fetchall()
 
+            # Get command history — the owner's action record (lock/siren/wipe/
+            # capture issued and their outcomes). Police/insurers want to see
+            # WHAT was done to the device, not just where it went.
+            commands = conn.execute(
+                """SELECT id, command, params, status, issued_at, executed_at,
+                          failure_reason
+                   FROM commands
+                   WHERE device_id=?
+                   ORDER BY issued_at ASC""",
+                (summary["device_id"],),
+            ).fetchall()
+
             return {
                 "case": summary,
                 "device": {
                     "id": device["id"] if device else "Unknown",
+                    "alias": device["alias"] if device and device["alias"] else None,
                     "model": device["model"] if device else "Unknown",
                     "os_version": device["os_version"] if device else "Unknown",
                     "imei_hash": device["imei_hash"] if device else None,
@@ -238,6 +251,7 @@ class EvidenceBuilder:
                 "locations": decrypted_locations,
                 "media": [dict(m) for m in media],
                 "alerts": [dict(a) for a in alerts],
+                "commands": [dict(c) for c in commands],
                 "generated_at": datetime.now(timezone.utc).isoformat(),
                 "chain_of_custody": summary["sha256_chain"],
             }

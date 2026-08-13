@@ -3,15 +3,18 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useStore } from '@/store/useStore';
 import { getAPI } from '@/lib/api';
-import { cn, formatTimestamp } from '@/lib/utils';
-import { ClipboardList, AlertTriangle, FileText, Loader, ShieldCheck } from 'lucide-react';
+import { useToast } from '@/components/ui/Toast';
+import { cn } from '@/lib/utils';
+import { ClipboardList, FileText, Loader, ShieldCheck } from 'lucide-react';
 import { EvidenceSkeleton } from '@/components/ui/Skeleton';
 
 export function EvidencePanel() {
   const { selectedDeviceId } = useStore();
+  const { toast } = useToast();
   const [evidence, setEvidence] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [error, setError] = useState('');
 
   const fetchEvidence = useCallback(async () => {
     if (!selectedDeviceId) return;
@@ -31,20 +34,20 @@ export function EvidencePanel() {
   const handleGenerate = async () => {
     if (!selectedDeviceId) return;
     setGenerating(true);
+    setError('');
     try {
       const api = getAPI();
       await api.generateEvidencePDF(selectedDeviceId);
+      toast('Recovery dossier downloaded — PDF saved to your device', 'success');
       await fetchEvidence();
-    } catch (e) {
-      console.error('Failed to generate evidence:', e);
+    } catch (e: any) {
+      const message = e?.message || 'Failed to generate dossier';
+      setError(message);
+      toast(message, 'error');
     } finally {
       setGenerating(false);
     }
   };
-
-  const totalCount = evidence?.item_counts
-    ? evidence.item_counts.locations + evidence.item_counts.photos + evidence.item_counts.audio
-    : 0;
 
   return (
     <div className="p-4 space-y-4">
@@ -110,24 +113,32 @@ export function EvidencePanel() {
         )}
       </div>
 
-      {/* Generate Report */}
+      {/* Export Recovery Dossier */}
       <button
         onClick={handleGenerate}
-        disabled={generating || totalCount === 0}
+        disabled={generating || !selectedDeviceId}
         className="mag-btn-primary w-full text-xs"
       >
         {generating ? (
           <>
             <Loader size={14} className="animate-spin" />
-            GENERATING...
+            GENERATING DOSSIER...
           </>
         ) : (
           <>
             <FileText size={14} />
-            GENERATE EVIDENCE REPORT
+            EXPORT RECOVERY DOSSIER (PDF)
           </>
         )}
       </button>
+
+      {error && <div className="text-[10px] font-mono text-red-400 break-words">{error}</div>}
+
+      <p className="text-[10px] font-mono text-mag-text-dim/40 leading-relaxed">
+        One-click PDF for police or insurers: device info, location trail, command
+        timeline (lock / siren / wipe), SHA-256-chained photos & audio, and alert
+        history.
+      </p>
     </div>
   );
 }

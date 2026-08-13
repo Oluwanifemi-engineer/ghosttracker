@@ -499,6 +499,45 @@ class TestEvidencePdf:
         assert "lat" in loc and "lng" in loc
         assert "battery_percent" in loc
 
+    def test_compile_pdf_data_includes_command_timeline_and_alias(self):
+        """The Recovery Dossier must include the owner's action record (remote
+        commands issued + outcomes) and the device alias — a police officer
+        wants to see "Mum's phone" and the lock/siren/wipe sequence, not just
+        coordinates."""
+        self._ensure_device_with_locations()
+        # Alias the device so the dossier can show a friendly name.
+        dash = get_dashboard_headers()
+        resp = client.patch(
+            f"/api/dashboard/devices/{TEST_DEVICE_ID}/alias",
+            json={"alias": "Mum's phone"},
+            headers=dash,
+        )
+        assert resp.status_code == 200, resp.text
+
+        # Seed two commands with different statuses (alarm executed, wipe
+        # pending) — the action record the dossier must carry. Wipe is a
+        # destructive command, so it needs the step-up master API key.
+        for cmd, params, password in (("alarm", "", None), ("wipe", "CONFIRMED_WIPE", TEST_API_KEY)):
+            resp = client.post(
+                "/api/dashboard/command",
+                json={"device_id": TEST_DEVICE_ID, "command": cmd, "params": params, "password": password},
+                headers=dash,
+            )
+            assert resp.status_code == 200, resp.text
+
+        case_id = evidence_builder.create_case(TEST_DEVICE_ID)
+        data = evidence_builder.compile_pdf_data(case_id)
+        assert data is not None
+        assert data["device"]["alias"] == "Mum's phone"
+        cmds = data["commands"]
+        assert len(cmds) >= 2
+        kinds = {c["command"] for c in cmds}
+        assert "alarm" in kinds and "wipe" in kinds
+        wipe = next(c for c in cmds if c["command"] == "wipe")
+        assert wipe["params"] == "CONFIRMED_WIPE"
+        assert wipe["status"] in ("pending", "executed")
+        assert "issued_at" in wipe, "command timeline needs issued_at for the PDF"
+
 
 # ─── Commands ────────────────────────────────────────────────────────────────
 

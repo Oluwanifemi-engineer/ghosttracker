@@ -35,6 +35,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   location broadcasts (the set excludes them server-side), matching the
   REST redaction.
 
+### Added (v1.6 — recovery dossier round, COMPETITOR_AUDIT P0 #3 closed)
+
+- **Recovery Dossier — one-click police/insurer PDF (P0 gap-closer #3)**: the
+  evidence PDF is now a true action dossier. `compile_pdf_data` feeds the
+  owner's **command timeline** (lock / siren / wipe / capture with
+  issued-at, params, status, executed-at) and the device **alias** into the
+  report; `evidence_pdf.py` renders a new COMMAND TIMELINE section (the
+  recovery actions taken, not just where the device went) and now embeds
+  **every** photo inline (it previously re-fetched media rows per item and
+  embedded only the first). The dashboard Evidence panel button is renamed
+  **EXPORT RECOVERY DOSSIER (PDF)**, always enabled (the server auto-creates
+  a case, so a pre-theft dossier — device info + alias + location trail +
+  command history — is exportable), and now gives real feedback: success /
+  error toasts + an inline error strip (the old handler only
+  `console.error`'d, so failures looked like a dead button).
+- **RBAC for the dossier (enforced, now tested)**: the generate-pdf endpoint
+  was already `viewer`-floored via `_assert_device_access`; new tests lock
+  it — a `device_only` share gets **403** (no coordinates → no PDF) while a
+  `viewer` share downloads the PDF, and `compile_pdf_data` returns the
+  command timeline + alias. Tests: 4 API/Sentinel-file + 2 multi-user
+  (device_only 403, viewer 200) + 5 dashboard (`EvidencePanel.test.tsx`: case
+  summary, empty state with enabled button, success toast, error toast +
+  inline error, re-enable after failure).
+
 ### Added (v1.5 — expert review round)
 
 - **Geofence auto-actions (P0 gap-closer #1)**: per-zone `auto_action`
