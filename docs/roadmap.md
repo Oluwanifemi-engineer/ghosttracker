@@ -55,8 +55,8 @@ The Magneetar ecosystem is production-ready with:
 |----------|------|---------|--------|
 | 🔴 P0 | **Device → User linking** | When a user signs in on Android, link the device to their account via device registration API | 3 days |
 | 🔴 P0 | **Multi-device dashboard** | Show all devices owned by a user; filter by device, group by location | 3 days |
-| 🟡 P1 | **Role-based access** | Admin, viewer, and device-only roles for dashboard users | 4 days |
-| 🟡 P1 | **Device sharing** | Allow sharing device access with another user (e.g., family member) | 5 days |
+| 🟡 P1 | **Role-based access** | Admin, viewer, and device-only roles for dashboard users | ✅ **DONE** — `_assert_device_access(db, id, auth, min_role)` role floors on every device endpoint; device list tags `access_role`/`is_owner` |
+| 🟡 P1 | **Device sharing** | Allow sharing device access with another user (e.g., family member) | ✅ **DONE** — `device_shares` table + `POST/GET/DELETE .../shares` (owner-only, idempotent upsert), Sharing card UI, WS live updates for shared devices, `device_only` privacy tier |
 | 🟢 P2 | **Organization accounts** | Multi-user teams with shared device pools | 1 week |
 
 ### Architecture Changes

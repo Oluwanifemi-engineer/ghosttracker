@@ -19,10 +19,14 @@ jest.mock('@/store/useStore', () => ({
       media: mockMedia,
       selectedDeviceId: mockSelectedDeviceId,
       setMedia: mockSetMedia,
+      // access_role defaults to owner when absent, so an empty list is safe
+      devices: mockDevices,
     };
     return selector ? selector(state) : state;
   }),
 }));
+
+let mockDevices: any[] = [];
 
 jest.mock('@/lib/api', () => ({
   getAPI: () => ({

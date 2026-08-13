@@ -1,12 +1,20 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { useStore } from '@/store/useStore';
 import { cn, relativeTime, formatCoordinate, deviceDisplayName, stepUpPasswordHint } from '@/lib/utils';
-import { BellRing, MapPin, LocateFixed, Navigation, ExternalLink, Download, Save, Check, Trash2, X, Pencil, MessageSquareText } from 'lucide-react';
+import { BellRing, MapPin, LocateFixed, Navigation, ExternalLink, Download, Save, Check, Trash2, X, Pencil, MessageSquareText, Users, UserPlus, UserMinus, ShieldCheck } from 'lucide-react';
 import { CoordDisplay } from '@/components/ui/CoordDisplay';
 import { getAPI } from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
+import type { DeviceShare, ShareRole } from '@/types';
+
+// Role labels for the access badge (Milestone 2 P1 family sharing).
+const ROLE_LABEL: Record<string, string> = {
+  admin: 'Admin',
+  viewer: 'Viewer',
+  device_only: 'Device-only',
+};
 
 // All toggleable alert types, mirroring server alerts.ALL_ALERT_TYPES. The
 // emergency types (theft, SIM change, factory reset) always deliver and are
@@ -31,6 +39,14 @@ export function DevicePanel() {
   const { devices, selectedDeviceId, latestLocation, setDevices, selectDevice } = useStore();
   const { toast } = useToast();
   const device = devices.find(d => d.id === selectedDeviceId);
+
+  // ── Access role (Milestone 2 P1 RBAC) ───────────────────────────────────
+  // owner (implicit) > admin > viewer > device_only. The SERVER enforces every
+  // rule; these flags only hide controls a granted user cannot use anyway.
+  const accessRole: 'owner' | 'admin' | 'viewer' | 'device_only' = device?.access_role ?? 'owner';
+  const canManage = accessRole === 'owner' || accessRole === 'admin'; // rename, settings, commands
+  const canReadLocation = canManage || accessRole === 'viewer'; // coords, history, evidence
+  const isOwner = accessRole === 'owner'; // delete, share grant/revoke
 
   // Alert recipient settings state (per-device override of global defaults)
   const [alertPhone, setAlertPhone] = useState('');
@@ -67,6 +83,57 @@ export function DevicePanel() {
   const [nameError, setNameError] = useState('');
   // Location-history CSV export (v1.5 — Prey-parity portable history)
   const [exporting, setExporting] = useState(false);
+  // Device sharing (Milestone 2 P1) — invite by email, role picker, revoke.
+  const [shares, setShares] = useState<DeviceShare[]>([]);
+  const [showShares, setShowShares] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteRole, setInviteRole] = useState<ShareRole>('viewer');
+  const [shareSaving, setShareSaving] = useState(false);
+  const [shareError, setShareError] = useState('');
+  const [shareMsg, setShareMsg] = useState('');
+
+  const fetchShares = useCallback(async (deviceId: string) => {
+    try {
+      const res = await getAPI().getShares(deviceId);
+      setShares(res.shares ?? []);
+    } catch {
+      setShares([]); // non-fatal — the sharing card simply stays empty
+    }
+  }, []);
+
+  const inviteShare = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!device || shareSaving) return;
+    const email = inviteEmail.trim();
+    if (!email) {
+      setShareError("Enter the recipient's email address.");
+      return;
+    }
+    setShareSaving(true);
+    setShareError('');
+    setShareMsg('');
+    try {
+      await getAPI().addShare(device.id, email, inviteRole);
+      setInviteEmail('');
+      setShareMsg(`Access granted (${inviteRole}) — they'll see this device when they sign in.`);
+      await fetchShares(device.id);
+    } catch (err: any) {
+      setShareError(err?.message || 'Failed to share device');
+    } finally {
+      setShareSaving(false);
+    }
+  };
+
+  const revokeShare = async (shareId: string) => {
+    if (!device) return;
+    try {
+      await getAPI().revokeShare(device.id, shareId);
+      await fetchShares(device.id);
+      toast('Access revoked', 'success');
+    } catch (err: any) {
+      toast(err?.message || 'Failed to revoke access', 'error');
+    }
+  };
 
   const exportCsv = async () => {
     if (!device || exporting) return;
@@ -107,7 +174,17 @@ export function DevicePanel() {
     setNameError('');
     setDeletePassword('');
     setDeleteError('');
+    setShares([]);
+    setShowShares(false);
+    setShareError('');
+    setShareMsg('');
+    setInviteEmail('');
   }
+
+  // Load the share list whenever the selected device changes.
+  useEffect(() => {
+    if (deviceKey) fetchShares(deviceKey);
+  }, [deviceKey, fetchShares]);
 
   const confirmDeleteDevice = async () => {
     if (!device || deleting) return;
@@ -261,6 +338,26 @@ export function DevicePanel() {
               Archived
             </span>
           )}
+          {/* Shared-access badge — shown only when this account does NOT own
+              the device (Milestone 2 P1 family sharing). The server enforces
+              the role; this is the user-facing label. */}
+          {!isOwner && (
+            <span
+              className={cn(
+                'text-[9px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border shrink-0',
+                accessRole === 'admin'
+                  ? 'border-mag-primary/40 text-mag-accent bg-mag-primary/10'
+                  : accessRole === 'viewer'
+                    ? 'border-mag-accent/40 text-mag-accent bg-mag-accent/10'
+                    : 'border-mag-text-dim/40 text-mag-text-dim/80 bg-mag-text-dim/10'
+              )}
+              title={`Shared access — ${accessRole} role. ${
+                accessRole === 'admin' ? 'Full control.' : accessRole === 'viewer' ? 'Read-only.' : 'Status only (no location).'
+              }`}
+            >
+              {ROLE_LABEL[accessRole] ?? accessRole}
+            </span>
+          )}
           {editingName ? (
             <form onSubmit={saveDeviceName} className="flex items-center gap-1.5 flex-1 min-w-0">
               <input
@@ -293,18 +390,20 @@ export function DevicePanel() {
               <h3 className="text-base font-bold text-mag-text truncate flex-1 min-w-0">
                 {deviceDisplayName(device)}
               </h3>
-              <button
-                onClick={() => {
-                  setNameDraft(deviceDisplayName(device));
-                  setNameError('');
-                  setEditingName(true);
-                }}
-                aria-label="Rename device"
-                title="Rename device"
-                className="p-1.5 rounded-md border border-mag-border/40 text-mag-text-dim/50 hover:text-mag-accent hover:border-mag-accent/40 transition-colors"
-              >
-                <Pencil size={12} />
-              </button>
+              {canManage && (
+                <button
+                  onClick={() => {
+                    setNameDraft(deviceDisplayName(device));
+                    setNameError('');
+                    setEditingName(true);
+                  }}
+                  aria-label="Rename device"
+                  title="Rename device"
+                  className="p-1.5 rounded-md border border-mag-border/40 text-mag-text-dim/50 hover:text-mag-accent hover:border-mag-accent/40 transition-colors"
+                >
+                  <Pencil size={12} />
+                </button>
+              )}
             </>
           )}
         </div>
@@ -400,18 +499,144 @@ export function DevicePanel() {
         </a>
       )}
 
-      {/* Export location history (CSV) */}
-      <button
-        onClick={exportCsv}
-        disabled={exporting}
-        title="Download the full location history as CSV (law-enforcement handover, insurance claims, local analysis)"
-        className="flex items-center justify-center gap-2 py-3 rounded-xl border border-mag-border/40 text-mag-text-dim hover:text-mag-text hover:border-mag-accent/50 hover:bg-mag-accent/[0.04] transition-all text-xs font-bold disabled:opacity-50"
-      >
-        <Download size={14} />
-        {exporting ? 'Exporting…' : 'Export Location History (CSV)'}
-      </button>
+      {/* Export location history (CSV) — viewer+ only (device_only has no
+          location access at all) */}
+      {canReadLocation && (
+        <button
+          onClick={exportCsv}
+          disabled={exporting}
+          title="Download the full location history as CSV (law-enforcement handover, insurance claims, local analysis)"
+          className="flex items-center justify-center gap-2 py-3 rounded-xl border border-mag-border/40 text-mag-text-dim hover:text-mag-text hover:border-mag-accent/50 hover:bg-mag-accent/[0.04] transition-all text-xs font-bold disabled:opacity-50"
+        >
+          <Download size={14} />
+          {exporting ? 'Exporting…' : 'Export Location History (CSV)'}
+        </button>
+      )}
 
-      {/* Alert Settings (per-device recipients) */}
+      {/* Device Sharing (Milestone 2 P1) — invite family by email, pick a
+          role, revoke. Owner manages grants; admins see the list read-only. */}
+      {canManage && (
+        <div className="bg-mag-surface/30 border border-mag-border/30 rounded-xl p-4 space-y-3">
+          <button
+            onClick={() => setShowShares(!showShares)}
+            className="w-full flex items-center justify-between text-[11px] font-mono text-mag-text-dim/80 uppercase tracking-wider font-bold hover:text-mag-text transition-colors"
+          >
+            <span className="flex items-center gap-1.5">
+              <Users size={12} className="text-mag-accent" />
+              Sharing
+              {shares.length > 0 && (
+                <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-mag-primary/15 text-mag-accent border border-mag-primary/25">
+                  {shares.length}
+                </span>
+              )}
+            </span>
+            <span className="text-mag-text-dim/50">{showShares ? '−' : '+'}</span>
+          </button>
+
+          {showShares && (
+            <div className="space-y-2.5 pt-1">
+              {isOwner ? (
+                <form onSubmit={inviteShare} className="space-y-2">
+                  <div>
+                    <label className="text-[10px] font-mono text-mag-text-dim/60 font-bold mb-1 block">
+                      Share with (account email)
+                    </label>
+                    <input
+                      value={inviteEmail}
+                      onChange={e => setInviteEmail(e.target.value)}
+                      placeholder="family@example.com"
+                      type="email"
+                      aria-label="Recipient email"
+                      className="w-full bg-mag-bg/60 border border-mag-border/40 rounded-lg px-3 py-2 text-xs font-mono text-mag-text placeholder:text-mag-text-dim/30 focus:outline-none focus:border-mag-primary/60 transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-mono text-mag-text-dim/60 font-bold mb-1 block">
+                      Role
+                    </label>
+                    <select
+                      value={inviteRole}
+                      onChange={e => setInviteRole(e.target.value as ShareRole)}
+                      aria-label="Share role"
+                      className="w-full bg-mag-bg/60 border border-mag-border/40 rounded-lg px-3 py-2 text-xs font-mono text-mag-text focus:outline-none focus:border-mag-primary/60 transition-colors"
+                    >
+                      <option value="viewer">Viewer — read only</option>
+                      <option value="admin">Admin — full control</option>
+                      <option value="device_only">Device-only — status glance, no location</option>
+                    </select>
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={shareSaving}
+                    className="w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-mag-primary/90 hover:bg-mag-primary disabled:opacity-50 text-white text-xs font-bold transition-all"
+                  >
+                    <UserPlus size={13} />
+                    {shareSaving ? 'Sharing...' : 'Share device'}
+                  </button>
+                  {shareError && <div className="text-[10px] font-mono text-red-400">{shareError}</div>}
+                  {shareMsg && (
+                    <div className="flex items-start gap-1.5 text-[10px] font-mono text-mag-accent leading-relaxed">
+                      <ShieldCheck size={11} className="shrink-0 mt-0.5" />
+                      {shareMsg}
+                    </div>
+                  )}
+                </form>
+              ) : (
+                <p className="text-[10px] font-mono text-mag-text-dim/50 leading-relaxed">
+                  Only the device owner can manage sharing. You have{' '}
+                  <span className="font-bold text-mag-text-dim/80">{ROLE_LABEL[accessRole] ?? accessRole}</span>{' '}
+                  access to this device.
+                </p>
+              )}
+
+              {shares.length > 0 && (
+                <div className="space-y-1.5 pt-1">
+                  {shares.map(s => (
+                    <div
+                      key={s.id}
+                      className="flex items-center gap-2 px-2.5 py-2 rounded-lg bg-mag-bg/40 border border-mag-border/25"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[10px] font-mono text-mag-text font-bold truncate">
+                          {s.display_name || s.email}
+                        </div>
+                        <div className="text-[9px] font-mono text-mag-text-dim/45 truncate">
+                          {s.email}
+                        </div>
+                      </div>
+                      <span
+                        className={cn(
+                          'text-[9px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border shrink-0',
+                          s.role === 'admin'
+                            ? 'border-mag-primary/40 text-mag-accent bg-mag-primary/10'
+                            : s.role === 'viewer'
+                              ? 'border-mag-accent/40 text-mag-accent bg-mag-accent/10'
+                              : 'border-mag-text-dim/40 text-mag-text-dim/80 bg-mag-text-dim/10'
+                        )}
+                      >
+                        {ROLE_LABEL[s.role] ?? s.role}
+                      </span>
+                      {isOwner && (
+                        <button
+                          onClick={() => revokeShare(s.id)}
+                          aria-label={`Revoke access for ${s.email}`}
+                          title="Revoke access"
+                          className="p-1 rounded-md text-mag-text-dim/40 hover:text-mag-danger hover:bg-mag-danger/10 transition-colors"
+                        >
+                          <UserMinus size={12} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Alert Settings (per-device recipients) — admin+ only */}
+      {canManage && (
       <div className="bg-mag-surface/30 border border-mag-border/30 rounded-xl p-4 space-y-3">
         <button
           onClick={() => setShowSettings(!showSettings)}
@@ -570,6 +795,7 @@ export function DevicePanel() {
           </div>
         )}
       </div>
+      )}
 
       {!latestLocation && (
         <div className="text-center py-6">
@@ -583,7 +809,8 @@ export function DevicePanel() {
         </div>
       )}
 
-      {/* Offline Command Relay (SMS) — commands that reach the phone even with no data */}
+      {/* Offline Command Relay (SMS) — commands that reach the phone even with no data. Admin+ only (it is a security surface + costs money). */}
+      {canManage && (
       <div className="bg-mag-surface/30 border border-mag-border/30 rounded-xl p-4 space-y-3">
         <button
           onClick={() => setShowSmsSettings(!showSmsSettings)}
@@ -658,8 +885,10 @@ export function DevicePanel() {
           </div>
         )}
       </div>
+      )}
 
-      {/* Permanent deletion (privacy policy promise) */}
+      {/* Permanent deletion (privacy policy promise) — owner only */}
+      {isOwner && (
       <div className="bg-mag-surface/30 border border-mag-border/30 rounded-xl p-4">
         {!confirmDelete ? (
           <button
@@ -720,6 +949,7 @@ export function DevicePanel() {
           </div>
         )}
       </div>
+      )}
     </div>
   );
 }

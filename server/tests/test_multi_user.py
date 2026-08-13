@@ -123,6 +123,7 @@ def reset_db_state():
             "alerts",
             "heartbeats",
             "geofences",
+            "device_shares",
             "fcm_tokens",
             "recovery_sightings",
             "recovery_requests",
@@ -141,6 +142,7 @@ def reset_db_state():
 
     websocket_manager._device_owners.clear()
     websocket_manager._connection_owners.clear()
+    websocket_manager._connection_device_ids.clear()
     yield
 
 
@@ -1193,3 +1195,216 @@ class TestPermanentDeletion:
     def test_delete_user_account_rejects_api_key(self):
         resp = client.delete("/api/auth/user/account", headers=api_key_headers())
         assert resp.status_code == 401
+
+
+# ─── Device Sharing + RBAC (roadmap Milestone 2 P1) ─────────────────────────
+# Family sharing: the owner grants another account admin/viewer/device_only
+# access. Roles are enforced centrally by _assert_device_access; the device
+# list tags each row with the caller's access_role so the UI can hide controls.
+
+
+class TestDeviceSharing:
+    def _share(self, owner_token: str, device_id: str, email: str, role: str = "viewer"):
+        return client.post(
+            f"/api/dashboard/devices/{device_id}/shares",
+            json={"email": email, "role": role},
+            headers=user_headers(owner_token),
+        )
+
+    def _seed_location(self, device_id: str):
+        with database.get_db_context() as conn:
+            conn.execute(
+                "INSERT INTO locations (device_id, lat, lng, provider, server_timestamp) " "VALUES (?, ?, ?, 'gps', ?)",
+                (device_id, 6.5244, 3.3792, "2026-08-01T12:00:00+00:00"),
+            )
+            conn.commit()
+
+    def test_owner_can_share_device_by_email(self):
+        owner = register_user("share-owner@example.com")
+        grantee = register_user("share-grantee@example.com")
+        register_device("share-device", user_token=owner["token"])
+
+        resp = self._share(owner["token"], "share-device", "share-grantee@example.com", "viewer")
+        assert resp.status_code == 200, resp.text
+
+        devices = get_dashboard_devices(user_headers(grantee["token"]))
+        shared = [d for d in devices if d["id"] == "share-device"]
+        assert len(shared) == 1
+        assert shared[0]["access_role"] == "viewer"
+        assert shared[0]["is_owner"] is False
+
+    def test_shared_viewer_can_read_locations_but_not_command(self):
+        owner = register_user("share-rw-owner@example.com")
+        grantee = register_user("share-rw-grantee@example.com")
+        register_device("share-rw-device", user_token=owner["token"])
+        self._seed_location("share-rw-device")
+        self._share(owner["token"], "share-rw-device", "share-rw-grantee@example.com", "viewer")
+
+        resp = client.get("/api/dashboard/locations/share-rw-device", headers=user_headers(grantee["token"]))
+        assert resp.status_code == 200, resp.text
+
+        resp = client.post(
+            "/api/dashboard/command",
+            json={"device_id": "share-rw-device", "command": "ping", "params": ""},
+            headers=user_headers(grantee["token"]),
+        )
+        assert resp.status_code == 403, resp.text
+
+    def test_shared_admin_can_issue_commands(self):
+        owner = register_user("share-admin-owner@example.com")
+        admin = register_user("share-admin-grantee@example.com")
+        register_device("share-admin-device", user_token=owner["token"])
+        self._share(owner["token"], "share-admin-device", "share-admin-grantee@example.com", "admin")
+
+        resp = client.post(
+            "/api/dashboard/command",
+            json={"device_id": "share-admin-device", "command": "ping", "params": ""},
+            headers=user_headers(admin["token"]),
+        )
+        assert resp.status_code == 200, resp.text
+
+    def test_device_only_share_sees_status_but_no_location(self):
+        owner = register_user("share-do-owner@example.com")
+        grantee = register_user("share-do-grantee@example.com")
+        register_device("share-do-device", user_token=owner["token"])
+        self._seed_location("share-do-device")
+        self._share(owner["token"], "share-do-device", "share-do-grantee@example.com", "device_only")
+
+        devices = get_dashboard_devices(user_headers(grantee["token"]))
+        shared = next(d for d in devices if d["id"] == "share-do-device")
+        assert shared["access_role"] == "device_only"
+        # Privacy tier: no coordinates on the list row either.
+        assert shared["lat"] is None and shared["lng"] is None
+
+        resp = client.get("/api/dashboard/locations/share-do-device", headers=user_headers(grantee["token"]))
+        assert resp.status_code == 403, resp.text
+
+    def test_invite_unknown_email_404(self):
+        owner = register_user("share-404-owner@example.com")
+        register_device("share-404-device", user_token=owner["token"])
+        resp = self._share(owner["token"], "share-404-device", "nobody@example.com")
+        assert resp.status_code == 404
+
+    def test_invite_bad_role_422(self):
+        owner = register_user("share-422-owner@example.com")
+        register_device("share-422-device", user_token=owner["token"])
+        resp = self._share(owner["token"], "share-422-device", "share-422-grantee@example.com", "superuser")
+        assert resp.status_code == 422
+
+    def test_share_to_self_rejected(self):
+        owner = register_user("share-self-owner@example.com")
+        register_device("share-self-device", user_token=owner["token"])
+        resp = self._share(owner["token"], "share-self-device", "share-self-owner@example.com", "viewer")
+        assert resp.status_code == 400
+
+    def test_reinvite_upgrades_role_in_place(self):
+        owner = register_user("share-up-owner@example.com")
+        grantee = register_user("share-up-grantee@example.com")
+        register_device("share-up-device", user_token=owner["token"])
+        self._share(owner["token"], "share-up-device", "share-up-grantee@example.com", "viewer")
+        resp = self._share(owner["token"], "share-up-device", "share-up-grantee@example.com", "admin")
+        assert resp.status_code == 200, resp.text
+
+        devices = get_dashboard_devices(user_headers(grantee["token"]))
+        shared = next(d for d in devices if d["id"] == "share-up-device")
+        assert shared["access_role"] == "admin"
+        # Upsert, not a second row.
+        with database.get_db_context() as conn:
+            cnt = conn.execute("SELECT COUNT(*) FROM device_shares WHERE device_id='share-up-device'").fetchone()[0]
+        assert cnt == 1
+
+    def test_owner_can_revoke_share(self):
+        owner = register_user("share-rev-owner@example.com")
+        grantee = register_user("share-rev-grantee@example.com")
+        register_device("share-rev-device", user_token=owner["token"])
+        self._share(owner["token"], "share-rev-device", "share-rev-grantee@example.com", "viewer")
+
+        resp = client.get("/api/dashboard/devices/share-rev-device/shares", headers=user_headers(owner["token"]))
+        assert resp.status_code == 200, resp.text
+        share_id = resp.json()["shares"][0]["id"]
+
+        resp = client.delete(
+            f"/api/dashboard/devices/share-rev-device/shares/{share_id}",
+            headers=user_headers(owner["token"]),
+        )
+        assert resp.status_code == 200, resp.text
+
+        devices = get_dashboard_devices(user_headers(grantee["token"]))
+        assert all(d["id"] != "share-rev-device" for d in devices)
+        resp = client.get("/api/dashboard/locations/share-rev-device", headers=user_headers(grantee["token"]))
+        assert resp.status_code == 403, resp.text
+
+    def test_grantee_cannot_share_or_delete(self):
+        owner = register_user("share-no-owner@example.com")
+        grantee = register_user("share-no-grantee@example.com")
+        register_device("share-no-device", user_token=owner["token"])
+        self._share(owner["token"], "share-no-device", "share-no-grantee@example.com", "admin")
+
+        # Grantee cannot grant shares (owner only).
+        resp = self._share(grantee["token"], "share-no-device", "share-no-grantee2@example.com", "viewer")
+        assert resp.status_code == 403, resp.text
+        # Grantee cannot delete the device (owner only).
+        resp = client.request(
+            "DELETE",
+            "/api/dashboard/devices/share-no-device",
+            json={"password": TEST_USER_PASSWORD},
+            headers=user_headers(grantee["token"]),
+        )
+        assert resp.status_code == 403, resp.text
+
+        devices = get_dashboard_devices(user_headers(owner["token"]))
+        assert any(d["id"] == "share-no-device" for d in devices)
+
+    def test_admin_session_sees_all_with_owner_role(self):
+        register_device("share-admin-view-device")
+        tokens = create_dashboard_tokens(TEST_API_KEY)
+        resp = client.get("/api/dashboard/devices", headers={"Authorization": f"Bearer {tokens['token']}"})
+        assert resp.status_code == 200
+        assert any(d["id"] == "share-admin-view-device" and d["access_role"] == "owner" for d in resp.json()["devices"])
+
+    def test_ws_scope_denies_devices_outside_the_allowed_set(self):
+        """The WebSocket per-connection device set is the delivery gate for
+        shared users. main.py builds that set from owned + viewer/admin
+        grants ONLY (device_only is the privacy tier — REST strips its
+        coordinates, so live broadcasts must never reach it). Here we assert
+        the gate itself: a device outside the allowed set is never delivered,
+        regardless of what the owner-cache would say."""
+        import websocket_manager
+
+        fake = object()  # _connection_can_receive only uses id(ws)
+        # Simulate a user connection whose set is {owned-dev} — the shared
+        # device_only grant was (correctly) excluded by main.py.
+        websocket_manager._connection_owners[id(fake)] = "ws-user-1"
+        websocket_manager._connection_device_ids[id(fake)] = {"owned-dev"}
+        try:
+            # In-set device: delivered.
+            assert websocket_manager._connection_can_receive(
+                fake, {"_scope_owner": "ws-user-1", "data": {"device_id": "owned-dev"}}
+            )
+            # Out-of-set device (the device_only share): must NOT be delivered
+            # even though it carries a valid scope owner.
+            assert not websocket_manager._connection_can_receive(
+                fake, {"_scope_owner": "ws-user-2", "data": {"device_id": "shared-only-dev"}}
+            )
+            # Global (no device_id) broadcasts still reach authenticated users.
+            assert websocket_manager._connection_can_receive(fake, {"type": "ping"})
+        finally:
+            websocket_manager._connection_owners.pop(id(fake), None)
+            websocket_manager._connection_device_ids.pop(id(fake), None)
+
+    def test_delete_device_removes_shares(self):
+        owner = register_user("share-del-owner@example.com")
+        register_user("share-del-grantee@example.com")
+        register_device("share-del-device", user_token=owner["token"])
+        self._share(owner["token"], "share-del-device", "share-del-grantee@example.com", "viewer")
+
+        resp = client.request(
+            "DELETE",
+            "/api/dashboard/devices/share-del-device",
+            json={"password": TEST_USER_PASSWORD},
+            headers=user_headers(owner["token"]),
+        )
+        assert resp.status_code == 200, resp.text
+        with database.get_db_context() as conn:
+            cnt = conn.execute("SELECT COUNT(*) FROM device_shares WHERE device_id='share-del-device'").fetchone()[0]
+        assert cnt == 0

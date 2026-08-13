@@ -41,6 +41,10 @@ export function CommandPanel() {
   const { commands, setCommands, selectedDeviceId, devices } = useStore();
   const { toast } = useToast();
   const selectedDevice = devices.find(d => d.id === selectedDeviceId);
+  // Milestone 2 P1 RBAC: only owner/admin may ISSUE commands or delete the
+  // audit trail (server-enforced; this hides the controls for viewer/shared).
+  const accessRole: 'owner' | 'admin' | 'viewer' | 'device_only' = selectedDevice?.access_role ?? 'owner';
+  const canCommand = accessRole === 'owner' || accessRole === 'admin';
   // Offline Command Relay: when the device is offline (no data) but the owner
   // enabled SMS commands, every issued command is ALSO texted to the phone and
   // executed locally. Show an honest notice so the operator knows the delivery
@@ -184,7 +188,9 @@ export function CommandPanel() {
         </div>
       )}
 
-      {/* Quick Actions */}
+      {/* Quick Actions — owner/admin only (viewer & device-only shares are
+          read-only; the server rejects commands from them too) */}
+      {canCommand && (
       <div>
         <div className="text-[11px] font-mono text-mag-text-dim/70 uppercase tracking-wider font-bold mb-2.5 px-1">
           Quick Actions
@@ -281,6 +287,7 @@ export function CommandPanel() {
           </div>
         )}
       </div>
+      )}
 
       {/* Command History */}
       <div>
@@ -288,7 +295,7 @@ export function CommandPanel() {
           <div className="text-[11px] font-mono text-mag-text-dim/70 uppercase tracking-wider font-bold">
             Recent Commands
           </div>
-          {commands.filter(c => c.status !== 'pending').length > 0 && deleteTarget !== 'all-finished' && (
+          {canCommand && commands.filter(c => c.status !== 'pending').length > 0 && deleteTarget !== 'all-finished' && (
             <button
               onClick={() => { setDeleteTarget('all-finished'); setDeleteError(''); }}
               className="flex items-center gap-1 text-[10px] font-mono font-bold uppercase tracking-wider text-mag-text-dim/60 hover:text-mag-danger/80 transition-colors"
@@ -406,14 +413,16 @@ export function CommandPanel() {
                   {cmd.status}
                 </span>
 
-                <button
-                  onClick={() => { setDeleteTarget(cmd.id); setDeleteError(''); }}
-                  className="text-mag-text-dim/35 hover:text-mag-danger/80 transition-colors p-0.5"
-                  title="Delete this command from history"
-                  aria-label={`Delete ${getCommandLabel(cmd.command)} command`}
-                >
-                  <Trash2 size={12} />
-                </button>
+                {canCommand && (
+                  <button
+                    onClick={() => { setDeleteTarget(cmd.id); setDeleteError(''); }}
+                    className="text-mag-text-dim/35 hover:text-mag-danger/80 transition-colors p-0.5"
+                    title="Delete this command from history"
+                    aria-label={`Delete ${getCommandLabel(cmd.command)} command`}
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                )}
               </div>
             ))
           )}

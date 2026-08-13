@@ -230,6 +230,21 @@ class PostgresDatabase:
                         last_inside BOOLEAN
                     );
 
+                    -- Device sharing (Milestone 2 P1) — parity with the
+                    -- SQLite device_shares table.
+                    CREATE TABLE IF NOT EXISTS device_shares (
+                        id TEXT PRIMARY KEY,
+                        device_id TEXT NOT NULL REFERENCES devices(id),
+                        grantee_user_id TEXT NOT NULL,
+                        role TEXT NOT NULL DEFAULT 'viewer',
+                        created_by TEXT NOT NULL,
+                        created_at TIMESTAMPTZ DEFAULT NOW(),
+                        UNIQUE (device_id, grantee_user_id)
+                    );
+
+                    CREATE INDEX IF NOT EXISTS idx_device_shares_device ON device_shares(device_id);
+                    CREATE INDEX IF NOT EXISTS idx_device_shares_grantee ON device_shares(grantee_user_id);
+
                     CREATE TABLE IF NOT EXISTS guardian_profiles (
                         user_id TEXT PRIMARY KEY,
                         opted_in BOOLEAN DEFAULT TRUE,

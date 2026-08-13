@@ -24,8 +24,13 @@ function policyLabel(action: GeofenceAutoAction): string {
 }
 
 export function GeofencePanel() {
-  const { selectedDeviceId, latestLocation } = useStore();
+  const { selectedDeviceId, latestLocation, devices } = useStore();
   const { toast } = useToast();
+  // Milestone 2 P1 RBAC: creating/deleting zone policies is owner/admin only
+  // (server-enforced — this hides the controls for read-only shares).
+  const selectedDevice = devices.find(d => d.id === selectedDeviceId);
+  const accessRole: 'owner' | 'admin' | 'viewer' | 'device_only' = selectedDevice?.access_role ?? 'owner';
+  const canManage = accessRole === 'owner' || accessRole === 'admin';
 
   const [zones, setZones] = useState<Geofence[] | null>(null);
   const [loading, setLoading] = useState(false);
@@ -239,34 +244,40 @@ export function GeofencePanel() {
                   )}
                   On exit: {policyLabel(zone.auto_action)}
                 </span>
-                <button
-                  onClick={() => armDelete(zone)}
-                  disabled={deletingId !== null}
-                  aria-label={`Delete zone ${zone.name || zone.id}`}
-                  title={confirmDeleteId === zone.id ? 'Click again to confirm' : 'Delete zone'}
-                  className={cn(
-                    'px-2 py-1.5 rounded-md border text-[9px] font-mono font-bold uppercase tracking-wider transition-colors disabled:opacity-40 shrink-0',
-                    confirmDeleteId === zone.id
-                      ? 'border-mag-danger/60 bg-mag-danger/15 text-mag-danger'
-                      : 'border-mag-border/40 text-mag-text-dim/40 hover:text-mag-danger hover:border-mag-danger/40'
-                  )}
-                >
-                  {deletingId === zone.id ? (
-                    <Loader size={11} className="animate-spin" />
-                  ) : confirmDeleteId === zone.id ? (
-                    'Confirm?'
-                  ) : (
-                    <Trash2 size={11} />
-                  )}
-                </button>
+                {canManage && (
+                  <button
+                    onClick={() => armDelete(zone)}
+                    disabled={deletingId !== null}
+                    aria-label={`Delete zone ${zone.name || zone.id}`}
+                    title={confirmDeleteId === zone.id ? 'Click again to confirm' : 'Delete zone'}
+                    className={cn(
+                      'px-2 py-1.5 rounded-md border text-[9px] font-mono font-bold uppercase tracking-wider transition-colors disabled:opacity-40 shrink-0',
+                      confirmDeleteId === zone.id
+                        ? 'border-mag-danger/60 bg-mag-danger/15 text-mag-danger'
+                        : 'border-mag-border/40 text-mag-text-dim/40 hover:text-mag-danger hover:border-mag-danger/40'
+                    )}
+                  >
+                    {deletingId === zone.id ? (
+                      <Loader size={11} className="animate-spin" />
+                    ) : confirmDeleteId === zone.id ? (
+                      'Confirm?'
+                    ) : (
+                      <Trash2 size={11} />
+                    )}
+                  </button>
+                )}
               </div>
             </div>
           ))
         )}
       </div>
 
-      {/* Create zone */}
-      {!formOpen ? (
+      {/* Create zone — owner/admin only */}
+      {!canManage ? (
+        <p className="text-center text-[10px] font-mono text-mag-text-dim/40 py-2">
+          You have read-only access — only the owner or an admin can change zones.
+        </p>
+      ) : !formOpen ? (
         <button
           onClick={() => { setFormOpen(true); setError(''); }}
           className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-dashed border-mag-border/40 text-mag-text-dim/70 hover:text-mag-accent hover:border-mag-primary/50 transition-all text-xs font-bold"

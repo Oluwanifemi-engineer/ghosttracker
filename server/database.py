@@ -482,6 +482,26 @@ def init_db(db_path: str = None):
             FOREIGN KEY (device_id) REFERENCES devices(id)
         );
 
+        -- ─── Device Sharing (Milestone 2 P1) ───────────────────────────────
+        -- Grant another account (family member, partner) access to a device.
+        -- role: device_only (status glance) / viewer (read) / admin (control);
+        -- only the device owner can grant/revoke (enforced in routes).
+        -- UNIQUE(device_id, grantee) makes an invite idempotent — re-inviting
+        -- the same account upgrades/downgrades the role in place.
+        CREATE TABLE IF NOT EXISTS device_shares (
+            id TEXT PRIMARY KEY,
+            device_id TEXT NOT NULL,
+            grantee_user_id TEXT NOT NULL,
+            role TEXT NOT NULL DEFAULT 'viewer',
+            created_by TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE (device_id, grantee_user_id),
+            FOREIGN KEY (device_id) REFERENCES devices(id)
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_device_shares_device ON device_shares(device_id);
+        CREATE INDEX IF NOT EXISTS idx_device_shares_grantee ON device_shares(grantee_user_id);
+
         -- ─── Guardian Network (community recovery) ─────────────────────────
         -- Users who opted in to help recover other people's stolen devices.
         CREATE TABLE IF NOT EXISTS guardian_profiles (
@@ -633,7 +653,9 @@ def delete_device_cascade(conn, device_id: str):
     except Exception:
         pass  # never block deletion on a disk glitch
 
-    # Everything else references the device row directly.
+    # Everything else references the device row directly. device_shares rows
+    # must go with the device (a deleted device must not leave dangling grants
+    # that the grantee's device list would try to join).
     for table in (
         "locations",
         "media",
@@ -642,6 +664,7 @@ def delete_device_cascade(conn, device_id: str):
         "alerts",
         "heartbeats",
         "geofences",
+        "device_shares",
         "fcm_tokens",
         "error_log",
     ):

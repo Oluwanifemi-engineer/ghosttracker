@@ -18,8 +18,13 @@ import { useToast } from '@/components/ui/Toast';
  * verification on every delete and is never stored client-side.
  */
 export function MediaGallery() {
-  const { media, setMedia, selectedDeviceId } = useStore();
+  const { media, setMedia, selectedDeviceId, devices } = useStore();
   const { toast } = useToast();
+  // Milestone 2 P1 RBAC: deleting evidence is owner/admin only (server-verified
+  // step-up password too) — viewer/device_only shares are read-only here.
+  const selectedDevice = devices.find(d => d.id === selectedDeviceId);
+  const accessRole: 'owner' | 'admin' | 'viewer' | 'device_only' = selectedDevice?.access_role ?? 'owner';
+  const canManage = accessRole === 'owner' || accessRole === 'admin';
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [itemData, setItemData] = useState<any>(null);
   const [playing, setPlaying] = useState(false);
@@ -139,19 +144,21 @@ export function MediaGallery() {
             <span className="text-[11px] font-mono text-mag-text-dim/70 uppercase tracking-wider font-bold flex-1 truncate">
               {selectedItem.type === 'photo' ? 'PHOTO' : 'AUDIO'} — {formatTimestamp(viewerTimestamp)}
             </span>
-            {/* Single-item delete (step-up password) */}
-            <button
-              onClick={() => {
-                setDeletePassword('');
-                setDeleteError('');
-                setDeleteOpen(true);
-              }}
-              aria-label="Delete this media item"
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-mono font-bold text-mag-danger/80 hover:text-mag-danger hover:bg-mag-danger/[0.06] border border-mag-danger/25 hover:border-mag-danger/50 transition-all"
-            >
-              <Trash2 size={11} />
-              DELETE
-            </button>
+            {/* Single-item delete (step-up password) — owner/admin only */}
+            {canManage && (
+              <button
+                onClick={() => {
+                  setDeletePassword('');
+                  setDeleteError('');
+                  setDeleteOpen(true);
+                }}
+                aria-label="Delete this media item"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-mono font-bold text-mag-danger/80 hover:text-mag-danger hover:bg-mag-danger/[0.06] border border-mag-danger/25 hover:border-mag-danger/50 transition-all"
+              >
+                <Trash2 size={11} />
+                DELETE
+              </button>
+            )}
           </div>
 
           <div className="bg-mag-surface/30 border border-mag-border/30 rounded-xl overflow-hidden">
@@ -209,7 +216,7 @@ export function MediaGallery() {
                 delete requires password
               </span>
             )}
-            {!manageMode && (
+            {canManage && !manageMode && (
               <button
                 onClick={toggleManage}
                 className="ml-auto flex items-center gap-1 px-2 py-1 rounded-lg border border-mag-border/40 text-mag-text-dim/50 hover:text-mag-text hover:border-mag-border text-[9px] font-mono font-bold transition-all"

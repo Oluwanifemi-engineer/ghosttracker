@@ -32,6 +32,32 @@ export interface Device {
   // locally. Owner opt-in only — sms_commands_enabled defaults to false.
   sms_phone: string | null;
   sms_commands_enabled: boolean;
+  // Milestone 2 P1 RBAC: the caller's effective role on this device.
+  // 'owner' = the linked account; admin/viewer/device_only = shared grants
+  // (family sharing). The UI hides write/delete controls below admin, and
+  // coordinates/PII for device_only (the server strips them too).
+  access_role: 'owner' | ShareRole;
+  is_owner: boolean;
+}
+
+// ─── Device Sharing (Milestone 2 P1) ──────────────────────────────────────
+
+// Roles granted via device sharing, least → most privileged:
+// device_only — status glance only (online, battery, last seen). No location,
+//               evidence, or command access (privacy tier).
+// viewer      — full read access (locations, media, evidence, history).
+// admin       — viewer + full control (commands, geofences, settings).
+// Only the device OWNER can grant, change, or revoke shares (server-enforced).
+export type ShareRole = 'admin' | 'viewer' | 'device_only';
+
+export interface DeviceShare {
+  id: string;
+  device_id: string;
+  grantee_user_id: string;
+  role: ShareRole;
+  email: string;
+  display_name: string | null;
+  created_at: string;
 }
 
 export interface DeviceWithStatus extends Device {

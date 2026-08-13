@@ -45,6 +45,11 @@ jest.mock('lucide-react', () => {
     X: stub('X'),
     Pencil: stub('Pencil'),
     MessageSquareText: stub('MessageSquareText'),
+    // Milestone 2 P1 device sharing
+    Users: stub('Users'),
+    UserPlus: stub('UserPlus'),
+    UserMinus: stub('UserMinus'),
+    ShieldCheck: stub('ShieldCheck'),
   };
 });
 

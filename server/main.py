@@ -941,6 +941,7 @@ async def dashboard_websocket(websocket: WebSocket):
         return
 
     owner = None  # resolved below; never register unauthenticated
+    device_ids = None  # user connections: allowed device ids (owned + shared)
     try:
         payload = decode_token(token)
         if payload.get("type") not in ("dashboard", "access"):
@@ -951,16 +952,29 @@ async def dashboard_websocket(websocket: WebSocket):
         if user_id:
             owner = user_id
             # Hydrate the in-memory device→owner cache so this user's
-            # dashboards receive broadcasts immediately (survives restarts).
+            # dashboards receive broadcasts immediately (survives restarts),
+            # and snapshot the full allowed-device set (owned + SHARED via
+            # device_shares — Milestone 2 P1) so shared users receive live
+            # updates for granted devices too. The snapshot is taken at
+            # connect time; reconnecting picks up grant/revoke changes.
             try:
                 from database import get_db_context
 
                 with get_db_context() as conn:
-                    rows = conn.execute("SELECT id FROM devices WHERE owner_id=?", (owner,)).fetchall()
-                    for row in rows:
+                    owned = conn.execute("SELECT id FROM devices WHERE owner_id=?", (owner,)).fetchall()
+                    for row in owned:
                         update_device_owner(row["id"], owner)
+                    # device_only shares are the privacy tier: REST strips their
+                    # coordinates, so the WS feed must NOT leak live lat/lng to
+                    # them either — only viewer/admin grants join the set.
+                    shared = conn.execute(
+                        "SELECT device_id AS id FROM device_shares "
+                        "WHERE grantee_user_id=? AND role != 'device_only'",
+                        (owner,),
+                    ).fetchall()
+                    device_ids = {row["id"] for row in owned} | {row["id"] for row in shared}
             except Exception:
-                pass
+                pass  # fall back to owner-only scoping (safe default)
         elif sub.startswith("dashboard:"):
             # Authenticated operator/dashboard token — explicit admin scope.
             owner = ADMIN_OWNER
@@ -988,7 +1002,7 @@ async def dashboard_websocket(websocket: WebSocket):
         )
         await close_lowest_priority_connection()
 
-    add_connection(websocket, owner)  # register + initialize pong timestamp
+    add_connection(websocket, owner, device_ids)  # register + scope + pong init
     logger.info(
         "WebSocket connected",
         extra={

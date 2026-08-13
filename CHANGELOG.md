@@ -9,6 +9,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased] — 2026-08-12
 
+### Added (v1.6 — family sharing round)
+
+- **Device sharing + RBAC (Milestone 2 P1)**: owners can grant another
+  account access to a device with one of three roles — `admin` (full
+  control: commands, geofences, settings), `viewer` (full read: locations,
+  media, evidence, history), or `device_only` (status glance only — no
+  location, evidence, or commands; the privacy tier). New `device_shares`
+  table (SQLite + Postgres parity, cascade cleanup on device delete),
+  `POST/GET/DELETE /api/dashboard/devices/{id}/shares` (grant by email with
+  idempotent upsert, list, revoke — account-owner only), and every device
+  endpoint now enforces a role floor via the centralized
+  `_assert_device_access(db, id, auth, min_role)` choke point (read=viewer,
+  control=admin, destroy/share-manage=owner). The device list tags each row
+  with the caller's `access_role`/`is_owner` and strips coordinates + PII
+  for `device_only`.
+- **Family-sharing dashboard UI (Milestone 2 P1, UI)**: "Sharing" card in
+  the device panel (invite by email, role picker, revoke, role badges),
+  shared-access chips in the sidebar, and role-aware control gating
+  (commands, zones, media delete, settings, tabs hidden for `device_only`).
+  Live updates for shared devices ride the WebSocket: each connection now
+  carries an allowed-device set (owned + viewer/admin grants) resolved at
+  connect time.
+- **WebSocket privacy fix**: `device_only` grants never receive live
+  location broadcasts (the set excludes them server-side), matching the
+  REST redaction.
+
 ### Added (v1.5 — expert review round)
 
 - **Geofence auto-actions (P0 gap-closer #1)**: per-zone `auto_action`

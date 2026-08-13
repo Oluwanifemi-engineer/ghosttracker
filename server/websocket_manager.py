@@ -58,6 +58,15 @@ Initialized to the connection time when the client first connects."""
 #   str user id  -> user token: sees only devices linked to that account
 _connection_owners: dict[int, Optional[str]] = {}
 
+# Per-connection allowed-device set for USER connections (Milestone 2 P1
+# device sharing). None = admin connection (sees all devices). When set, a
+# broadcast only reaches the connection if its device_id is in the set — this
+# lets a shared user receive live updates for devices granted to them via
+# device_shares, not just devices they own (the owner-cache check below only
+# knows the device's OWNER). Snapshotted at connect time; a reconnect (or a
+# 3s dashboard poll) picks up share changes.
+_connection_device_ids: dict[int, Optional[set]] = {}
+
 # Explicit sentinel for authenticated admin connections. The old design used
 # None as "admin", which made UNauthenticated connections admin too — a live
 # location feed for every device, no token required (F-01).
@@ -67,7 +76,7 @@ ADMIN_OWNER = "__magneetar_admin__"
 _device_owners: dict[str, str] = {}
 
 
-def add_connection(ws: WebSocket, owner: Optional[str] = None):
+def add_connection(ws: WebSocket, owner: Optional[str] = None, device_ids: Optional[set] = None):
     """Register a new WebSocket connection and initialize its pong tracking.
 
     Args:
@@ -76,9 +85,13 @@ def add_connection(ws: WebSocket, owner: Optional[str] = None):
             that account). Callers MUST pass a resolved owner — passing None
             here registers an anonymous connection that can never receive
             device broadcasts.
+        device_ids: for USER connections, the full set of device ids the
+            account can see (owned + shared via device_shares). None for
+            admin connections (unbounded scope).
     """
     active_dashboard_connections.append(ws)
     _connection_owners[id(ws)] = owner
+    _connection_device_ids[id(ws)] = device_ids
     _last_pong_times[id(ws)] = time.time()
 
 
@@ -234,6 +247,15 @@ def _connection_can_receive(ws: WebSocket, message: dict) -> bool:
         return False  # unauthenticated — never receive device data
     if owner == ADMIN_OWNER:
         return True  # authenticated admin sees all devices
+    # User connection with an explicit allowed-device set (owned + shared):
+    # the set is the authoritative scope — it covers shared devices whose
+    # OWNER is a different account, which the owner-cache check below cannot.
+    allowed = _connection_device_ids.get(id(ws))
+    if allowed is not None:
+        device_id = _message_device_id(message)
+        if device_id is None:
+            return True  # global broadcast (ping/shutdown)
+        return device_id in allowed
     scope_owner = message.get("_scope_owner", _UNSET)
     if scope_owner is not _UNSET:
         return scope_owner == owner
@@ -346,6 +368,7 @@ def _safe_remove(ws: WebSocket, reason: str = "unknown"):
         active_dashboard_connections.remove(ws)
         _last_pong_times.pop(id(ws), None)
         _connection_owners.pop(id(ws), None)
+        _connection_device_ids.pop(id(ws), None)
         logger.info(
             "WebSocket removed",
             extra={

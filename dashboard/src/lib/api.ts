@@ -1,4 +1,4 @@
-import { Device, Location, Command, MediaItem, MediaDetail, ErrorLogResponse, GuardianProfile, RecoveryRequest, NearbyRecoveryRequest, UserProfile, Geofence, GeofenceAutoAction } from '@/types';
+import { Device, Location, Command, MediaItem, MediaDetail, ErrorLogResponse, GuardianProfile, RecoveryRequest, NearbyRecoveryRequest, UserProfile, Geofence, GeofenceAutoAction, DeviceShare, ShareRole } from '@/types';
 
 // ─── Configuration ───────────────────────────────────────────────────────────
 
@@ -321,6 +321,30 @@ class MagneetarAPI {
 
   async resolveError(errorId: number, notes = ''): Promise<{ status: string }> {
     return this.request(`/api/dashboard/errors/${errorId}/resolve`, 'PATCH', { notes });
+  }
+
+  // ── Device Sharing (Milestone 2 P1) ─────────────────────────────────────
+  // Family sharing: the device owner grants another account admin/viewer/
+  // device_only access. All three endpoints are ownership-gated server-side
+  // (grant/revoke = owner only, list = owner + admins).
+
+  /** List accounts with access to a device (owner + admins). */
+  async getShares(deviceId: string): Promise<{ shares: DeviceShare[] }> {
+    return this.request(`/api/dashboard/devices/${deviceId}/shares`);
+  }
+
+  /** Grant (or update) another account's access to a device (owner only). */
+  async addShare(deviceId: string, email: string, role: ShareRole): Promise<{
+    status: string;
+    share_id: string;
+    role: ShareRole;
+  }> {
+    return this.request(`/api/dashboard/devices/${deviceId}/shares`, 'POST', { email, role });
+  }
+
+  /** Revoke an account's access to a device (owner only). */
+  async revokeShare(deviceId: string, shareId: string): Promise<{ status: string; share_id: string }> {
+    return this.request(`/api/dashboard/devices/${deviceId}/shares/${shareId}`, 'DELETE');
   }
 
   // ── Device Management ───────────────────────────────────────────────────

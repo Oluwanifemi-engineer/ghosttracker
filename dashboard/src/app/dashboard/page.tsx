@@ -27,8 +27,22 @@ const PANEL_TABS = [
 ];
 
 export default function DashboardPage() {
-  const { activeTab, setActiveTab } = useStore();
+  const { activeTab, setActiveTab, devices, selectedDeviceId } = useStore();
   const [rightPanelOpen, setRightPanelOpen] = useState(true);
+
+  // Milestone 2 P1 RBAC: a device_only share (status glance, no location)
+  // must not see tabs whose endpoints would 403 — the server strips
+  // coordinates anyway, so hiding them is honest UX, not the security
+  // boundary (that is _assert_device_access min_role on every endpoint).
+  const selectedDevice = devices.find(d => d.id === selectedDeviceId);
+  const accessRole: 'owner' | 'admin' | 'viewer' | 'device_only' = selectedDevice?.access_role ?? 'owner';
+  const visibleTabs = accessRole === 'device_only'
+    ? PANEL_TABS.filter(t => !['location', 'zones', 'media', 'evidence'].includes(t.id))
+    : PANEL_TABS;
+  // If the active tab is hidden by the role (e.g. the user was on Location
+  // and the selected device became a device_only share), fall back to a
+  // visible tab so the panel area never renders blank.
+  const effectiveTab = visibleTabs.some(t => t.id === activeTab) ? activeTab : 'sentinel';
 
   return (
     <div className="flex h-full">
@@ -60,21 +74,21 @@ export default function DashboardPage() {
           <>
             {/* Tabs */}
             <Tabs
-              tabs={PANEL_TABS}
-              activeTab={activeTab}
+              tabs={visibleTabs}
+              activeTab={effectiveTab}
               onTabChange={setActiveTab}
             />
 
             {/* Tab Content */}
             <div className="flex-1 overflow-y-auto">
-              {activeTab === 'sentinel' && <SentinelPanel />}
-              {activeTab === 'commands' && <CommandPanel />}
-              {activeTab === 'location' && <DevicePanel />}
-              {activeTab === 'zones' && <GeofencePanel />}
-              {activeTab === 'media' && <MediaGallery />}
-              {activeTab === 'evidence' && <EvidencePanel />}
-              {activeTab === 'guardian' && <GuardianPanel />}
-              {activeTab === 'errors' && <ErrorPanel />}
+              {effectiveTab === 'sentinel' && <SentinelPanel />}
+              {effectiveTab === 'commands' && <CommandPanel />}
+              {effectiveTab === 'location' && <DevicePanel />}
+              {effectiveTab === 'zones' && <GeofencePanel />}
+              {effectiveTab === 'media' && <MediaGallery />}
+              {effectiveTab === 'evidence' && <EvidencePanel />}
+              {effectiveTab === 'guardian' && <GuardianPanel />}
+              {effectiveTab === 'errors' && <ErrorPanel />}
             </div>
 
             {/* Panel footer */}

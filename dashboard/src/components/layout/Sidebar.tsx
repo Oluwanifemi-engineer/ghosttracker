@@ -240,12 +240,29 @@ export function Sidebar() {
                     style={{ animationDelay: `${idx * 30}ms` }}
                   >
                     <div className="flex items-center justify-between mb-0.5">
-                      <span className="text-sm font-bold text-mag-text truncate group-hover:text-mag-text-bright transition-colors max-w-[65%]">
+                      <span className="text-sm font-bold text-mag-text truncate group-hover:text-mag-text-bright transition-colors max-w-[55%]">
                         {deviceDisplayName(device)}
                       </span>
                       {archived && (
                         <span className="text-[8px] font-mono font-bold uppercase tracking-wider px-1 py-0.5 rounded border border-amber-500/25 text-amber-400 bg-amber-500/10 shrink-0">
                           Archived
+                        </span>
+                      )}
+                      {/* Shared-access chip (Milestone 2 P1) — shown only when
+                          this account does not own the device */}
+                      {!device.is_owner && device.access_role && (
+                        <span
+                          className={cn(
+                            'text-[7px] font-mono font-bold uppercase tracking-wider px-1 py-0.5 rounded border shrink-0',
+                            device.access_role === 'admin'
+                              ? 'border-mag-primary/40 text-mag-accent bg-mag-primary/10'
+                              : device.access_role === 'viewer'
+                                ? 'border-mag-accent/40 text-mag-accent bg-mag-accent/10'
+                                : 'border-mag-text-dim/40 text-mag-text-dim/70 bg-mag-text-dim/10'
+                          )}
+                          title={`Shared access — ${device.access_role} role`}
+                        >
+                          {device.access_role === 'admin' ? 'ADMIN' : device.access_role === 'viewer' ? 'VIEW' : 'STATUS'}
                         </span>
                       )}
                       <StatusIndicator

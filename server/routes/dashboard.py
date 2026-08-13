@@ -8,6 +8,7 @@ import hmac
 import sqlite3
 from datetime import datetime, timedelta, timezone
 from typing import Optional
+from uuid import uuid4
 
 from auth import (
     check_command_rate_limit,
@@ -39,6 +40,7 @@ from models import (
     GeofenceRequest,
     LoginRequest,
     RefreshRequest,
+    ShareRequest,
     TokenResponse,
 )
 
@@ -83,22 +85,66 @@ def _parse_int(raw) -> Optional[int]:
         return None
 
 
-def _assert_device_access(db, device_id: str, auth: str):
-    """Admins can access any device; users only devices linked to their account.
+# ─── Device Sharing / RBAC (roadmap Milestone 2 P1) ─────────────────────────
+# Role hierarchy: owner > admin > viewer > device_only. Shares only ever grant
+# admin/viewer/device_only — "owner" is implicit (the account the device is
+# linked to). device_only is a privacy tier: status glance only, no location,
+# evidence, or command access. Operator/dashboard (admin) sessions rank as
+# owner so the existing admin surface keeps working unchanged.
+ROLE_RANK = {"device_only": 0, "viewer": 1, "admin": 2, "owner": 3}
 
-    Existence is verified for BOTH scopes: a nonexistent device must be a
+
+def _resolve_device_role(db, device_id: str, auth: str) -> Optional[str]:
+    """Return the caller's effective role for a device, or None if they have
+    no access at all.
+
+    Existence is verified for EVERY scope BEFORE the admin shortcut: a
+    nonexistent device must resolve to None so _assert_device_access can 404
+    cleanly (the admin branch returning 'owner' first would let admin-scope
+    writes blow up on downstream FK constraints instead of 404ing)."""
+    row = db.execute("SELECT owner_id FROM devices WHERE id=?", (device_id,)).fetchone()
+    if not row:
+        return None
+    user_id = _resolve_user_id(auth)
+    if user_id is None:
+        return "owner"  # operator/dashboard session — full access
+    if row["owner_id"] == user_id:
+        return "owner"
+    share = db.execute(
+        "SELECT role FROM device_shares WHERE device_id=? AND grantee_user_id=?",
+        (device_id, user_id),
+    ).fetchone()
+    return share["role"] if share else None
+
+
+def _assert_device_access(db, device_id: str, auth: str, min_role: str = "device_only"):
+    """Verify the caller can access a device at or above min_role.
+
+    Roles: owner > admin > viewer > device_only (see _resolve_device_role).
+    Existence is verified for EVERY scope: a nonexistent device must be a
     clean 404, never a 500 from a downstream FOREIGN KEY constraint (the
     admin scope historically skipped the existence check, so admin-scope
     writes like command/geofence blew up with an unhandled IntegrityError).
+    min_role semantics:
+      device_only — status-level visibility (default; any access grants it)
+      viewer      — full read access (locations, media, evidence)
+      admin       — control (commands, geofences, alert/sms settings)
+      owner       — destructive/management actions (delete, share grant/revoke)
+    Returns the caller's role so endpoints can branch on it (e.g. hide
+    device_only users' coordinates in the device list).
     """
-    user_id = _resolve_user_id(auth)
-    row = db.execute("SELECT owner_id FROM devices WHERE id=?", (device_id,)).fetchone()
-    if not row:
-        raise HTTPException(status_code=404, detail="Device not found")
-    if user_id is None:
-        return
-    if row["owner_id"] != user_id:
+    role = _resolve_device_role(db, device_id, auth)
+    if role is None:
+        row = db.execute("SELECT id FROM devices WHERE id=?", (device_id,)).fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Device not found")
         raise HTTPException(status_code=403, detail="Access denied: device not linked to your account")
+    if ROLE_RANK[role] < ROLE_RANK[min_role]:
+        raise HTTPException(
+            status_code=403,
+            detail=f"Access denied: the '{role}' role cannot perform this action",
+        )
+    return role
 
 
 def _verify_stepup_password(db, auth: str, raw_password) -> None:
@@ -178,28 +224,39 @@ async def list_devices(
     db: sqlite3.Connection = Depends(get_db),
     auth: str = Depends(require_dashboard_auth),
 ):
-    """List devices with latest location. Users see only their own devices."""
+    """List devices with latest location. Users see their own devices PLUS
+    devices shared with them (each tagged with the caller's access_role:
+    owner/admin/viewer/device_only — see _resolve_device_role)."""
     user_id = _resolve_user_id(auth)
     # location_encrypted/location_data ride along so each device's last fix
     # can be decrypted below (v1.5 at-rest encryption — encrypted rows carry
-    # 0.0 placeholders in lat/lng).
+    # 0.0 placeholders in lat/lng). access_role/is_owner tag the caller's
+    # grant per row (device_shares LEFT JOIN — the COALESCE only kicks in for
+    # the owner's own rows where ds is NULL).
     if user_id:
         devices = db.execute(
             """SELECT d.*,
                       l.lat, l.lng, l.location_encrypted, l.location_data,
-                      l.battery_percent, l.sentinel_score, l.threat_level
+                      l.battery_percent, l.sentinel_score, l.threat_level,
+                      CASE WHEN d.owner_id = ? THEN 'owner'
+                           ELSE COALESCE(ds.role, 'viewer') END AS access_role,
+                      (d.owner_id = ?) AS is_owner
                FROM devices d
+               LEFT JOIN device_shares ds
+                      ON ds.device_id = d.id AND ds.grantee_user_id = ?
                LEFT JOIN locations l ON d.id = l.device_id
                    AND l.id = (SELECT MAX(id) FROM locations WHERE device_id = d.id)
-               WHERE d.owner_id = ?
+               WHERE d.owner_id = ? OR ds.grantee_user_id IS NOT NULL
                ORDER BY d.last_seen DESC""",
-            (user_id,),
+            (user_id, user_id, user_id, user_id),
         ).fetchall()
     else:
         devices = db.execute(
             """SELECT d.*,
                       l.lat, l.lng, l.location_encrypted, l.location_data,
-                      l.battery_percent, l.sentinel_score, l.threat_level
+                      l.battery_percent, l.sentinel_score, l.threat_level,
+                      'owner' AS access_role,
+                      1 AS is_owner
                FROM devices d
                LEFT JOIN locations l ON d.id = l.device_id
                    AND l.id = (SELECT MAX(id) FROM locations WHERE device_id = d.id)
@@ -224,6 +281,12 @@ async def list_devices(
             d["location_data"],
             d["id"],
         )
+        access_role = d["access_role"] if "access_role" in d.keys() else "owner"
+        is_owner = bool(d["is_owner"]) if "is_owner" in d.keys() else True
+        if access_role == "device_only":
+            # Privacy tier: status glance only — strip coordinates and PII
+            # (alert recipients, SMS relay number) before anything leaves.
+            lat, lng = None, None
 
         result.append(
             {
@@ -242,21 +305,45 @@ async def list_devices(
                 "battery_percent": d["battery_percent"],
                 "location_encrypted": bool(d["location_encrypted"]),
                 "is_online": is_online,
+                # Milestone 2 P1 RBAC: how the caller may use this device
+                # (owner/admin/viewer/device_only) + whether they own it.
+                "access_role": access_role,
+                "is_owner": is_owner,
                 "capture_armed": (
                     bool(d["capture_armed"]) if "capture_armed" in d.keys() and d["capture_armed"] is not None else None
                 ),
                 "archived_at": d["archived_at"] if "archived_at" in d.keys() else None,
-                "alert_phone": d["alert_phone"] if "alert_phone" in d.keys() else None,
-                "alert_email": d["alert_email"] if "alert_email" in d.keys() else None,
+                "alert_phone": (
+                    d["alert_phone"] if "alert_phone" in d.keys() and access_role != "device_only" else None
+                ),
+                "alert_email": (
+                    d["alert_email"] if "alert_email" in d.keys() and access_role != "device_only" else None
+                ),
                 # Per-device prefs stored as JSON TEXT — parse for the client;
                 # NULL (no override) stays None so the UI shows global defaults.
-                "alert_channels": (_parse_json_list(d["alert_channels"]) if "alert_channels" in d.keys() else None),
-                "enabled_types": (_parse_json_list(d["enabled_types"]) if "enabled_types" in d.keys() else None),
-                "quiet_hours_start": (_parse_int(d["quiet_hours_start"]) if "quiet_hours_start" in d.keys() else None),
-                "quiet_hours_end": (_parse_int(d["quiet_hours_end"]) if "quiet_hours_end" in d.keys() else None),
+                "alert_channels": (
+                    _parse_json_list(d["alert_channels"])
+                    if "alert_channels" in d.keys() and access_role != "device_only"
+                    else None
+                ),
+                "enabled_types": (
+                    _parse_json_list(d["enabled_types"])
+                    if "enabled_types" in d.keys() and access_role != "device_only"
+                    else None
+                ),
+                "quiet_hours_start": (
+                    _parse_int(d["quiet_hours_start"])
+                    if "quiet_hours_start" in d.keys() and access_role != "device_only"
+                    else None
+                ),
+                "quiet_hours_end": (
+                    _parse_int(d["quiet_hours_end"])
+                    if "quiet_hours_end" in d.keys() and access_role != "device_only"
+                    else None
+                ),
                 # Offline Command Relay (SMS) — the number commands are SMSed to
                 # when the device is offline, and the opt-in toggle.
-                "sms_phone": d["sms_phone"] if "sms_phone" in d.keys() else None,
+                "sms_phone": (d["sms_phone"] if "sms_phone" in d.keys() and access_role != "device_only" else None),
                 "sms_commands_enabled": (
                     bool(d["sms_commands_enabled"]) if "sms_commands_enabled" in d.keys() else False
                 ),
@@ -350,7 +437,7 @@ async def update_device_alias(
     auth: str = Depends(require_dashboard_auth),
 ):
     """Update device alias/name."""
-    _assert_device_access(db, device_id, auth)
+    _assert_device_access(db, device_id, auth, min_role="admin")
     alias = body.get("alias", "").strip()
     if not alias:
         raise HTTPException(status_code=400, detail="Alias is required")
@@ -375,7 +462,7 @@ async def update_device_alert_settings(
 ):
     """Set per-device alert preferences (recipients, channels, enabled types,
     quiet hours). Empty string/None clears the override to global defaults."""
-    _assert_device_access(db, device_id, auth)
+    _assert_device_access(db, device_id, auth, min_role="admin")
     device = db.execute("SELECT id FROM devices WHERE id=?", (device_id,)).fetchone()
     if not device:
         raise HTTPException(status_code=404, detail="Device not found")
@@ -496,7 +583,7 @@ async def update_device_sms_settings(
       sms_phone on registration only when it is still NULL so an owner-set
       value is never overwritten.
     """
-    _assert_device_access(db, device_id, auth)
+    _assert_device_access(db, device_id, auth, min_role="admin")
     row = db.execute("SELECT id FROM devices WHERE id=?", (device_id,)).fetchone()
     if not row:
         raise HTTPException(status_code=404, detail="Device not found")
@@ -717,7 +804,7 @@ async def delete_device(
     dashboard session alone must not be able to destroy a device's history,
     so the caller re-authenticates (see _verify_stepup_password).
     """
-    _assert_device_access(db, device_id, auth)
+    _assert_device_access(db, device_id, auth, min_role="owner")
     row = db.execute("SELECT id FROM devices WHERE id=?", (device_id,)).fetchone()
     if not row:
         raise HTTPException(status_code=404, detail="Device not found")
@@ -743,7 +830,7 @@ async def mark_device_recovered(
     auth: str = Depends(require_dashboard_auth),
 ):
     """Mark a stolen device as recovered."""
-    _assert_device_access(db, device_id, auth)
+    _assert_device_access(db, device_id, auth, min_role="admin")
     now = datetime.now(timezone.utc).isoformat()
 
     db.execute(
@@ -761,6 +848,109 @@ async def mark_device_recovered(
     return {"status": "ok", "message": "Device marked as recovered", "timestamp": now}
 
 
+# ─── Device Sharing (roadmap Milestone 2 P1) ────────────────────────────────
+# Grant another account (family member, partner) access to a device. Only the
+# device OWNER can grant, change, or revoke shares; grantees are ranked
+# admin > viewer > device_only (see _resolve_device_role).
+
+
+@router.post("/api/dashboard/devices/{device_id}/shares")
+async def grant_device_share(
+    device_id: str,
+    body: ShareRequest,
+    db: sqlite3.Connection = Depends(get_db),
+    auth: str = Depends(require_dashboard_auth),
+):
+    """Grant (or update) another account's access to a device.
+
+    Account OWNERS only — mirroring claim-by-pairing, sharing is a user
+    action: an operator (API-key/dashboard) session has no account to share
+    FROM, and a grant it creates would carry created_by=None plus skip the
+    self-share check. The grantee is found by email; re-inviting the same
+    account with a different role upgrades/downgrades the grant in place
+    (UNIQUE device_id+grantee, id kept stable so the returned share_id is
+    always the row's real id). A grantee is never the owner themselves — you
+    cannot "share" a device you own.
+    """
+    _assert_device_access(db, device_id, auth, min_role="owner")
+    owner_id = _resolve_user_id(auth)
+    if owner_id is None:
+        raise HTTPException(status_code=403, detail="Sharing is a user-account action")
+
+    grantee = db.execute("SELECT id FROM users WHERE email=? AND is_active=1", (body.email,)).fetchone()
+    if not grantee:
+        raise HTTPException(status_code=404, detail="No account found with that email")
+    if grantee["id"] == owner_id:
+        raise HTTPException(status_code=400, detail="You already own this device")
+
+    share_id = uuid4().hex
+    db.execute(
+        """INSERT INTO device_shares (id, device_id, grantee_user_id, role, created_by)
+           VALUES (?, ?, ?, ?, ?)
+           ON CONFLICT(device_id, grantee_user_id)
+           DO UPDATE SET id=excluded.id, role=excluded.role, created_by=excluded.created_by""",
+        (share_id, device_id, grantee["id"], body.role, owner_id),
+    )
+    db.commit()
+    log_audit(
+        "device_share_granted",
+        actor=auth,
+        details=f"Device: {device_id}, Grantee: {body.email}, Role: {body.role}",
+    )
+    return {
+        "status": "ok",
+        "share_id": share_id,
+        "device_id": device_id,
+        "grantee_user_id": grantee["id"],
+        "role": body.role,
+    }
+
+
+@router.get("/api/dashboard/devices/{device_id}/shares")
+async def list_device_shares(
+    device_id: str,
+    db: sqlite3.Connection = Depends(get_db),
+    auth: str = Depends(require_dashboard_auth),
+):
+    """List who has access to a device and with which role (owner + admins)."""
+    _assert_device_access(db, device_id, auth, min_role="admin")
+    rows = db.execute(
+        """SELECT ds.id, ds.device_id, ds.grantee_user_id, ds.role, ds.created_at,
+                  u.email, u.display_name
+           FROM device_shares ds
+           JOIN users u ON u.id = ds.grantee_user_id
+           WHERE ds.device_id = ?
+           ORDER BY ds.created_at DESC""",
+        (device_id,),
+    ).fetchall()
+    return {"shares": [dict(r) for r in rows]}
+
+
+@router.delete("/api/dashboard/devices/{device_id}/shares/{share_id}")
+async def revoke_device_share(
+    device_id: str,
+    share_id: str,
+    db: sqlite3.Connection = Depends(get_db),
+    auth: str = Depends(require_dashboard_auth),
+):
+    """Revoke an account's access to a device (account owner only — operator
+    sessions have no account, mirroring the grant endpoint)."""
+    _assert_device_access(db, device_id, auth, min_role="owner")
+    if _resolve_user_id(auth) is None:
+        raise HTTPException(status_code=403, detail="Sharing is a user-account action")
+    row = db.execute("SELECT id FROM device_shares WHERE id=? AND device_id=?", (share_id, device_id)).fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail="Share not found")
+    db.execute("DELETE FROM device_shares WHERE id=?", (share_id,))
+    db.commit()
+    log_audit(
+        "device_share_revoked",
+        actor=auth,
+        details=f"Device: {device_id}, Share: {share_id}",
+    )
+    return {"status": "ok", "share_id": share_id}
+
+
 @router.get("/api/dashboard/devices/{device_id}/history")
 async def get_device_history(
     device_id: str,
@@ -768,7 +958,7 @@ async def get_device_history(
     auth: str = Depends(require_dashboard_auth),
 ):
     """Get full device information including command and event history."""
-    _assert_device_access(db, device_id, auth)
+    _assert_device_access(db, device_id, auth, min_role="viewer")
     device = db.execute("SELECT * FROM devices WHERE id=?", (device_id,)).fetchone()
     if not device:
         raise HTTPException(status_code=404, detail="Device not found")
@@ -817,7 +1007,7 @@ async def get_locations(
     auth: str = Depends(require_dashboard_auth),
 ):
     """Get location history for a device."""
-    _assert_device_access(db, device_id, auth)
+    _assert_device_access(db, device_id, auth, min_role="viewer")
     rows = db.execute(
         "SELECT * FROM locations WHERE device_id=? ORDER BY server_timestamp DESC LIMIT ?",
         (device_id, limit),
@@ -859,7 +1049,7 @@ async def export_locations_csv(
 
     from fastapi.responses import Response
 
-    _assert_device_access(db, device_id, auth)
+    _assert_device_access(db, device_id, auth, min_role="viewer")
     rows = db.execute(
         "SELECT device_id, server_timestamp, device_timestamp, lat, lng, location_encrypted, location_data, "
         "accuracy_horizontal, altitude, speed, bearing, provider, battery_percent, "
@@ -925,7 +1115,7 @@ async def get_live_location(
     auth: str = Depends(require_dashboard_auth),
 ):
     """Get latest location for a device."""
-    _assert_device_access(db, device_id, auth)
+    _assert_device_access(db, device_id, auth, min_role="viewer")
     row = db.execute(
         "SELECT * FROM locations WHERE device_id=? ORDER BY server_timestamp DESC LIMIT 1",
         (device_id,),
@@ -949,7 +1139,7 @@ async def get_replay_data(
     auth: str = Depends(require_dashboard_auth),
 ):
     """Get location data for trail replay."""
-    _assert_device_access(db, device_id, auth)
+    _assert_device_access(db, device_id, auth, min_role="viewer")
     query = "SELECT * FROM locations WHERE device_id=?"
     params = [device_id]
 
@@ -984,7 +1174,7 @@ async def get_media_list(
     auth: str = Depends(require_dashboard_auth),
 ):
     """Get media list (thumbnails) for a device."""
-    _assert_device_access(db, device_id, auth)
+    _assert_device_access(db, device_id, auth, min_role="viewer")
     rows = db.execute(
         "SELECT id, device_id, type, timestamp, lat, lng FROM media WHERE device_id=? ORDER BY timestamp DESC",
         (device_id,),
@@ -1003,7 +1193,7 @@ async def get_media_file(
     row = db.execute("SELECT * FROM media WHERE id=?", (media_id,)).fetchone()
     if not row:
         raise HTTPException(status_code=404, detail="Media not found")
-    _assert_device_access(db, row["device_id"], auth)
+    _assert_device_access(db, row["device_id"], auth, min_role="viewer")
 
     # Media storage refactor (v1.4): bytes live on disk (file_path) for new
     # rows; legacy rows keep base64 in data_b64. Both are served in the same
@@ -1044,7 +1234,7 @@ async def delete_media(
     row = db.execute("SELECT * FROM media WHERE id=?", (media_id,)).fetchone()
     if not row:
         raise HTTPException(status_code=404, detail="Media not found")
-    _assert_device_access(db, row["device_id"], auth)
+    _assert_device_access(db, row["device_id"], auth, min_role="admin")
 
     _verify_stepup_password(db, auth, body.get("password"))
 
@@ -1089,7 +1279,7 @@ async def issue_command(
     auth: str = Depends(require_dashboard_auth),
 ):
     """Issue a command to a device."""
-    _assert_device_access(db, cmd.device_id, auth)
+    _assert_device_access(db, cmd.device_id, auth, min_role="admin")
     if not check_command_rate_limit(auth):
         raise HTTPException(status_code=429, detail="Command rate limit exceeded")
 
@@ -1258,7 +1448,7 @@ async def get_command_history(
     auth: str = Depends(require_dashboard_auth),
 ):
     """Get command history for a device."""
-    _assert_device_access(db, device_id, auth)
+    _assert_device_access(db, device_id, auth, min_role="viewer")
 
     # Commands never acknowledged within their expiry window are marked
     # 'expired' so the operator sees EXPIRED (grey) instead of a stale PENDING
@@ -1302,7 +1492,7 @@ async def delete_command(
     row = db.execute("SELECT device_id FROM commands WHERE id=?", (command_id,)).fetchone()
     if not row:
         raise HTTPException(status_code=404, detail="Command not found")
-    _assert_device_access(db, row["device_id"], auth)
+    _assert_device_access(db, row["device_id"], auth, min_role="admin")
 
     _verify_stepup_password(db, auth, (body or {}).get("password"))
 
@@ -1331,7 +1521,7 @@ async def clear_command_history(
     erased mid-delivery. only_finished=false clears the entire history
     (including pending, which effectively cancels queued commands).
     """
-    _assert_device_access(db, device_id, auth)
+    _assert_device_access(db, device_id, auth, min_role="admin")
 
     _verify_stepup_password(db, auth, (body or {}).get("password"))
 
@@ -1361,7 +1551,7 @@ async def get_evidence(
     auth: str = Depends(require_dashboard_auth),
 ):
     """Get evidence case for a device."""
-    _assert_device_access(db, device_id, auth)
+    _assert_device_access(db, device_id, auth, min_role="viewer")
     case = db.execute(
         "SELECT * FROM evidence_cases WHERE device_id=? ORDER BY created_at DESC LIMIT 1",
         (device_id,),
@@ -1391,7 +1581,7 @@ async def generate_evidence_pdf(
     auth: str = Depends(require_dashboard_auth),
 ):
     """Generate a forensic PDF evidence report for a device."""
-    _assert_device_access(db, device_id, auth)
+    _assert_device_access(db, device_id, auth, min_role="viewer")
     from fastapi.responses import Response
 
     case = db.execute(
@@ -1439,7 +1629,7 @@ async def get_alerts(
     auth: str = Depends(require_dashboard_auth),
 ):
     """Get alert history for a device."""
-    _assert_device_access(db, device_id, auth)
+    _assert_device_access(db, device_id, auth, min_role="viewer")
     rows = db.execute(
         "SELECT * FROM alerts WHERE device_id=? ORDER BY sent_at DESC LIMIT 50",
         (device_id,),
@@ -1458,7 +1648,7 @@ async def create_geofence(
     auth: str = Depends(require_dashboard_auth),
 ):
     """Create a geofence for a device."""
-    _assert_device_access(db, fence.device_id, auth)
+    _assert_device_access(db, fence.device_id, auth, min_role="admin")
     cur = db.execute(
         (
             "INSERT INTO geofences (device_id, name, center_lat, center_lng, "
@@ -1492,7 +1682,7 @@ async def delete_geofence(
     """Delete a geofence."""
     fence = db.execute("SELECT device_id FROM geofences WHERE id=?", (geofence_id,)).fetchone()
     if fence:
-        _assert_device_access(db, fence["device_id"], auth)
+        _assert_device_access(db, fence["device_id"], auth, min_role="admin")
     db.execute("DELETE FROM geofences WHERE id=?", (geofence_id,))
     db.commit()
     return {"status": "ok"}
@@ -1505,7 +1695,7 @@ async def list_geofences(
     auth: str = Depends(require_dashboard_auth),
 ):
     """List geofences for a device."""
-    _assert_device_access(db, device_id, auth)
+    _assert_device_access(db, device_id, auth, min_role="viewer")
     rows = db.execute("SELECT * FROM geofences WHERE device_id=? AND active=1", (device_id,)).fetchall()
 
     return {"geofences": [dict(r) for r in rows]}

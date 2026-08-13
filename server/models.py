@@ -517,6 +517,39 @@ class Geofence(BaseModel):
     active: bool = True
 
 
+# ─── Device Sharing Models (Milestone 2 P1) ─────────────────────────────────
+
+
+class ShareRequest(BaseModel):
+    """Grant another account access to a device (roadmap Milestone 2 P1).
+
+    Roles, least → most privileged:
+      device_only — status glance only (online, battery, last seen). No
+                    location, evidence, or command access (privacy tier).
+      viewer      — full read access (locations, media, evidence, history).
+      admin       — viewer + full control (commands, geofences, settings).
+    Only the device OWNER can grant, change, or revoke shares.
+    """
+
+    email: str = Field(..., min_length=5, max_length=255)
+    role: str = "viewer"
+
+    @field_validator("email")
+    @classmethod
+    def normalize_email(cls, v):
+        v = v.strip().lower()
+        if "@" not in v or "." not in v.split("@")[-1]:
+            raise ValueError("Invalid email address")
+        return v
+
+    @field_validator("role")
+    @classmethod
+    def validate_role(cls, v):
+        if v not in {"admin", "viewer", "device_only"}:
+            raise ValueError("role must be one of: admin, viewer, device_only")
+        return v
+
+
 # ─── Guardian Network Models ──────────────────────────────────────────────────
 
 
