@@ -101,7 +101,11 @@ describe('Landing Page', () => {
 
     // CTA + Footer
     expect(screen.getByText('I have an account')).toBeInTheDocument();
-    expect(screen.getByText('API Docs (Swagger)')).toBeInTheDocument();
+    // The docs are disabled in production (docs_url=None) — the footer must
+    // not advertise dead /docs + /redoc links; System Status (/health) works.
+    expect(screen.queryByText('API Docs (Swagger)')).not.toBeInTheDocument();
+    expect(screen.queryByText('API Docs (ReDoc)')).not.toBeInTheDocument();
+    expect(screen.getByText('System Status')).toBeInTheDocument();
     expect(screen.getAllByText('ALL SYSTEMS OPERATIONAL').length).toBeGreaterThan(0);
   });
 

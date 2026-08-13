@@ -9,6 +9,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased] — 2026-08-12
 
+### Security & hygiene (2026-08-13 — hardening pass)
+
+- **`/metrics` + `/metrics/json` are no longer public**: both leaked operational
+  intelligence (registered user/device counts, DB health, and which external
+  alert providers are configured) to anyone who could reach the API. They now
+  require a dashboard/admin JWT and reject regular user accounts (401 anon /
+  403 user / 200 operator) — matching the `/api/dashboard/errors` admin gate.
+- **Real Firebase client config removed from the public repo**: the committed
+  `android-app/app/google-services.json` contained the live project id +
+  API key (the repo is public). It is now untracked + gitignored; a safe
+  placeholder template ships as `google-services.json.example` and the APK
+  CI workflow copies it when the `GOOGLE_SERVICES_JSON` secret is unset (the
+  real file is preserved locally at `backups/google-services.json.real`). The
+  dead placeholder duplicate at `android-app/google-services.json` was deleted.
+- **`.gitignore` hardened**: `android-app/**/google-services.json`, stray
+  firebase-service-account paths, and the empty leftover
+  `server/firebase-service-account.json` dir (removed) are all covered now.
+- **Stale artifacts removed from the publicly-served static dir**: 10 `.bak`
+  APKs + `logo-preview*.html` dev previews deleted from `server/static/`;
+  the `/apk/download` + checksum endpoints still resolve the same v1.4.1 file.
+- **Redundant root `.env` deleted**: it duplicated `server/.env` secrets
+  (Twilio creds, DB password) plus a deprecated `CF_TUNNEL_TOKEN` and was
+  consumed by nothing (compose uses `server/.env` via `env_file`;
+  `scripts/test-e2e.sh` now prefers `server/.env` too).
+- **Stale dev artifacts removed**: `backups/dev-artifacts-2026-08-12/`
+  (two old v1.0 APKs + a dev SQLite dump) deleted; scheduled
+  `backups/magneetar_*.db.gz` / media archives untouched.
+
+### Fixed (2026-08-13 — full customer-journey QA pass)
+
+- **Password reset / email verification were dead ends without SendGrid**: with
+  `MT_SENDGRID_KEY` unset (the current production state) the reset/verify links
+  were never emailed AND never logged — the raw token was only stored hashed in
+  the DB, so a customer clicking "Forgot password" could never recover their
+  account. `send_transactional_email` now logs the FULL email body (containing
+  the single-use, short-lived link) when no provider is configured, so a
+  self-hosted operator can retrieve and deliver it. Covered by a new regression
+  test proving the logged link completes a real reset (old password rejected,
+  replay rejected).
+- **Dead API-docs links removed from the customer-facing UI**: the Footer and
+  dashboard Sidebar linked to `https://api.magneetar.me/docs` and
+  `/redoc` — hardcoded to the production host where the docs are deliberately
+  disabled (`docs_url=None` in production), so every click 404'd. Both links
+  removed; "System Status" (`/health`) and "Responsible Disclosure" remain.
+  `LandingPage.test.tsx` updated to assert the dead links are gone.
+
 ### Added (v1.6 — navigation + Find Network visibility round)
 
 - **Interactive map navigation (dashboard)**: the YOU/DEVICE chips in the

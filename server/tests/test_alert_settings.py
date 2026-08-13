@@ -32,6 +32,11 @@ os.environ["MT_API_KEY"] = "test-api-key-" + "a" * 32
 os.environ["MT_JWT_SECRET"] = "test-jwt-secret-" + "b" * 64
 os.environ["MT_ENCRYPTION_KEY"] = secrets.token_hex(32)
 os.environ["MT_DB_PATH"] = test_db_path
+# Test-only alert recipient (conftest.py strips real credentials globally, so
+# send_all must resolve a recipient from here, not from the developer's
+# server/.env). Twilio itself stays unconfigured → the channel fires its
+# delivered=0 audit row with zero network calls.
+os.environ["MT_ALERT_PHONE"] = "+2348000000000"
 
 import config  # noqa: E402
 

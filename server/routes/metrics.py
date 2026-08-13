@@ -6,10 +6,19 @@ Provides Prometheus-compatible metrics for monitoring and observability.
 import time
 from datetime import datetime, timezone
 
+from auth import require_dashboard_auth, user_id_from_subject
 from database import get_db_context
-from fastapi import APIRouter, Response
+from fastapi import APIRouter, Depends, HTTPException, Response
 
 router = APIRouter()
+
+
+def _require_operator(auth: str = Depends(require_dashboard_auth)) -> str:
+    """Metrics are operational intelligence (user/device counts, alert-provider
+    state) — visible to operators only, never to regular accounts."""
+    if user_id_from_subject(auth) is not None:
+        raise HTTPException(status_code=403, detail="Admin access required")
+    return auth
 
 
 def _get_server_start():
@@ -33,8 +42,8 @@ def _get_app_version():
 
 
 @router.get("/metrics")
-async def metrics():
-    """Prometheus-compatible metrics endpoint.
+async def metrics(_: str = Depends(_require_operator)):
+    """Prometheus-compatible metrics endpoint (operator/admin only).
 
     Provides:
     - Uptime
@@ -43,6 +52,11 @@ async def metrics():
     - Database statistics
     - Alert delivery rates
     - Device statistics
+
+    Security: the payload leaks operational intelligence (registered user /
+    device counts, DB health, which external alert services are configured)
+    so it must never be anonymously scrapeable — requires a dashboard/admin
+    JWT (same gate as every other /api/dashboard endpoint).
     """
     metrics_lines = []
     server_start = _get_server_start()
@@ -205,8 +219,8 @@ async def metrics():
 
 
 @router.get("/metrics/json")
-async def metrics_json():
-    """JSON metrics endpoint for dashboard consumption."""
+async def metrics_json(_: str = Depends(_require_operator)):
+    """JSON metrics endpoint for dashboard consumption (operator/admin only)."""
     server_start = _get_server_start()
     metrics = {
         "timestamp": datetime.now(timezone.utc).isoformat(),

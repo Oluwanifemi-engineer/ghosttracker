@@ -7,7 +7,7 @@ import { cn, relativeTime, isOnline, getSignalLevel, deviceDisplayName } from '@
 import { StatusIndicator } from '@/components/ui/StatusIndicator';
 import { ClaimDeviceModal } from '@/components/devices/ClaimDeviceModal';
 import { stepUpPasswordHint } from '@/lib/utils';
-import { ChevronLeft, ChevronRight, Smartphone, BarChart3, FileText, BookOpen, Copy, Battery, MapPin, Link2, Trash2, X, AlertTriangle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Smartphone, BarChart3, Copy, Battery, MapPin, Link2, Trash2, X, AlertTriangle } from 'lucide-react';
 import { SidebarSkeleton } from '@/components/ui/Skeleton';
 
 function sentinelLevel(score: number): string {
@@ -354,29 +354,6 @@ export function Sidebar() {
               </span>
             </div>
 
-            {/* API Docs Links */}
-            <div className="space-y-1 pt-2.5 border-t border-mag-border/15">
-              <a
-                href="https://api.magneetar.me/docs"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-[9px] font-mono text-mag-text-dim/50 hover:text-mag-accent hover:bg-mag-accent/[0.03] transition-all duration-150 group"
-              >
-                <FileText size={10} className="text-mag-text-dim/30 group-hover:text-mag-accent shrink-0" />
-                <span className="font-bold tracking-wide">API Docs (Swagger)</span>
-                <span className="ml-auto text-[7px] opacity-0 group-hover:opacity-100 transition-opacity">↗</span>
-              </a>
-              <a
-                href="https://api.magneetar.me/redoc"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-[9px] font-mono text-mag-text-dim/50 hover:text-mag-accent hover:bg-mag-accent/[0.03] transition-all duration-150 group"
-              >
-                <BookOpen size={10} className="text-mag-text-dim/30 group-hover:text-mag-accent shrink-0" />
-                <span className="font-bold tracking-wide">API Docs (ReDoc)</span>
-                <span className="ml-auto text-[7px] opacity-0 group-hover:opacity-100 transition-opacity">↗</span>
-              </a>
-            </div>
           </div>
         </>
       )}

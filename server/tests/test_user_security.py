@@ -328,6 +328,70 @@ class TestPasswordReset:
         )
         assert resp.status_code == 401
 
+    def test_reset_link_recoverable_via_logs_without_email_provider(self):
+        """No SendGrid configured (the current production state): the reset
+        link must be recoverable by the operator from the logs so the flow is
+        not a dead end — the body (containing the single-use link) is logged
+        verbatim when no provider is configured."""
+        _register_user("recover@test.dev")
+
+        import logging
+
+        # Capture directly on the module's logger: caplog (root-logger
+        # handler) is unreliable in the full suite because the app's
+        # logging_config adds its own handler and propagation state can vary
+        # with collection order. A handler on the emitting logger itself is
+        # order-independent.
+        captured: list[str] = []
+        handler = logging.Handler()
+        handler.setLevel(logging.WARNING)
+        handler.emit = lambda record: captured.append(record.getMessage())
+        logger = logging.getLogger("user_security")
+        logger.addHandler(handler)
+        logger.setLevel(logging.WARNING)
+        try:
+            resp = client.post("/api/auth/forgot-password", json={"email": "recover@test.dev"})
+        finally:
+            logger.removeHandler(handler)
+        assert resp.status_code == 200
+
+        logged = "\n".join(captured)
+        assert "Delivering via logs instead" in logged
+        # The single-use link must be in the log so a self-hosted operator can
+        # recover it when no email provider is configured.
+        assert "recover@test.dev" in logged
+        assert "/reset-password?email=recover@test.dev&token=" in logged
+
+        # And it must actually work — complete the reset with the logged link.
+        import re
+
+        match = re.search(r"/reset-password\?email=[^&\s]+&token=([A-Za-z0-9._-]+)", logged)
+        assert match is not None
+        token = match.group(1)
+        done = client.post(
+            "/api/auth/reset-password",
+            json={"email": "recover@test.dev", "token": token, "new_password": "Recovered#2026"},
+        )
+        assert done.status_code == 200, done.text
+        assert (
+            client.post(
+                "/api/auth/user/login", json={"email": "recover@test.dev", "password": "Recovered#2026"}
+            ).status_code
+            == 200
+        )
+        # The old password is gone and the token is single-use.
+        assert (
+            client.post(
+                "/api/auth/user/login", json={"email": "recover@test.dev", "password": STRONG_PASSWORD}
+            ).status_code
+            == 401
+        )
+        replay = client.post(
+            "/api/auth/reset-password",
+            json={"email": "recover@test.dev", "token": token, "new_password": "Replay#2026"},
+        )
+        assert replay.status_code == 401
+
 
 class TestEmailVerification:
     def test_verify_flow(self):
