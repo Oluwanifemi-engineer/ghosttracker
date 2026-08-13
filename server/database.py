@@ -258,6 +258,14 @@ def init_db(db_path: str = None):
     except sqlite3.OperationalError:
         pass  # Column already exists
 
+    # Find Network: opaque per-request beacon token broadcast over BLE by the
+    # stolen device. Migrated for existing DBs — a pre-beacon request stays
+    # NULL and simply can't be beaconed until a new request is launched.
+    try:
+        c.execute("ALTER TABLE recovery_requests ADD COLUMN beacon_token TEXT")
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+
     # Location at-rest encryption (v1.5): ciphertext column for encrypted
     # telemetry rows (see the locations CREATE TABLE comment). Existing rows
     # stay plaintext (flag 0) — dual-mode readers handle both.
@@ -525,6 +533,11 @@ def init_db(db_path: str = None):
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             closed_at TIMESTAMP,
             closed_reason TEXT,
+            -- Find Network: opaque per-request token broadcast by the stolen
+            -- device over BLE. Guardians report the token (never the request
+            -- id) so the request id itself never goes on the air; the server
+            -- resolves token -> request. NULL for pre-beacon requests.
+            beacon_token TEXT,
             FOREIGN KEY (device_id) REFERENCES devices(id)
         );
 
@@ -1090,6 +1103,10 @@ def ensure_initialized() -> bool:
             users_columns = {row["name"] for row in conn.execute("PRAGMA table_info(users)").fetchall()}
             locations_columns = {row["name"] for row in conn.execute("PRAGMA table_info(locations)").fetchall()}
             geofences_columns = {row["name"] for row in conn.execute("PRAGMA table_info(geofences)").fetchall()}
+            # Find Network beacon token (v1.6) — an existing DB whose
+            # recovery_requests table predates the column would take the
+            # no-op path below and never migrate (the device_shares bug class).
+            recovery_columns = {row["name"] for row in conn.execute("PRAGMA table_info(recovery_requests)").fetchall()}
         if (
             required_tables.issubset(present_tables)
             and expected_devices_columns.issubset(devices_columns)
@@ -1098,6 +1115,7 @@ def ensure_initialized() -> bool:
             and expected_users_columns.issubset(users_columns)
             and expected_locations_columns.issubset(locations_columns)
             and expected_geofences_columns.issubset(geofences_columns)
+            and {"beacon_token"}.issubset(recovery_columns)
         ):
             return False
         init_db()

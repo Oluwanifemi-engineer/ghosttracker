@@ -538,3 +538,242 @@ class TestNearbyAndSightings:
         payload = str(body)
         assert "owner" not in payload.lower() or "owner_id" not in payload
         assert "owner_id" not in payload
+
+
+# ─── Find Network — BLE beacon protocol (COMPETITOR_AUDIT P1 #6, Phase 1) ────
+# The stolen device broadcasts an opaque per-request beacon_token over BLE;
+# guardians in range report the token back (never the request id) and the
+# server resolves token -> request. Tests lock the whole lifecycle:
+# launch mints a token, the device can fetch ONLY its own active token, the
+# token never leaks through owner/guardian request views, and a sighting
+# reported by beacon_token lands on the right request.
+
+
+class TestFindNetworkBeacon:
+    def _launch(self, device_id="stolen-phone", email="beacon-owner@example.com"):
+        """Owner + stolen device + active recovery request; returns (owner, req)."""
+        user = register_user(email)
+        register_device(device_id, user_token=user["token"])
+        set_device_stolen(device_id)
+        req = client.post(
+            "/api/recovery/requests",
+            json={"device_id": device_id, "description": "Find this Pixel"},
+            headers=user_headers(user["token"]),
+        ).json()
+        return user, req
+
+    def _device_headers(self, device_id="stolen-phone"):
+        # Device auth via the device JWT minted at registration (auth method
+        # 1 — pure token decode, no DB lookup). The x-device-key path does a
+        # per-request DB lookup via a function-local import that resolves a
+        # DIFFERENT database module after test_e2e's sys.modules eviction
+        # (the full-suite order hazard this file documents elsewhere), so the
+        # suite convention for device-authenticated tests is the JWT.
+        resp = client.post(
+            "/api/device/register",
+            json={
+                "device_id": device_id,
+                "fingerprint": f"fp-{device_id}",
+                "model": "Guardian Test Phone",
+                "os_version": "Android 14",
+                "app_version": "1.1.0",
+                "device_key": f"devicekey-{device_id}",
+            },
+            headers=api_key_headers(),
+        )
+        assert resp.status_code == 200, f"device re-register failed: {resp.text}"
+        return {"Authorization": f"Bearer {resp.json()['token']}"}
+
+    def test_launch_mints_beacon_token(self):
+        _user, req = self._launch()
+        # The launch response itself must NOT carry the token — only the
+        # device endpoint hands it out, and only to the device.
+        assert "beacon_token" not in req
+        with database.get_db_context() as conn:
+            row = conn.execute("SELECT beacon_token FROM recovery_requests WHERE id=?", (req["id"],)).fetchone()
+        assert row and row["beacon_token"]
+        assert len(row["beacon_token"]) >= 16  # token_hex(8) -> 16 chars
+
+    def test_device_fetches_own_beacon_token(self):
+        _user, _req = self._launch()
+        resp = client.get("/api/device/recovery/beacon", headers=self._device_headers())
+        assert resp.status_code == 200, resp.text
+        token = resp.json()["beacon_token"]
+        assert token, "device must get its active beacon token"
+        assert len(token) == 16
+
+    def test_device_beacon_null_when_no_active_request(self):
+        user = register_user("beacon-none@example.com")
+        register_device("stolen-phone", user_token=user["token"])
+        # Device exists but no recovery request.
+        resp = client.get("/api/device/recovery/beacon", headers=self._device_headers())
+        assert resp.status_code == 200
+        assert resp.json()["beacon_token"] is None
+
+    def test_device_beacon_null_after_request_closed(self):
+        user, req = self._launch()
+        client.post(f"/api/recovery/requests/{req['id']}/close", headers=user_headers(user["token"]))
+        resp = client.get("/api/device/recovery/beacon", headers=self._device_headers())
+        assert resp.status_code == 200
+        assert resp.json()["beacon_token"] is None
+
+    def test_device_beacon_requires_device_auth(self):
+        self._launch()
+        # The shared API key is NOT a specific device — it must be rejected.
+        resp = client.get("/api/device/recovery/beacon", headers=api_key_headers())
+        assert resp.status_code == 401
+
+    def test_other_device_cannot_fetch_this_beacon(self):
+        self._launch()
+        # A DIFFERENT device (registered, but with no request of its own)
+        # must get null — never someone else's token.
+        register_device("other-phone")
+        resp = client.get("/api/device/recovery/beacon", headers=self._device_headers("other-phone"))
+        assert resp.status_code == 200
+        assert resp.json()["beacon_token"] is None
+
+    def test_shared_api_key_cannot_mint_device_beacon(self):
+        """The shared x-api-key identity ('api_key_user') is device-scope only
+        but is NOT a specific device — the beacon endpoint must reject it so
+        anyone holding the public APK key can't probe other devices' tokens."""
+        self._launch()
+        resp = client.get("/api/device/recovery/beacon", headers={"x-api-key": TEST_API_KEY})
+        assert resp.status_code == 401
+
+    def test_token_never_leaks_to_owner_or_guardian_views(self):
+        owner, req = self._launch()
+        guardian = register_user("beacon-guardian@example.com")
+        client.post(
+            "/api/guardian/opt-in",
+            json={"opted_in": True, "radius_km": 50, "handle": "Scanner"},
+            headers=user_headers(guardian["token"]),
+        )
+
+        # Owner's request list must not contain the token.
+        owner_list = client.get("/api/recovery/requests", headers=user_headers(owner["token"])).json()
+        assert "beacon_token" not in str(owner_list)
+
+        # Guardian's nearby view must not contain it either.
+        nearby = client.get(
+            "/api/recovery/nearby?lat=9.0820&lng=8.6753&radius_km=50",
+            headers=user_headers(guardian["token"]),
+        ).json()
+        assert "beacon_token" not in str(nearby)
+
+    def test_sighting_by_beacon_token_resolves_to_request(self):
+        owner, req = self._launch()
+        guardian = register_user("beacon-g@example.com")
+        client.post(
+            "/api/guardian/opt-in",
+            json={"opted_in": True, "radius_km": 50, "handle": "Scanner"},
+            headers=user_headers(guardian["token"]),
+        )
+
+        # Guardian got the token off the air — they report it, not the id.
+        with database.get_db_context() as conn:
+            token = conn.execute("SELECT beacon_token FROM recovery_requests WHERE id=?", (req["id"],)).fetchone()[
+                "beacon_token"
+            ]
+
+        resp = client.post(
+            "/api/recovery/sightings",
+            json={"beacon_token": token, "lat": 9.083, "lng": 8.676, "note": "Picked up the beacon"},
+            headers=user_headers(guardian["token"]),
+        )
+        assert resp.status_code == 200, resp.text
+        assert resp.json()["request_id"] == req["id"]
+
+        # The sighting lands on the owner's request.
+        owner_list = client.get("/api/recovery/requests", headers=user_headers(owner["token"])).json()
+        assert owner_list["requests"][0]["sighting_count"] == 1
+        assert owner_list["requests"][0]["sightings"][0]["note"] == "Picked up the beacon"
+
+    def test_sighting_unknown_beacon_token_404(self):
+        self._launch()
+        guardian = register_user("beacon-404@example.com")
+        client.post(
+            "/api/guardian/opt-in",
+            json={"opted_in": True, "radius_km": 50, "handle": "Noob"},
+            headers=user_headers(guardian["token"]),
+        )
+        resp = client.post(
+            "/api/recovery/sightings",
+            json={"beacon_token": "deadbeefdeadbeef", "lat": 9.0, "lng": 8.6},
+            headers=user_headers(guardian["token"]),
+        )
+        assert resp.status_code == 404
+
+    def test_sighting_requires_request_id_or_beacon_token(self):
+        self._launch()
+        guardian = register_user("beacon-422@example.com")
+        client.post(
+            "/api/guardian/opt-in",
+            json={"opted_in": True, "radius_km": 50, "handle": "Oblivious"},
+            headers=user_headers(guardian["token"]),
+        )
+        resp = client.post(
+            "/api/recovery/sightings",
+            json={"lat": 9.0, "lng": 8.6},
+            headers=user_headers(guardian["token"]),
+        )
+        assert resp.status_code == 422
+
+    def test_sighting_by_token_on_closed_request_400(self):
+        owner, req = self._launch()
+        guardian = register_user("beacon-late@example.com")
+        client.post(
+            "/api/guardian/opt-in",
+            json={"opted_in": True, "radius_km": 50, "handle": "Late"},
+            headers=user_headers(guardian["token"]),
+        )
+        client.post(f"/api/recovery/requests/{req['id']}/close", headers=user_headers(owner["token"]))
+        with database.get_db_context() as conn:
+            token = conn.execute("SELECT beacon_token FROM recovery_requests WHERE id=?", (req["id"],)).fetchone()[
+                "beacon_token"
+            ]
+        resp = client.post(
+            "/api/recovery/sightings",
+            json={"beacon_token": token, "lat": 9.0, "lng": 8.6},
+            headers=user_headers(guardian["token"]),
+        )
+        # Status is no longer active -> the request_id flow 400s; the beacon
+        # flow must behave identically (a stale beacon is worthless).
+        assert resp.status_code == 400
+
+    def test_migrated_db_gains_beacon_token_column(self, monkeypatch):
+        """An existing DB created before beacon_token must gain the column via
+        ensure_initialized() — the same migration the server runs at startup
+        (the device_shares no-op bug class)."""
+        fd, old_db_path = tempfile.mkstemp(suffix="-beacon-old.db")
+        os.close(fd)
+        conn = sqlite3.connect(old_db_path)
+        # A realistic pre-beacon recovery_requests table — every column that
+        # shipped before v1.6, minus beacon_token. (init_db() skips the
+        # CREATE TABLE IF NOT EXISTS for an existing table, then the guarded
+        # ALTER adds the new column; a minimal table would break the index
+        # creation instead, which is NOT how a real old DB looks.)
+        conn.execute(
+            """CREATE TABLE recovery_requests (
+                id TEXT PRIMARY KEY,
+                device_id TEXT NOT NULL,
+                owner_id TEXT NOT NULL,
+                status TEXT DEFAULT 'active',
+                description TEXT,
+                last_lat REAL,
+                last_lng REAL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                closed_at TIMESTAMP,
+                closed_reason TEXT
+            )"""
+        )
+        conn.commit()
+        conn.close()
+
+        monkeypatch.setattr(database, "DB_PATH", old_db_path)
+        assert database.ensure_initialized() is True
+
+        conn = sqlite3.connect(old_db_path)
+        cols = {row[1] for row in conn.execute("PRAGMA table_info(recovery_requests)")}
+        conn.close()
+        assert "beacon_token" in cols
+        os.remove(old_db_path)

@@ -22,7 +22,7 @@ import sqlite3
 from datetime import datetime, timezone
 from typing import Optional
 
-from auth import check_rate_limit, get_current_user
+from auth import check_rate_limit, get_current_device_or_key, get_current_user
 from database import get_db, log_audit
 from encryption import decrypt_location_row
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -212,10 +212,17 @@ async def launch_recovery_request(
     now = datetime.now(timezone.utc).isoformat()
     lat, lng = _device_last_location(db, req.device_id)
 
+    # Find Network: an opaque per-request beacon token the stolen device
+    # broadcasts over BLE. Guardians report the token back (never the request
+    # id), so the request id stays off the air and the token is useless to a
+    # random scanner that doesn't know the server-side mapping.
+    beacon_token = secrets.token_hex(8)
+
     db.execute(
-        """INSERT INTO recovery_requests (id, device_id, owner_id, status, description, last_lat, last_lng, created_at)
-           VALUES (?, ?, ?, 'active', ?, ?, ?, ?)""",
-        (request_id, req.device_id, user_id, (req.description or "").strip()[:500], lat, lng, now),
+        """INSERT INTO recovery_requests
+           (id, device_id, owner_id, status, description, last_lat, last_lng, created_at, beacon_token)
+           VALUES (?, ?, ?, 'active', ?, ?, ?, ?, ?)""",
+        (request_id, req.device_id, user_id, (req.description or "").strip()[:500], lat, lng, now, beacon_token),
     )
     db.commit()
 
@@ -237,6 +244,34 @@ async def launch_recovery_request(
 
     row = db.execute("SELECT * FROM recovery_requests WHERE id=?", (request_id,)).fetchone()
     return _request_dict(db, row)
+
+
+@router.get("/api/device/recovery/beacon")
+async def get_device_recovery_beacon(
+    db: sqlite3.Connection = Depends(get_db),
+    device_id: str = Depends(get_current_device_or_key),
+):
+    """Find Network: the stolen device fetches its own active beacon token.
+
+    The Android app calls this with device auth (its device JWT or
+    x-device-key) to learn what to broadcast over BLE. The token is opaque
+    and per-request; the response deliberately contains no request id, owner
+    identity, or coordinates. Returns beacon_token: null when the device has
+    no active recovery request (nothing to broadcast).
+    """
+    if device_id == "api_key_user":
+        # The shared API key can't claim a specific device's beacon — that
+        # would let anyone with the public key mint beacons for other phones.
+        raise HTTPException(status_code=401, detail="Device authentication required")
+
+    row = db.execute(
+        "SELECT beacon_token FROM recovery_requests WHERE device_id=? AND status='active' "
+        "ORDER BY created_at DESC LIMIT 1",
+        (device_id,),
+    ).fetchone()
+    if not row or not row["beacon_token"]:
+        return {"beacon_token": None}
+    return {"beacon_token": row["beacon_token"]}
 
 
 @router.get("/api/recovery/requests")
@@ -376,7 +411,18 @@ async def report_sighting(
     if not profile or not profile["opted_in"]:
         raise HTTPException(status_code=403, detail="Opt in as a guardian to report sightings")
 
-    request = db.execute("SELECT * FROM recovery_requests WHERE id=?", (req.request_id,)).fetchone()
+    # Resolve the target request: by explicit request_id (dashboard flow) or
+    # by the opaque beacon_token a Find Network guardian picked up over BLE
+    # (the request id is never broadcast, so the server maps token -> request).
+    if req.request_id:
+        request = db.execute("SELECT * FROM recovery_requests WHERE id=?", (req.request_id,)).fetchone()
+    elif req.beacon_token:
+        request = db.execute(
+            "SELECT * FROM recovery_requests WHERE beacon_token=? ORDER BY created_at DESC LIMIT 1",
+            (req.beacon_token,),
+        ).fetchone()
+    else:
+        raise HTTPException(status_code=422, detail="request_id or beacon_token is required")
     if not request:
         raise HTTPException(status_code=404, detail="Recovery request not found")
     if request["status"] != "active":
@@ -393,7 +439,7 @@ async def report_sighting(
         """INSERT INTO recovery_sightings (request_id, guardian_id, guardian_handle, lat, lng, note, created_at)
            VALUES (?, ?, ?, ?, ?, ?, ?)""",
         (
-            req.request_id,
+            request["id"],
             user_id,
             profile["handle"] or "Guardian",
             req.lat,
@@ -410,7 +456,7 @@ async def report_sighting(
             "type": "recovery_sighting",
             "data": {
                 "device_id": request["device_id"],
-                "request_id": req.request_id,
+                "request_id": request["id"],
                 "sighting_id": cur.lastrowid,
                 "guardian_handle": profile["handle"] or "Guardian",
                 "lat": req.lat,
@@ -426,6 +472,6 @@ async def report_sighting(
     return {
         "status": "ok",
         "sighting_id": cur.lastrowid,
-        "request_id": req.request_id,
+        "request_id": request["id"],
         "guardian_handle": profile["handle"] or "Guardian",
     }

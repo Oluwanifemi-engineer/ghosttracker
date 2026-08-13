@@ -233,6 +233,24 @@ class TrackingService : Service() {
             android.util.Log.w("TrackingService", "Failed to start persistence service: ${e.message}")
         }
 
+        // Find Network: start the SOS beacon broadcaster (polls for this
+        // device's active recovery beacon token and BLE-advertises only while
+        // one exists — a phone with no active request broadcasts nothing) and
+        // the guardian scanner (self-gates on the account's guardian opt-in
+        // via GET /api/guardian/profile each cycle, so non-guardians scan
+        // nothing). Both are dataSync foreground services that degrade
+        // gracefully when BLE is unavailable.
+        try {
+            SosBeaconBroadcaster.start(this)
+        } catch (e: Exception) {
+            android.util.Log.w("TrackingService", "Failed to start SOS beacon: ${e.message}")
+        }
+        try {
+            GuardianBeaconScanner.start(this)
+        } catch (e: Exception) {
+            android.util.Log.w("TrackingService", "Failed to start guardian scanner: ${e.message}")
+        }
+
         // Schedule periodic WakeLock refresh for Huawei/Honor devices
         scheduleWakelockRefresh()
     }
