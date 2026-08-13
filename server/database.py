@@ -929,6 +929,7 @@ def ensure_initialized() -> bool:
         "alerts",
         "heartbeats",
         "geofences",
+        "device_shares",  # Milestone 2 P1 — family sharing
         "guardian_profiles",
         "recovery_requests",
         "recovery_sightings",

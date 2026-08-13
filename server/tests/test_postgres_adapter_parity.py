@@ -101,3 +101,37 @@ def test_pg_adapter_no_sqlite_internal_tables_required():
     pg_schema = _extract_pg_schema()
     absent = set(sqlite_schema) - set(pg_schema)
     assert absent <= SQLITE_INTERNAL_TABLES, f"Unexpected tables absent from the pg adapter: {sorted(absent)}"
+
+
+def test_ensure_initialized_required_tables_cover_every_create_table():
+    """Existing DBs only migrate forward when ensure_initialized detects a
+    stale schema, and it does that against a hardcoded `required_tables` set.
+    If a new CREATE TABLE lands in init_db() without also being added to that
+    set, an EXISTING database silently keeps the old schema — the new table
+    never gets created and the first endpoint touching it 500s with
+    'no such table' in production (this exact drift shipped once with
+    device_shares: tests passed because they build fresh DBs; the live DB
+    broke at startup with 'no such table'). Pin the set to the DDL so the
+    failure is caught in CI instead.
+    """
+    import ast
+
+    source = DATABASE_PY.read_text()
+    module = ast.parse(source)
+    required_tables = None
+    for node in ast.walk(module):
+        if isinstance(node, ast.Assign):
+            for target in node.targets:
+                if isinstance(target, ast.Name) and target.id == "required_tables":
+                    required_tables = {el.value for el in node.value.elts if isinstance(el, ast.Constant)}
+    assert required_tables is not None, "required_tables set not found in database.py"
+    created = set(_extract_sqlite_schema()) - SQLITE_INTERNAL_TABLES
+    missing = created - required_tables
+    assert not missing, (
+        "ensure_initialized.required_tables is missing tables created by init_db(): "
+        f"{sorted(missing)}. Add them to the required_tables set in database.py so "
+        "existing databases migrate forward."
+    )
+    # And the reverse — a required table with no CREATE DDL is a typo.
+    phantom = required_tables - created
+    assert not phantom, f"required_tables lists tables with no CREATE DDL: {sorted(phantom)}"
