@@ -236,6 +236,69 @@ export function GuardianPanel() {
         <GuardianSkeleton />
       ) : (
         <>
+          {/* ── Find Network status ────────────────────────────────────── */}
+          <div className="bg-mag-surface/40 border border-mag-border/40 rounded-xl p-4">
+            <div className="flex items-center gap-1.5 text-[10px] font-mono text-mag-text-dim/60 mb-3">
+              <Radar size={11} className="text-mag-accent" />
+              Find Network
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {/* Owner beacon — the selected device BLE-broadcasts an SOS
+                  beacon while a recovery request is active; nearby guardian
+                  phones auto-detect it and report sightings. */}
+              <div className="px-3 py-2 rounded-lg bg-mag-bg/40 border border-mag-border/20">
+                <div className="text-[9px] font-mono text-mag-text-dim/50 uppercase tracking-wider font-bold">
+                  Owner Beacon
+                </div>
+                <div className="flex items-center gap-1.5 mt-1">
+                  <span className={cn(
+                    'w-1.5 h-1.5 rounded-full',
+                    activeRequest
+                      ? 'bg-mag-primary shadow-[0_0_8px_rgba(233,30,140,0.8)] animate-pulse-slow'
+                      : 'bg-mag-text-dim/25'
+                  )} />
+                  <span className={cn(
+                    'text-[11px] font-mono font-bold',
+                    activeRequest ? 'text-mag-primary' : 'text-mag-text-dim/50'
+                  )}>
+                    {activeRequest ? 'BROADCASTING' : 'STANDBY'}
+                  </span>
+                </div>
+                <div className="text-[9px] text-mag-text-dim/40 mt-0.5 leading-tight">
+                  {activeRequest
+                    ? 'Nearby guardians can detect this device over BLE'
+                    : 'No active recovery request for this device'}
+                </div>
+              </div>
+              {/* Guardian scanner — when guardian mode is on, this account's
+                  phone auto-scans for SOS beacons in the background. */}
+              <div className="px-3 py-2 rounded-lg bg-mag-bg/40 border border-mag-border/20">
+                <div className="text-[9px] font-mono text-mag-text-dim/50 uppercase tracking-wider font-bold">
+                  Guardian Scanner
+                </div>
+                <div className="flex items-center gap-1.5 mt-1">
+                  <span className={cn(
+                    'w-1.5 h-1.5 rounded-full',
+                    isGuardian
+                      ? 'bg-mag-accent shadow-[0_0_8px_rgba(34,197,94,0.8)] animate-pulse-slow'
+                      : 'bg-mag-text-dim/25'
+                  )} />
+                  <span className={cn(
+                    'text-[11px] font-mono font-bold',
+                    isGuardian ? 'text-mag-accent' : 'text-mag-text-dim/50'
+                  )}>
+                    {isGuardian ? 'SCANNING' : 'OFF'}
+                  </span>
+                </div>
+                <div className="text-[9px] text-mag-text-dim/40 mt-0.5 leading-tight">
+                  {isGuardian
+                    ? 'Auto-detecting SOS beacons nearby'
+                    : 'Turn on Guardian Mode to help others'}
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* ── Owner: launch / track recovery ─────────────────────────── */}
           <div className="bg-mag-surface/40 border border-mag-border/40 rounded-xl p-4">
             <div className="flex items-center gap-1.5 text-[10px] font-mono text-mag-text-dim/60 mb-3">
