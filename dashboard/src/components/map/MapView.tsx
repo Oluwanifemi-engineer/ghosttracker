@@ -185,7 +185,14 @@ async function initIcons() {
 
 // ─── Map Controller — smooth follow & recenter ────────────────────────────
 
-function MapController({ pinning, onPin }: { pinning: boolean; onPin: (pos: [number, number]) => void }) {
+function MapController({ pinning, onPin, replayActive }: {
+  pinning: boolean;
+  onPin: (pos: [number, number]) => void;
+  // While the trail replay timeline is open the operator is scrubbing
+  // history — the live follow re-centre must yield, or every poll tick
+  // yanks the map away from the point being scrubbed.
+  replayActive: boolean;
+}) {
   const map = useMap();
   const { followDevice, latestLocation, selectedDeviceId } = useStore();
   const prevCenter = useRef<string>('');
@@ -216,7 +223,7 @@ function MapController({ pinning, onPin }: { pinning: boolean; onPin: (pos: [num
   }, [map]);
 
   useEffect(() => {
-    if (followDevice && latestLocation && !userInteracted.current) {
+    if (followDevice && latestLocation && !userInteracted.current && !replayActive) {
       const key = `${latestLocation.lat.toFixed(6)},${latestLocation.lng.toFixed(6)}`;
       if (key !== prevCenter.current) {
         map.setView([latestLocation.lat, latestLocation.lng], Math.max(map.getZoom(), 16), {
@@ -226,7 +233,7 @@ function MapController({ pinning, onPin }: { pinning: boolean; onPin: (pos: [num
         prevCenter.current = key;
       }
     }
-  }, [followDevice, latestLocation, map]);
+  }, [followDevice, latestLocation, map, replayActive]);
 
   // When the operator (re)selects a device, jump to street level (z17) so the
   // exact building is visible — the persisted mapZoom is 6 (whole country) and
@@ -531,6 +538,9 @@ export function MapView() {
   const [pathSpeed, setPathSpeed] = useState(2);
   const [pathIndex, setPathIndex] = useState(0);
   const [showPathTracker, setShowPathTracker] = useState(false);
+  // Remember whether follow was on before replay opened, so closing replay
+  // restores it instead of leaving the map stranded or yanking it.
+  const followBeforeReplay = useRef<boolean | null>(null);
 
   // Selected device + online state (drives the offline banner + zoom-on-select)
   const device = devices.find(d => d.id === selectedDeviceId);
@@ -662,7 +672,7 @@ export function MapView() {
             />
           )}
 
-          <MapController pinning={pinning} onPin={handlePin} />
+          <MapController pinning={pinning} onPin={handlePin} replayActive={showPathTracker} />
 
           {/* Distance / offline overlay */}
           {latestLocation && (effectiveUserPos || !deviceOnline) && (
@@ -1079,7 +1089,23 @@ export function MapView() {
           {latestLocation && locations.length > 2 && (
             <div className="mag-panel px-3 py-2">
               <button
-                onClick={() => { setShowPathTracker(!showPathTracker); setPathPlaying(false); setPathIndex(0); }}
+                onClick={() => {
+                  if (showPathTracker) {
+                    // Closing replay — restore the follow state it paused.
+                    if (followBeforeReplay.current != null) {
+                      setFollowDevice(followBeforeReplay.current);
+                      followBeforeReplay.current = null;
+                    }
+                  } else {
+                    // Opening replay — pause follow so the live re-centre
+                    // can't fight the scrubber; remember it to restore.
+                    followBeforeReplay.current = followDevice;
+                    setFollowDevice(false);
+                  }
+                  setShowPathTracker(!showPathTracker);
+                  setPathPlaying(false);
+                  setPathIndex(0);
+                }}
                 className={cn(
                   'flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-mono font-bold uppercase tracking-wider border transition-all w-full',
                   showPathTracker
