@@ -20,8 +20,6 @@ const FOOTER_LINKS = [
     title: 'Resources',
     links: [
       { label: 'Download APK', href: '/download' },
-      { label: 'API Docs (Swagger)', href: 'https://api.magneetar.me/docs' },
-      { label: 'API Docs (ReDoc)', href: 'https://api.magneetar.me/redoc' },
       { label: 'System Status', href: 'https://api.magneetar.me/health' },
       { label: 'Responsible Disclosure', href: '/.well-known/security.txt' },
     ],

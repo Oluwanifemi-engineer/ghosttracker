@@ -38,10 +38,10 @@ assert_status() {
 # ─── Get API Key if not provided ──────────────────────────────────────────────
 
 if [[ -z "$API_KEY" ]]; then
-    if [[ -f ".env" ]]; then
-        API_KEY=$(grep MT_API_KEY .env | cut -d= -f2)
-    elif [[ -f "server/.env" ]]; then
+    if [[ -f "server/.env" ]]; then
         API_KEY=$(grep MT_API_KEY server/.env | cut -d= -f2)
+    elif [[ -f ".env" ]]; then
+        API_KEY=$(grep MT_API_KEY .env | cut -d= -f2)
     fi
 fi
 

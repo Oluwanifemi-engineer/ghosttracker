@@ -111,9 +111,9 @@ services:
     # Locally-managed config file (repo versioned) — routes to Docker service
     # names (server / dashboard), fixing the 503 caused by localhost ingress
     # inside the container. Credentials file is a host secret, never committed.
-    # NOTE: CF_TUNNEL_TOKEN in root .env is now DEPRECATED for this service —
-    # the token-driven dashboard-managed ingress is no longer used. It is kept
-    # in .env only for reference / rollback.
+    # NOTE: CF_TUNNEL_TOKEN is DEPRECATED for this service — the token-driven
+    # dashboard-managed ingress is no longer used. If it is ever needed again,
+    # the value lives in server/.env (the root .env duplicate was removed).
     # --edge-ip-version 4: the host has no IPv6 route; without this,
     # cloudflared keeps dialing IPv6 edge addresses, dropping the connection
     # and canceling in-flight streams (pages hang / "connection closed").

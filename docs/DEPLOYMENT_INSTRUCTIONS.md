@@ -131,8 +131,13 @@ kubectl scale deployment dashboard --replicas=3 -n magneetar
 ### Monitoring
 
 ```bash
-# View metrics
-curl https://api.magneetar.me/metrics
+# View metrics (operator only — requires a dashboard/admin JWT; the endpoint
+# is deliberately NOT anonymous: it leaks user/device counts and which alert
+# providers are configured)
+TOKEN=$(curl -s -X POST https://api.magneetar.me/api/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"api_key":"<MT_API_KEY>"}' | jq -r .token)
+curl -H "Authorization: Bearer $TOKEN" https://api.magneetar.me/metrics
 
 # View logs
 kubectl logs -f deployment/magneetar-server -n magneetar

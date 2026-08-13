@@ -40,16 +40,20 @@ jobs:
           test -d "$ANDROID_HOME/build-tools/36.0.0" && echo "OK: build-tools 36.0.0 present" || echo "MISSING: build-tools 36.0.0"
 
       - name: Inject real google-services.json (optional)
-        # Placeholder is committed; if you set the GOOGLE_SERVICES_JSON
-        # secret (base64 of your real android-app/app/google-services.json),
-        # this replaces it so Firebase push actually works.
+        # The real google-services.json is NOT committed (gitignored — it
+        # identifies the live Firebase project). If you set the
+        # GOOGLE_SERVICES_JSON secret (base64 of your real file), this writes
+        # it so Firebase push actually works; otherwise the committed
+        # placeholder template (no real values) is used so the build still
+        # succeeds.
         shell: bash
         run: |
           if [ -n "$GOOGLE_SERVICES_JSON" ]; then
             echo "$GOOGLE_SERVICES_JSON" | base64 -d > android-app/app/google-services.json
             echo "::notice::Injected real google-services.json from secret"
           else
-            echo "::warning::GOOGLE_SERVICES_JSON secret not set — using placeholder google-services.json"
+            cp android-app/app/google-services.json.example android-app/app/google-services.json
+            echo "::warning::GOOGLE_SERVICES_JSON secret not set — using placeholder google-services.json.example"
           fi
         env:
           GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}

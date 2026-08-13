@@ -172,7 +172,18 @@ async def send_transactional_email(to: str, subject: str, text: str) -> bool:
     gracefully (tokens still issued + logged) exactly like the alert engine.
     """
     if not settings.SENDGRID_API_KEY:
-        logger.warning(f"Transactional email NOT sent to {to} — MT_SENDGRID_KEY not configured (subject: {subject})")
+        # No provider configured: the link can't be emailed, so log the FULL
+        # body (it contains the single-use, short-lived reset/verify link).
+        # Without this the link is unrecoverable — an operator on a
+        # self-hosted deployment (or pre-SendGrid production) could never
+        # retrieve a reset link, and the feature would be a dead end.
+        logger.warning(
+            "Transactional email NOT sent to %s — MT_SENDGRID_KEY not configured. "
+            "Delivering via logs instead (subject=%s):\n%s",
+            to,
+            subject,
+            text,
+        )
         return False
     try:
         async with httpx.AsyncClient() as client:
