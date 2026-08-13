@@ -18,6 +18,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   resumes follow, and the FOLLOW button now also flies straight to the device
   the moment it's turned on. No more waiting for the poll cycle to restore a
   manual view.
+- **Trail replay no longer fights follow (dashboard)**: opening the replay
+  timeline pauses device follow (restored on close), and the live re-centre
+  yields while the timeline is open — scrubbing/playing the trail now pans to
+  each point without being yanked back on the next poll tick.
+- **Battery-aware Find Network scanning (Android)**: the guardian beacon
+  scanner now paces itself — screen off → 5 min rest, battery < 15% → 10 min,
+  battery < 5% → paused until charging (re-checked every cycle). The scan was
+  already LOW_POWER/30s-per-minute; this widens the rest window instead of
+  letting community scanning drain a guardian's phone.
 - **Find Network status card (dashboard, Guardian tab)**: a two-state panel
   shows the selected device's Owner Beacon (BROADCASTING while a recovery
   request is active, else STANDBY) and this account's Guardian Scanner

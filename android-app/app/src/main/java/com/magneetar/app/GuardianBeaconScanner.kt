@@ -12,10 +12,13 @@ import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.location.LocationManager
+import android.os.BatteryManager
 import android.os.Build
 import android.os.IBinder
+import android.os.PowerManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import kotlinx.coroutines.CoroutineScope
@@ -61,6 +64,19 @@ class GuardianBeaconScanner : Service() {
         private const val NOTIF_ID = 4949
         private const val SCAN_PERIOD_MS = 30_000L // 30s of scanning
         private const val SCAN_PAUSE_MS = 60_000L // then 60s of rest (battery)
+
+        // ── Battery-aware pacing (Find Network followup) ────────────────────
+        // The scanner must never be the reason a guardian's phone dies. The
+        // pause between scan bursts grows with battery pressure and screen
+        // state, and scanning stops entirely at critical battery:
+        //   normal (screen on / charging)  -> 60s pause
+        //   screen off                     -> 5 min pause (idle phone)
+        //   low battery (< 15%)            -> 10 min pause
+        //   critical battery (< 5%)        -> paused until charging
+        private const val BATTERY_LOW_PCT = 15
+        private const val BATTERY_CRITICAL_PCT = 5
+        private const val SCAN_PAUSE_SCREEN_OFF_MS = 5 * 60_000L
+        private const val SCAN_PAUSE_LOW_BATTERY_MS = 10 * 60_000L
 
         /** Start (or re-arm) the scanner. Safe to call repeatedly. */
         fun start(context: Context) {
@@ -131,13 +147,75 @@ class GuardianBeaconScanner : Service() {
                 // cycle so an owner who opts in later starts scanning without
                 // a service restart.
                 optedIn = guardianOptedIn()
-                if (optedIn) {
+                if (optedIn && !isBatteryCritical()) {
                     scanOnce()
                 }
             } catch (e: Exception) {
                 Log.w(TAG, "scan cycle failed: ${e.message}")
             }
-            kotlinx.coroutines.delay(SCAN_PAUSE_MS)
+            kotlinx.coroutines.delay(nextPauseMs())
+        }
+    }
+
+    /**
+     * Battery-aware pause between scan bursts. The scan itself is already
+     * LOW_POWER mode and short (30s per minute of rest); this widens the rest
+     * window as battery pressure grows, and stops scanning entirely below the
+     * critical threshold (checked before scanOnce above).
+     */
+    private fun nextPauseMs(): Long {
+        val battery = batteryPercent()
+        if (battery != null && battery < BATTERY_CRITICAL_PCT && !isCharging()) {
+            // Critical — pause until the phone is charging again; the loop
+            // keeps running (cheap) and re-checks on every tick.
+            return SCAN_PAUSE_LOW_BATTERY_MS
+        }
+        if (battery != null && battery < BATTERY_LOW_PCT && !isCharging()) {
+            return SCAN_PAUSE_LOW_BATTERY_MS
+        }
+        // Screen off (or locked): the phone is idle and nobody is looking at
+        // a beacon — scan far less often. Charging or screen on: normal pace.
+        if (!isCharging() && !isScreenInteractive()) {
+            return SCAN_PAUSE_SCREEN_OFF_MS
+        }
+        return SCAN_PAUSE_MS
+    }
+
+    private fun isBatteryCritical(): Boolean {
+        val pct = batteryPercent() ?: return false
+        return pct < BATTERY_CRITICAL_PCT && !isCharging()
+    }
+
+    /** Current battery percent (0-100), or null if unknown. */
+    private fun batteryPercent(): Int? {
+        return try {
+            val bm = getSystemService(Context.BATTERY_SERVICE) as? BatteryManager ?: return null
+            bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY).let {
+                if (it in 0..100) it else null
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    private fun isCharging(): Boolean {
+        return try {
+            val sticky = registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+                ?: return false
+            val status = sticky.getIntExtra(BatteryManager.EXTRA_STATUS, -1)
+            status == BatteryManager.BATTERY_STATUS_CHARGING ||
+                status == BatteryManager.BATTERY_STATUS_FULL
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    private fun isScreenInteractive(): Boolean {
+        return try {
+            val pm = getSystemService(Context.POWER_SERVICE) as? PowerManager ?: return true
+            pm.isInteractive
+        } catch (e: Exception) {
+            true // unknown — assume interactive (scan at normal pace)
         }
     }
 
