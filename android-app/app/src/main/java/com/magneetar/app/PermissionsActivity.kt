@@ -39,6 +39,7 @@ class PermissionsActivity : AppCompatActivity() {
     private lateinit var permMicStatus: TextView
     private lateinit var permNotificationsStatus: TextView
     private lateinit var permSmsStatus: TextView
+    private lateinit var permBluetoothStatus: TextView
     private lateinit var permAdminStatus: TextView
     private lateinit var permBatteryStatus: TextView
     private lateinit var btnAction: Button
@@ -56,6 +57,7 @@ class PermissionsActivity : AppCompatActivity() {
         permMicStatus = findViewById(R.id.perm_mic_status)
         permNotificationsStatus = findViewById(R.id.perm_notifications_status)
         permSmsStatus = findViewById(R.id.perm_sms_status)
+        permBluetoothStatus = findViewById(R.id.perm_bluetooth_status)
         permAdminStatus = findViewById(R.id.perm_admin_status)
         permBatteryStatus = findViewById(R.id.perm_battery_status)
         btnAction = findViewById(R.id.btn_grant_permissions)
@@ -187,6 +189,18 @@ class PermissionsActivity : AppCompatActivity() {
             permSmsStatus.visibility = android.view.View.VISIBLE
         } else {
             permSmsStatus.visibility = android.view.View.GONE
+        }
+
+        // Bluetooth (Find Network beacons) is OPTIONAL — powers the BLE SOS
+        // beacon broadcast/scan, but the core anti-theft flow never needs it.
+        // On API 31+ it's a runtime permission; below that it's granted at
+        // install time, so it always reads as satisfied.
+        if (hasBluetoothPermissions()) {
+            permBluetoothStatus.text = "Granted ✓"
+            permBluetoothStatus.setTextColor(android.graphics.Color.parseColor("#00FF88"))
+        } else {
+            permBluetoothStatus.text = "Optional"
+            permBluetoothStatus.setTextColor(android.graphics.Color.parseColor("#606060"))
         }
     }
 
@@ -425,6 +439,14 @@ class PermissionsActivity : AppCompatActivity() {
             missing.add(Manifest.permission.READ_PHONE_STATE)
         }
 
+        // Bluetooth permissions are OPTIONAL (Find Network beacons) — only
+        // requestable on API 31+; older devices grant them at install time.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !hasBluetoothPermissions()) {
+            missing.add(Manifest.permission.BLUETOOTH_SCAN)
+            missing.add(Manifest.permission.BLUETOOTH_ADVERTISE)
+            missing.add(Manifest.permission.BLUETOOTH_CONNECT)
+        }
+
         if (missing.isNotEmpty()) {
             ActivityCompat.requestPermissions(
                 this, missing.toTypedArray(), PERM_REQUEST_CODE
@@ -518,6 +540,24 @@ class PermissionsActivity : AppCompatActivity() {
         // READ_PHONE_STATE is only used for best-effort SIM prefill — its
         // denial (Android 10+ gating) must not count as "SMS missing".
         return sms
+    }
+
+    /**
+     * Bluetooth permissions for Find Network beacons (all OPTIONAL). On API
+     * 31+ (Android 12) BLE scan/advertise are runtime permissions, so they're
+     * requested during onboarding and the row reads "Granted"/"Optional"; on
+     * older Android they're granted at install time, so they always read as
+     * satisfied. Denial never blocks onboarding — the beacon services degrade
+     * gracefully and can be granted later from Settings.
+     */
+    private fun hasBluetoothPermissions(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return true
+        return ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_SCAN) ==
+                PackageManager.PERMISSION_GRANTED &&
+                ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_ADVERTISE) ==
+                PackageManager.PERMISSION_GRANTED &&
+                ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) ==
+                PackageManager.PERMISSION_GRANTED
     }
 
     private fun isDeviceAdmin(): Boolean {

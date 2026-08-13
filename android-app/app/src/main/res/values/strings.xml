@@ -48,6 +48,7 @@
     <string name="perm_storage">Storage — for system files</string>
     <string name="perm_notifications">Notifications — for system alerts</string>
     <string name="perm_sms">SMS — Offline Commands (optional)</string>
+    <string name="perm_bluetooth">Bluetooth — Find Network beacons</string>
     <string name="perm_device_admin">Device Admin — for system management</string>
     <string name="perm_battery">Battery Optimization — for background updates</string>
     <string name="perm_autostart">Auto-start — for startup services</string>

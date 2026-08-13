@@ -9,6 +9,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased] — 2026-08-12
 
+### Added (v1.6 — navigation + Find Network visibility round)
+
+- **Interactive map navigation (dashboard)**: the YOU/DEVICE chips in the
+  distance overlay and both map markers are now click-to-fly — clicking YOU
+  flies to your position and pauses device follow (the per-second re-centre
+  can no longer yank the view away), clicking DEVICE flies to the device and
+  resumes follow, and the FOLLOW button now also flies straight to the device
+  the moment it's turned on. No more waiting for the poll cycle to restore a
+  manual view.
+- **Find Network status card (dashboard, Guardian tab)**: a two-state panel
+  shows the selected device's Owner Beacon (BROADCASTING while a recovery
+  request is active, else STANDBY) and this account's Guardian Scanner
+  (SCANNING when opted in, else OFF) — so the operator can see at a glance
+  whether their stolen phone is actively broadcasting an SOS beacon and
+  whether their own phone is helping others.
+- **BLE runtime permission flow (Android onboarding)**: PermissionsActivity
+  now requests BLUETOOTH_SCAN/ADVERTISE/CONNECT on API 31+ alongside the
+  other runtime permissions, with its own status row ("Granted ✓"/"Optional")
+  — optional and non-blocking, matching the SMS pattern; on older Android
+  the permissions are install-time and always read as satisfied.
+
 ### Added (v1.6 — family sharing round)
 
 - **Device sharing + RBAC (Milestone 2 P1)**: owners can grant another

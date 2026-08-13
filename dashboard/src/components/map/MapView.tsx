@@ -254,6 +254,23 @@ function DistanceOverlay({ userPos, userAccuracy, userPinned, deviceLat, deviceL
   lastSeen: string | null;
 }) {
   const [distance, setDistance] = useState<number | null>(null);
+  const map = useMap();
+  const { setFollowDevice } = useStore();
+
+  // ── Interactive YOU / DEVICE navigation ──────────────────────────────
+  // Clicking the chips flies the map to that position instead of waiting for
+  // the next poll cycle. Flying to YOU turns follow OFF (so the per-second
+  // device re-centre can't yank the map back); flying to DEVICE turns it ON.
+  const flyToYou = useCallback(() => {
+    if (!userPos) return;
+    setFollowDevice(false);
+    map.flyTo(userPos, Math.max(map.getZoom(), 16), { animate: true, duration: 0.8 });
+  }, [userPos, map, setFollowDevice]);
+
+  const flyToDevice = useCallback(() => {
+    setFollowDevice(true);
+    map.flyTo([deviceLat, deviceLng], Math.max(map.getZoom(), 16), { animate: true, duration: 0.8 });
+  }, [deviceLat, deviceLng, map, setFollowDevice]);
 
   useEffect(() => {
     // A distance is always useful from ANY position we have (pin or browser
@@ -350,17 +367,26 @@ function DistanceOverlay({ userPos, userAccuracy, userPinned, deviceLat, deviceL
   return (
     <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000]">
       <div className="mag-panel px-4 py-2.5 flex items-center gap-4 animate-fade-in">
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-mag-secondary shadow-[0_0_10px_rgba(6,182,212,0.6)]" />
-          <span className="font-mono text-[11px] text-mag-text-dim font-bold">YOU</span>
-        </div>
+        <button
+          onClick={flyToYou}
+          disabled={!userPos}
+          title={userPos ? 'Fly to your location (stops device follow)' : 'No position yet'}
+          className="flex items-center gap-2 group/y disabled:opacity-50"
+        >
+          <div className="w-2 h-2 rounded-full bg-mag-secondary shadow-[0_0_10px_rgba(6,182,212,0.6)] group-hover/y:scale-125 transition-transform" />
+          <span className="font-mono text-[11px] text-mag-text-dim font-bold group-hover/y:text-mag-secondary group-hover/y:underline underline-offset-2 transition-colors">YOU</span>
+        </button>
         <svg width="16" height="16" viewBox="0 0 16 16" className="text-mag-text-dim/50">
           <path d="M1 8h14M8 1l7 7-7 7" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-mag-primary shadow-[0_0_10px_rgba(233,30,140,0.6)]" />
-          <span className="font-mono text-[11px] text-mag-text-dim font-bold">DEVICE</span>
-        </div>
+        <button
+          onClick={flyToDevice}
+          title="Fly to the device (resumes follow)"
+          className="flex items-center gap-2 group/d"
+        >
+          <div className="w-2 h-2 rounded-full bg-mag-primary shadow-[0_0_10px_rgba(233,30,140,0.6)] group-hover/d:scale-125 transition-transform" />
+          <span className="font-mono text-[11px] text-mag-text-dim font-bold group-hover/d:text-mag-primary group-hover/d:underline underline-offset-2 transition-colors">DEVICE</span>
+        </button>
         <div className="h-4 w-px bg-mag-border/40" />
         <span className="font-mono text-sm font-bold text-mag-primary tabular-nums">
           {formatDistance(distance)}
@@ -469,6 +495,10 @@ export function MapView() {
     followDevice, setFollowDevice, showTrail, setShowTrail,
     devices, selectedDeviceId,
   } = useStore();
+
+  // Leaflet map instance — lets marker clicks fly the map to their position
+  // instantly instead of waiting for the next poll/follow cycle.
+  const mapRef = useRef<any>(null);
 
   const [mapReady, setMapReady] = useState(false);
   const [iconsReady, setIconsReady] = useState(false);
@@ -599,6 +629,7 @@ export function MapView() {
       {/* Map */}
       {mapReady && (
         <MapContainer
+          ref={mapRef}
           center={mapCenter}
           zoom={mapZoom}
           className="w-full h-full"
@@ -753,9 +784,24 @@ export function MapView() {
             />
           )}
 
-          {/* Device Marker */}
+          {/* Device Marker — click flies to it (street level) and resumes
+              follow, so the operator never fights the per-second re-centre */}
           {latestLocation && iconsReady && deviceIcon && (
-            <Marker position={[latestLocation.lat, latestLocation.lng]} icon={deviceIcon}>
+            <Marker
+              position={[latestLocation.lat, latestLocation.lng]}
+              icon={deviceIcon}
+              eventHandlers={{
+                click: () => {
+                  if (!mapRef.current) return;
+                  setFollowDevice(true);
+                  mapRef.current.flyTo(
+                    [latestLocation.lat, latestLocation.lng],
+                    Math.max(mapRef.current.getZoom(), 16),
+                    { animate: true, duration: 0.8 }
+                  );
+                },
+              }}
+            >
               <Popup>
                 <div className="font-sans text-sm min-w-[220px]">
                   <div className="font-bold text-mag-primary mb-2 flex items-center gap-1.5">
@@ -815,9 +861,23 @@ export function MapView() {
             />
           )}
 
-          {/* Operator marker — pinned position (preferred) or browser fix */}
+          {/* Operator marker — click flies to YOU and pauses device follow */}
           {effectiveUserPos && iconsReady && userIcon && (
-            <Marker position={effectiveUserPos} icon={userIcon}>
+            <Marker
+              position={effectiveUserPos}
+              icon={userIcon}
+              eventHandlers={{
+                click: () => {
+                  if (!mapRef.current) return;
+                  setFollowDevice(false);
+                  mapRef.current.flyTo(
+                    effectiveUserPos,
+                    Math.max(mapRef.current.getZoom(), 16),
+                    { animate: true, duration: 0.8 }
+                  );
+                },
+              }}
+            >
               <Popup>
                 <div className="font-sans text-sm min-w-[160px]">
                   <div className="font-bold text-mag-secondary mb-1 flex items-center gap-1.5">
@@ -963,7 +1023,20 @@ export function MapView() {
                 </button>
               )}
               <button
-                onClick={() => setFollowDevice(!followDevice)}
+                onClick={() => {
+                  // Turning follow ON also flies straight to the device — the
+                  // operator shouldn't have to wait for the next poll tick to
+                  // be pulled back.
+                  const next = !followDevice;
+                  setFollowDevice(next);
+                  if (next && latestLocation && mapRef.current) {
+                    mapRef.current.flyTo(
+                      [latestLocation.lat, latestLocation.lng],
+                      Math.max(mapRef.current.getZoom(), 16),
+                      { animate: true, duration: 0.8 }
+                    );
+                  }
+                }}
                 className={cn(
                   'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-mono font-bold uppercase tracking-wider border transition-all',
                   followDevice
