@@ -576,7 +576,12 @@ class RecoveryRequestCreate(BaseModel):
 
 
 class RecoverySightingCreate(BaseModel):
-    request_id: str
+    # Exactly one of request_id / beacon_token is required: the dashboard
+    # flow reports by request_id, while Find Network guardians report the
+    # opaque beacon_token they picked up over BLE (the request id never goes
+    # on the air). The endpoint resolves either to the active request.
+    request_id: Optional[str] = None
+    beacon_token: Optional[str] = None
     lat: float = Field(..., ge=-90, le=90)
     lng: float = Field(..., ge=-180, le=180)
     note: Optional[str] = Field(None, max_length=300)

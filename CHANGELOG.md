@@ -59,6 +59,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   summary, empty state with enabled button, success toast, error toast +
   inline error, re-enable after failure).
 
+### Added (v1.6 — Find Network Phase 1, COMPETITOR_AUDIT P1 #6 started)
+
+- **SOS beacon protocol (server)**: `recovery_requests` gains an opaque
+  per-request `beacon_token` (`secrets.token_hex(8)`, minted at launch,
+  never exposed in owner/guardian request views). New device-facing
+  `GET /api/device/recovery/beacon` returns the device's OWN active token
+  (device JWT or x-device-key auth; the shared API key is rejected — anyone
+  holding the public APK key can't probe other phones' tokens; null when no
+  active request). `POST /api/recovery/sightings` now resolves a sighting by
+  `beacon_token` OR `request_id` — a guardian reports the token picked up
+  over BLE, so the request id itself never goes on the air. Schema
+  migration (guarded ALTER + `ensure_initialized` staleness check — the
+  device_shares no-op bug class) + Postgres adapter parity.
+- **Find Network Android (Phase 1)**: the stolen phone's
+  `SosBeaconBroadcaster` (dataSync FGS) polls the beacon endpoint and
+  BLE-advertises the token as a service UUID while a recovery request is
+  active; the guardian's `GuardianBeaconScanner` (dataSync FGS, self-gating
+  on the account's guardian opt-in each cycle) BLE-scans, decodes the
+  token, dedups via the persisted `SosBeaconTracker` (2h cooldown — a
+  beacon advertises many times a second and guardians are rate-limited to
+  10 sightings/hour), and reports a sighting with the guardian's OWN
+  coordinates. Both degrade gracefully without BLE/permissions and never
+  fake availability. Wire contract locked by JVM tests (`SosBeaconTest`
+  round-trips the `token_hex(8)` format, rejects foreign UUIDs;
+  `SosBeaconTrackerTest` cooldown/dedup) mirroring the server's format.
+  New manifest permissions (BLUETOOTH_SCAN/ADVERTISE, `neverForLocation`;
+  classic perms ≤ API 30) + optional `bluetooth_le` feature. Tests: 12
+  backend (`TestFindNetworkBeacon` — token mint, device fetch, own-token
+  isolation, API-key rejection, token-never-leaks, sighting-by-token
+  resolves, unknown/closed/missing-resolution 404/400/422, migration) + 2
+  JVM suites (16 tests). Honest scope: on-air BLE is Phase 1 — mesh
+  scale-out, beacon-permission UX, and battery-aware scheduling are the
+  documented follow-ups.
+
 ### Added (v1.5 — expert review round)
 
 - **Geofence auto-actions (P0 gap-closer #1)**: per-zone `auto_action`

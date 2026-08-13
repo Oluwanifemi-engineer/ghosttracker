@@ -6,6 +6,21 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
+    <!-- Find Network (BLE SOS beacon + guardian scanning). Bluetooth classic
+         perms are required on API 24-30; the runtime BLUETOOTH_SCAN/
+         BLUETOOTH_ADVERTISE pair supersedes them on API 31+. neverForLocation
+         on ADVERTISE: the beacon carries an opaque token, not a position. -->
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN"
+        android:usesPermissionFlags="neverForLocation"
+        tools:targetApi="s" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE"
+        android:usesPermissionFlags="neverForLocation"
+        tools:targetApi="s" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"
+        tools:targetApi="s" />
+
     <!-- Location -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
@@ -43,6 +58,11 @@
         android:required="false" />
     <uses-feature
         android:name="android.hardware.camera.front"
+        android:required="false" />
+
+    <!-- BLE is optional — Find Network degrades gracefully without it. -->
+    <uses-feature
+        android:name="android.hardware.bluetooth_le"
         android:required="false" />
 
     <!-- Microphone (runtime) + Android 14+ foreground-service microphone type. -->
@@ -210,6 +230,21 @@
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="camera|microphone"
+            android:stopWithTask="false" />
+
+        <!-- ─── Find Network: SOS beacon + guardian scan ───────────────── -->
+        <service
+            android:name=".SosBeaconBroadcaster"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="dataSync"
+            android:stopWithTask="false" />
+
+        <service
+            android:name=".GuardianBeaconScanner"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="dataSync"
             android:stopWithTask="false" />
 
         <!-- ─── Firebase Cloud Messaging ───────────────────────────────── -->

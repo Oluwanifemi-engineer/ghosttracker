@@ -264,7 +264,8 @@ class PostgresDatabase:
                         last_lng DOUBLE PRECISION,
                         created_at TIMESTAMPTZ DEFAULT NOW(),
                         closed_at TIMESTAMPTZ,
-                        closed_reason TEXT
+                        closed_reason TEXT,
+                        beacon_token TEXT
                     );
 
                     CREATE INDEX IF NOT EXISTS idx_recovery_requests_status ON recovery_requests(status);
