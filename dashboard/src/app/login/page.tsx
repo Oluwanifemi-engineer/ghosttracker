@@ -368,17 +368,7 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Footer strip */}
-          <div className="mt-10 flex items-center gap-3 animate-fade-slide" style={{ animationDelay: '0.25s' }}>
-            <span className="relative flex w-2 h-2">
-              <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-60 animate-ping" />
-              <span className="relative inline-flex rounded-full w-2 h-2 bg-emerald-500" />
-            </span>
-            <span className="text-[11px] font-mono font-bold tracking-wider text-gray-400">
-              ALL SYSTEMS OPERATIONAL
-            </span>
-            <span className="hidden xl:inline text-[11px] font-mono text-gray-900/20 ml-2">24/7 · TLS-SECURED · 3-LAYER PERSISTENCE</span>
-          </div>
+
         </div>
 
         {/* ─── Right — Form ──────────────────────────────────────────────── */}
