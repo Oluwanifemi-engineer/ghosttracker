@@ -33,7 +33,7 @@ export function CTA({ authed }: { authed: boolean }) {
           <Link href="/login" className="inline-flex items-center gap-2 px-7 py-4 rounded-2xl text-[13px] font-bold uppercase tracking-wider border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-900 transition-all duration-200">
             I have an account
           </Link>
-          <Link href="/download" className="inline-flex items-center gap-2 px-7 py-4 rounded-2xl text-[13px] font-bold uppercase tracking-wider border border-gray-200 text-gray-400 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-900 transition-all duration-200">
+          <Link href="/download" className="inline-flex items-center gap-2 px-7 py-4 rounded-2xl text-[13px] font-bold uppercase tracking-wider border border-gray-200 text-gray-600 hover:bg-gray-900 hover:text-white hover:border-gray-900 transition-all duration-200">
             <Download size={15} />
             Download APK
           </Link>

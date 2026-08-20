@@ -18,7 +18,7 @@ export interface ProductStat {
 }
 
 export const PRODUCT_STATS: ProductStat[] = [
-  { value: 381, label: 'automated tests', display: '381' },
   { value: 24, label: 'stealth tracking', suffix: '/7', display: '24/7' },
   { value: 256, label: 'chain-of-custody hashing', prefix: 'SHA-', suffix: '-bit', display: 'SHA-256' },
+  { value: 3, label: 'layer background persistence', display: '3-layer' },
 ];
