@@ -38,10 +38,11 @@ describe('Landing Page', () => {
     expect(screen.queryByText(/Stay close to/)).toBeTruthy();
     // Hero stats — AnimatedCounter renders the value and suffix as separate
     // text nodes (e.g. "24" + "/7"), so assert on the stable stat labels.
-    expect(screen.getByText('automated tests')).toBeInTheDocument();
-    expect(screen.getByText('stealth tracking')).toBeInTheDocument();
-    expect(screen.getByText('chain-of-custody hashing')).toBeInTheDocument();
-    expect(screen.getByText('background persistence')).toBeInTheDocument();
+    // Use flexible matchers to handle split nodes and spacing.
+    expect(screen.getByText(/automated\s*tests/i)).toBeInTheDocument();
+    expect(screen.getByText(/stealth\s*tracking/i)).toBeInTheDocument();
+    expect(screen.getByText(/chain-?of-?custody\s*hashing/i)).toBeInTheDocument();
+    expect(screen.getByText(/background\s*persistence/i)).toBeInTheDocument();
 
     // Features grid
     expect(screen.getByText('Sentinel AI')).toBeInTheDocument();
