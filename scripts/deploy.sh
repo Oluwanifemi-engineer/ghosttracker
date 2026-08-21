@@ -51,11 +51,34 @@ fi
 echo ""
 
 # ── 2. Generate env if needed ────────────────────────────────────────────────
-if [ ! -f server/.env ] || [ ! -s server/.env ]; then
-    echo "🔐 Generating environment secrets..."
-    bash scripts/generate-env.sh
-    echo "   ✅ Environment generated"
-    echo ""
+# Prefer fetching secrets from a secret store (VAULT_ADDR) in production.
+# Fallback: generate a fresh local .env for ad-hoc runs.
+if [ -n "${VAULT_ADDR:-}" ] && [ -n "${VAULT_TOKEN:-}" ]; then
+    echo "🔐 Fetching secrets from Vault: $VAULT_ADDR"
+    # Minimal POC: write KV pair contents into server/.env from Vault (requires jq & vault CLI)
+    if command -v vault >/dev/null 2>&1; then
+        # Run vault read and test its success directly in the if statement to satisfy shellcheck
+        if vault kv get -format=json secret/magneetar/server >/tmp/magneetar_vault.json 2>/dev/null && [ -s /tmp/magneetar_vault.json ]; then
+            jq -r '.data.data | to_entries | .[] | "\(.key)=\(.value)"' /tmp/magneetar_vault.json > server/.env.vault
+            mv server/.env.vault server/.env
+            echo "   ✅ Environment rendered from Vault"
+        else
+            echo "   ⚠️  Vault read failed — falling back to local generation"
+            bash scripts/generate-env.sh
+            echo "   ✅ Environment generated"
+        fi
+    else
+        echo "   ⚠️  'vault' CLI not found — falling back to local generation"
+        bash scripts/generate-env.sh
+        echo "   ✅ Environment generated"
+    fi
+else
+    if [ ! -f server/.env ] || [ ! -s server/.env ]; then
+        echo "🔐 Generating environment secrets..."
+        bash scripts/generate-env.sh
+        echo "   ✅ Environment generated"
+        echo ""
+    fi
 fi
 
 # ── 3. BACKUP the live database FIRST ─────────────────────────────────────────
