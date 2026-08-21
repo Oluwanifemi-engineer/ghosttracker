@@ -40,7 +40,7 @@ describe('Landing Page', () => {
     // text nodes (e.g. "24" + "/7"), so assert on the stable stat labels.
     // Use flexible matchers to handle split nodes and spacing.
     // Ensure at least one of the product stat displays is present (24/7, SHA-256 or 3-layer)
-    expect(screen.getByText(/24\/7|SHA-256|3-layer/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/24\/7|SHA-256|3-layer/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/stealth\s*tracking/i)).toBeInTheDocument();
     expect(screen.getByText(/chain-?of-?custody\s*hashing/i)).toBeInTheDocument();
     expect(screen.getByText(/background\s*persistence/i)).toBeInTheDocument();
