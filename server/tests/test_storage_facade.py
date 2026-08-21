@@ -27,10 +27,16 @@ TEST_PG_URL = os.environ.get("MT_TEST_PG_URL", "")
 from storage import (  # noqa: E402
     PgStore,
     SqliteStore,
+    _apply_all_rewrites,
     _coerce_bool_params,
     _coerce_timestamp_params,
     _parse_rowcount,
+    _rewrite_boolean_integer_comparisons,
+    _rewrite_datetime_calls,
+    _rewrite_insert_or_replace,
     _rewrite_insert_returning,
+    _rewrite_julianday_calls,
+    _rewrite_last_insert_rowid,
     init_pg_store,
     translate_placeholders,
 )
@@ -186,6 +192,186 @@ class TestRowcountParsing:
         assert _parse_rowcount("DELETE 2") == 2
         assert _parse_rowcount("") == 0
         assert _parse_rowcount(None) == 0
+
+
+# ─── Unit: SQL rewrite functions (Phase 2b portability) ────────────────────
+
+
+class TestRewriteDatetimeCalls:
+    """Test SQLite datetime() -> Postgres NOW()/INTERVAL rewrites."""
+
+    def test_datetime_now_bare(self):
+        sql = "UPDATE devices SET archived_at=datetime('now') WHERE id=?"
+        result = _rewrite_datetime_calls(sql)
+        assert "datetime('now')" not in result
+        assert "NOW()" in result
+        assert "WHERE id=?" in result
+
+    def test_datetime_now_with_literal_modifier(self):
+        sql = "SELECT * FROM devices WHERE datetime(last_seen) < datetime('now', '-5 minutes')"
+        result = _rewrite_datetime_calls(sql)
+        assert "INTERVAL '-5 minutes'" in result
+        assert "datetime('now'" not in result
+
+    def test_datetime_now_with_parameterized_modifier(self):
+        sql = "DELETE FROM locations WHERE datetime(server_timestamp) < datetime('now', ?)"
+        result = _rewrite_datetime_calls(sql)
+        assert "NOW() + (?::interval)" in result
+
+    def test_datetime_unwrap_non_now(self):
+        sql = "SELECT datetime(server_timestamp) FROM locations"
+        result = _rewrite_datetime_calls(sql)
+        assert result == "SELECT server_timestamp FROM locations"
+
+    def test_multiple_datetime_calls(self):
+        sql = "SELECT COUNT(*) FROM devices WHERE datetime(last_seen) > datetime('now', '-5 minutes')"
+        result = _rewrite_datetime_calls(sql)
+        assert "datetime('now'" not in result
+        assert "INTERVAL '-5 minutes'" in result
+
+    def test_nested_parens_preserved(self):
+        sql = "SELECT * FROM t WHERE datetime(col) < datetime('now', ?)"
+        result = _rewrite_datetime_calls(sql)
+        assert "NOW() + (?::interval)" in result
+        assert "col" in result
+
+
+class TestRewriteJuliandayCalls:
+    """Test SQLite julianday() -> Postgres EXTRACT(EPOCH) rewrites."""
+
+    def test_julianday_basic(self):
+        sql = "SELECT julianday(server_timestamp) FROM locations"
+        result = _rewrite_julianday_calls(sql)
+        assert "EXTRACT(EPOCH" in result
+        assert "86400.0" in result
+        assert "julianday(" not in result
+
+    def test_julianday_comparison(self):
+        sql = "SELECT * FROM t WHERE julianday(server_timestamp) >= julianday('now', '-5 minutes')"
+        result = _rewrite_julianday_calls(sql)
+        assert result.count("EXTRACT(EPOCH") == 2
+        assert "julianday(" not in result
+
+    def test_no_julianday_unchanged(self):
+        sql = "SELECT COUNT(*) FROM devices"
+        assert _rewrite_julianday_calls(sql) == sql
+
+
+class TestRewriteInsertOrReplace:
+    """Test INSERT OR REPLACE -> ON CONFLICT DO UPDATE rewrites."""
+
+    def test_known_table_devices(self):
+        sql = "INSERT OR REPLACE INTO devices (id, model) VALUES (?, ?)"
+        result = _rewrite_insert_or_replace(sql)
+        assert "ON CONFLICT (id)" in result
+        assert "DO UPDATE SET" in result
+        assert "model=EXCLUDED.model" in result
+        assert "INSERT OR REPLACE" not in result
+
+    def test_known_table_cell_location_cache(self):
+        sql = "INSERT OR REPLACE INTO cell_location_cache (fingerprint, lat, lng) VALUES (?, ?, ?)"
+        result = _rewrite_insert_or_replace(sql)
+        assert "ON CONFLICT (fingerprint)" in result
+        assert "lat=EXCLUDED.lat" in result
+        assert "lng=EXCLUDED.lng" in result
+
+    def test_known_table_data_retention(self):
+        sql = "INSERT OR REPLACE INTO data_retention (user_id, locations_days) VALUES (?, ?)"
+        result = _rewrite_insert_or_replace(sql)
+        assert "ON CONFLICT (user_id)" in result
+        assert "locations_days=EXCLUDED.locations_days" in result
+
+    def test_unknown_table_unchanged(self):
+        sql = "INSERT OR REPLACE INTO unknown_table (id, val) VALUES (?, ?)"
+        result = _rewrite_insert_or_replace(sql)
+        assert result == sql  # no rewrite for unknown tables
+
+    def test_non_ioreplace_unchanged(self):
+        sql = "INSERT INTO devices (id, model) VALUES (?, ?)"
+        assert _rewrite_insert_or_replace(sql) == sql
+
+    def test_pk_not_in_columns_unchanged(self):
+        sql = "INSERT OR REPLACE INTO devices (model, platform) VALUES (?, ?)"
+        assert _rewrite_insert_or_replace(sql) == sql  # id (pk) not in cols
+
+
+class TestRewriteBooleanComparisons:
+    """Test boolean = 1/0 -> TRUE/FALSE rewrites."""
+
+    def test_delivered_equals_1(self):
+        sql = "SELECT * FROM alerts WHERE delivered=1"
+        result = _rewrite_boolean_integer_comparisons(sql)
+        assert "delivered = TRUE" in result
+        assert "delivered=1" not in result
+
+    def test_is_stolen_equals_0(self):
+        sql = "SELECT * FROM devices WHERE is_stolen=0"
+        result = _rewrite_boolean_integer_comparisons(sql)
+        assert "is_stolen = FALSE" in result
+
+    def test_non_boolean_column_unchanged(self):
+        sql = "SELECT * FROM commands WHERE priority=1"
+        result = _rewrite_boolean_integer_comparisons(sql)
+        assert "priority=1" in result  # not a boolean column
+
+    def test_mixed_boolean_and_non_boolean(self):
+        sql = "SELECT * FROM devices WHERE is_stolen=1 AND sentinel_score=5"
+        result = _rewrite_boolean_integer_comparisons(sql)
+        assert "is_stolen = TRUE" in result
+        assert "sentinel_score=5" in result  # non-boolean untouched
+
+    def test_word_boundary_no_false_positive(self):
+        sql = "SELECT * FROM t WHERE delivered_status=1"
+        result = _rewrite_boolean_integer_comparisons(sql)
+        # delivered is a boolean col but delivered_status is not — regex word
+        # boundary \b must prevent the match
+        assert "delivered_status=1" in result
+
+
+class TestRewriteLastInsertRowid:
+    """Test last_insert_rowid() -> lastval() rewrite."""
+
+    def test_basic_rewrite(self):
+        sql = "SELECT last_insert_rowid()"
+        result = _rewrite_last_insert_rowid(sql)
+        assert result == "SELECT lastval()"
+
+    def test_in_context(self):
+        sql = "media_id = db.execute('SELECT last_insert_rowid()').fetchone()[0]"
+        result = _rewrite_last_insert_rowid(sql)
+        assert "lastval()" in result
+        assert "last_insert_rowid()" not in result
+
+    def test_no_match_unchanged(self):
+        sql = "SELECT COUNT(*) FROM devices"
+        assert _rewrite_last_insert_rowid(sql) == sql
+
+
+class TestApplyAllRewrites:
+    """Test the combined rewrite pipeline."""
+
+    def test_complex_query(self):
+        sql = "SELECT * FROM alerts WHERE delivered=1 AND datetime(sent_at) > datetime('now', '-1 day')"
+        result = _apply_all_rewrites(sql)
+        assert "delivered = TRUE" in result
+        assert "INTERVAL '-1 day'" in result
+        assert "datetime('now'" not in result
+
+    def test_insert_or_replace_with_boolean(self):
+        sql = "INSERT OR REPLACE INTO devices (id, is_stolen) VALUES (?, ?)"
+        result = _apply_all_rewrites(sql)
+        assert "ON CONFLICT (id)" in result
+        # Note: boolean coercion happens at param level, not SQL level
+
+    def test_idempotent(self):
+        sql = "SELECT * FROM devices WHERE is_stolen=1"
+        once = _apply_all_rewrites(sql)
+        twice = _apply_all_rewrites(once)
+        assert once == twice  # applying rewrites twice must not double-rewrite
+
+    def test_noop_on_clean_sql(self):
+        sql = "SELECT id, model FROM devices WHERE owner_id=$1"
+        assert _apply_all_rewrites(sql) == sql
 
 
 # ─── SqliteStore scenario (no Postgres needed) ──────────────────────────────

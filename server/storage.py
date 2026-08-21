@@ -141,6 +141,181 @@ def translate_placeholders(sql: str) -> str:
     return "".join(out)
 
 
+def _rewrite_datetime_calls(sql: str) -> str:
+    """Rewrite SQLite datetime(...) calls into Postgres-friendly expressions.
+
+    Rules implemented:
+    - datetime('now') -> NOW()
+    - datetime('now', '<modifier>') -> NOW() + INTERVAL '<modifier>'
+      (literal modifiers preserved)
+    - datetime('now', ?) -> NOW() + (?::interval)  (parameterized modifier)
+    - datetime(<expr>) -> <expr> (unwrap the call) for other expressions
+
+    This function scans for "datetime(" occurrences and finds the matching
+    closing parenthesis so nested parentheses are handled correctly.
+    """
+    out_parts: List[str] = []
+    idx = 0
+    while True:
+        pos = sql.find("datetime(", idx)
+        if pos == -1:
+            out_parts.append(sql[idx:])
+            break
+        out_parts.append(sql[idx:pos])
+        # find matching closing paren for the datetime( ... ) call
+        i = pos + len("datetime(")
+        depth = 1
+        while i < len(sql) and depth > 0:
+            if sql[i] == "(":
+                depth += 1
+            elif sql[i] == ")":
+                depth -= 1
+            i += 1
+        # if we didn't find a match, append rest and stop
+        if depth != 0:
+            out_parts.append(sql[pos:])
+            break
+        inner = sql[pos + len("datetime(") : i - 1]
+        inner_strip = inner.strip()
+        repl = None
+        # handle datetime('now', ...) and datetime('now')
+        if inner_strip.startswith("'now'"):
+            # split on first comma if present
+            if "," in inner_strip:
+                _, modifier = inner_strip.split(",", 1)
+                modifier = modifier.strip()
+                # parameterized modifier (e.g. datetime('now', ?)) -> use interval cast
+                if modifier == "?":
+                    repl = "NOW() + (?::interval)"
+                else:
+                    modifier = modifier.strip("'")
+                    # Use signed interval text; Postgres accepts NOW() + INTERVAL '-5 minutes'
+                    repl = f"NOW() + INTERVAL '{modifier}'"
+            else:
+                repl = "NOW()"
+        else:
+            # unwrap other datetime(x) to x (handles nested parentheses)
+            repl = inner
+        out_parts.append(repl)
+        idx = i
+    return "".join(out_parts)
+
+
+def _rewrite_julianday_calls(sql: str) -> str:
+    """Map SQLite julianday(x) -> EXTRACT(EPOCH FROM (x)) / 86400.0.
+
+    This preserves differences between two julianday() calls because the
+    Julian offset cancels; it's a pragmatic transform to avoid UndefinedFunction
+    errors while keeping day-difference semantics.
+    """
+    # simple textual replacement: julianday(...) -> (EXTRACT(EPOCH FROM (...)) / 86400.0)
+    out = []
+    idx = 0
+    while True:
+        pos = sql.find("julianday(", idx)
+        if pos == -1:
+            out.append(sql[idx:])
+            break
+        out.append(sql[idx:pos])
+        # find matching closing paren
+        i = pos + len("julianday(")
+        depth = 1
+        while i < len(sql) and depth > 0:
+            if sql[i] == "(":
+                depth += 1
+            elif sql[i] == ")":
+                depth -= 1
+            i += 1
+        if depth != 0:
+            out.append(sql[pos:])
+            break
+        inner = sql[pos + len("julianday(") : i - 1]
+        repl = f"(EXTRACT(EPOCH FROM ({inner})) / 86400.0)"
+        out.append(repl)
+        idx = i
+    return "".join(out)
+
+
+_PK_COLUMNS = {
+    # Known primary keys used by INSERT OR REPLACE sites in the codebase/tests.
+    "cell_location_cache": "fingerprint",
+    "devices": "id",
+    "data_retention": "user_id",
+    "users": "id",
+    "api_keys": "id",
+    "p2p_pairings": "id",
+}
+
+
+def _rewrite_insert_or_replace(sql: str) -> str:
+    """Rewrite a simple ``INSERT OR REPLACE INTO table(cols) VALUES(vals)``
+    to a Postgres ``INSERT ... ON CONFLICT(pk) DO UPDATE SET ...`` using the
+    known primary key for that table.
+
+    This is a targeted, best-effort translation for the small set of tables
+    that still use the SQLite upsert pattern in tests and route code.
+    If the pattern cannot be parsed or the table isn't known, the original
+    SQL is returned unchanged (we don't try to be clever for arbitrary DML).
+    """
+    m = re.match(r"\s*INSERT\s+OR\s+REPLACE\s+INTO\s+(\w+)\s*\(([^)]+)\)\s*VALUES\s*\(([^)]+)\)", sql, re.IGNORECASE)
+    if not m:
+        return sql
+    table = m.group(1)
+    cols = [c.strip().strip('"') for c in m.group(2).split(",")]
+    vals = m.group(3).strip()
+    pk = _PK_COLUMNS.get(table.lower())
+    if not pk or pk not in cols:
+        # cannot safely construct ON CONFLICT clause
+        return sql
+    # build SET clause mapping each column to EXCLUDED.col (skip pk)
+    set_parts = [f"{c}=EXCLUDED.{c}" for c in cols if c != pk]
+    set_clause = ", ".join(set_parts) if set_parts else "NOTHING"
+    rewritten = f"INSERT INTO {table} ({', '.join(cols)}) VALUES ({vals}) ON CONFLICT ({pk}) DO UPDATE SET {set_clause}"
+    return rewritten
+
+
+def _rewrite_boolean_integer_comparisons(sql: str) -> str:
+    """Replace comparisons like "col = 1/0" for known BOOLEAN columns with
+    explicit TRUE/FALSE to satisfy Postgres type expectations.
+
+    This is a conservative, textual transform applied across the statement.
+    """
+    out = sql
+    # For each known boolean column name, replace 'col = 1' -> 'col = TRUE'
+    for _table, cols in BOOLEAN_COLUMNS.items():
+        for col in cols:
+            # word-boundary safe replacements for = 1 / = 0
+            out = re.sub(rf"\b{re.escape(col)}\b\s*=\s*1\b", f"{col} = TRUE", out)
+            out = re.sub(rf"\b{re.escape(col)}\b\s*=\s*0\b", f"{col} = FALSE", out)
+    return out
+
+
+def _rewrite_last_insert_rowid(sql: str) -> str:
+    """Rewrite ``SELECT last_insert_rowid()`` to a Postgres-compatible form.
+
+    SQLite's ``last_insert_rowid()`` returns the rowid of the most recent
+    INSERT on the connection. On Postgres with asyncpg, we can't call this
+    function — but the ``PgStore`` already appends ``RETURNING id`` to plain
+    INSERTs and exposes the result via ``lastrowid``. When route code calls
+    ``SELECT last_insert_rowid()`` explicitly (e.g. after a plain INSERT),
+    we rewrite it to ``SELECT lastval()`` which Postgres supports natively.
+    """
+    return sql.replace("last_insert_rowid()", "lastval()")
+
+
+def _apply_all_rewrites(sql: str) -> str:
+    """Apply the suite of small, surgical SQL rewrites used to bridge
+    SQLite->Postgres dialect differences before placeholder translation.
+    """
+    s = sql
+    s = _rewrite_datetime_calls(s)
+    s = _rewrite_julianday_calls(s)
+    s = _rewrite_insert_or_replace(s)
+    s = _rewrite_boolean_integer_comparisons(s)
+    s = _rewrite_last_insert_rowid(s)
+    return s
+
+
 def _statement_kind(sql: str) -> str:
     """'select' | 'insert' | 'other' — based on the leading keyword."""
     stripped = sql.lstrip().upper()
@@ -153,8 +328,8 @@ def _statement_kind(sql: str) -> str:
 
 def _rewrite_insert_returning(sql: str) -> Tuple[str, bool]:
     """Append ``RETURNING id`` to a plain single-row INSERT so ``lastrowid``
-    works. Skips ``INSERT OR REPLACE`` (a Phase 2b dialect gap) and any
-    statement that already returns rows. Returns (rewritten_sql, is_plain)."""
+    works. Skips ``INSERT OR REPLACE`` (handled by _rewrite_insert_or_replace)
+    and any statement that already returns rows. Returns (rewritten_sql, is_plain)."""
     stripped = sql.strip()
     upper = stripped.upper()
     if upper.startswith("INSERT INTO") and " RETURNING " not in upper and " SELECT " not in upper:
@@ -392,11 +567,29 @@ class PgStore:
         if len(params) == 1 and isinstance(params[0], (list, tuple)):
             params = tuple(params[0])
 
+        # When running against Postgres, apply small SQL rewrites to bridge
+        # common SQLite dialect usage (datetime()/julianday/INSERT OR REPLACE,
+        # boolean integer checks) *before* placeholder translation.
+        if settings.DATABASE_URL:
+            sql = _apply_all_rewrites(sql)
+
         # asyncpg is strict about Python types vs declared column types;
         # normalize 0/1 ints on BOOLEAN columns and ISO strings on TIMESTAMP
-        # columns the way SQLite tolerated them.
+        # columns the way SQLite tolerated them. Also coerce obvious ISO-8601
+        # datetime strings across all params as a safety net for WHERE/DELETE
+        # and other statements where column->param position mapping is not
+        # easily discoverable.
         params = _coerce_bool_params(sql, params)
         params = _coerce_timestamp_params(sql, params)
+        # global heuristic: convert any ISO-like timestamp strings to datetime
+        coerced = list(params)
+        for i, v in enumerate(coerced):
+            if isinstance(v, str) and re.match(r"^\d{4}-\d{2}-\d{2}T", v):
+                try:
+                    coerced[i] = datetime.fromisoformat(v.replace("Z", "+00:00"))
+                except ValueError:
+                    pass
+        params = tuple(coerced)
 
         pg_sql = translate_placeholders(sql)
         db = _get_pg_db(self._database_url)

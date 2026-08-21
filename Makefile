@@ -62,7 +62,7 @@ test-dashboard: ## Run dashboard tests (jest, CI mode)
 	cd dashboard && npm run test:ci
 
 test-cov:       ## Run backend tests with coverage
-	cd server && source venv/bin/activate && python -m pytest tests/ -v --tb=short --cov=. --cov-report=term-missing
+	cd server && source venv/bin/activate && python -m pytest tests/ -v --tb=short --cov=. --cov-report=term-missing --cov-report=html:coverage_html --cov-report=xml:coverage.xml
 
 test-api:       ## Run only API tests
 	cd server && source venv/bin/activate && python -m pytest tests/test_api.py -v --tb=short

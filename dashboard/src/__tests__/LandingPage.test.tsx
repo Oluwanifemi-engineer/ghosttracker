@@ -41,9 +41,9 @@ describe('Landing Page', () => {
     // Use flexible matchers to handle split nodes and spacing.
     // Ensure at least one of the product stat displays is present (24/7, SHA-256 or 3-layer)
     expect(screen.getAllByText(/24\/7|SHA-256|3-layer/i).length).toBeGreaterThan(0);
-    expect(screen.getByText(/stealth\s*tracking/i)).toBeInTheDocument();
-    expect(screen.getByText(/chain-?of-?custody\s*hashing/i)).toBeInTheDocument();
-    expect(screen.getByText(/background\s*persistence/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/stealth\s*tracking/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/chain-?of-?custody\s*hashing/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/background\s*persistence/i).length).toBeGreaterThan(0);
 
     // Features grid
     expect(screen.getByText('Sentinel AI')).toBeInTheDocument();

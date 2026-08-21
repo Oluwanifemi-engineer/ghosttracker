@@ -42,11 +42,12 @@ jobs:
         run: |
           cd server
           pip install -r requirements.txt -r requirements-dev.txt
+          pip install pytest-cov
 
       - name: Run tests (full suite incl. live WebSocket integration tests)
         run: |
           cd server
-          python -m pytest tests/ -v --tb=short 2>&1 | tee /tmp/pytest.log
+          python -m pytest tests/ -v --tb=short --cov=. --cov-report=term-missing --cov-report=xml:/tmp/coverage.xml --cov-report=html:/tmp/coverage_html 2>&1 | tee /tmp/pytest.log
 
       - name: Surface pytest failure details (diagnostic annotations)
         # CI logs require auth, but annotations are public via the check-runs
@@ -79,6 +80,16 @@ jobs:
         run: |
           cd server
           flake8 . --count --statistics
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: |
+            /tmp/coverage.xml
+            /tmp/coverage_html/
+          retention-days: 30
 
       - name: Dead code check (vulture)
         run: |

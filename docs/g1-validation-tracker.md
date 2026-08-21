@@ -14,6 +14,53 @@ Supporting artifacts live next to this file: the recruitment message
 
 ---
 
+## 0. Executive Dashboard
+
+> **Last updated:** 2026-08-22
+> **Current build:** v1.4.4 (vc16)
+> **Overall status:** 🟡 **IN PROGRESS — G1 field validation underway**
+
+### Progress Summary
+
+| Metric | Target | Current | Status |
+|--------|--------|---------|--------|
+| Devices in matrix | ≥6 | 1 (D1 fleet phone) | 🔴 **BLOCKER — need 5 more** |
+| OEM diversity | ≥4 OEMs | 1 (Samsung) | 🔴 **Need Tecno/Infinix, Xiaomi, low-end, AOSP** |
+| Real users | ≥5 | 1 (owner/tester #1) | 🔴 **Need 4+ testers** |
+| 2-week validation windows | All devices | D1: in progress (ends 08-28) | 🟡 |
+| Recovery drill 12/12 | Every device | D1: PASS | 🟢 |
+| Zero P0 bugs | Required | 0 open P0s | 🟢 |
+| Silent-tracking-death | None in final week | D1: 0 gaps >30min (4h20m soak) | 🟢 |
+| Battery drain | ≤15%/day per device | D1: ~0.9%/h armed (~21%/day) | 🟡 **Armed watch over budget** |
+| User approval | ≥80% "keep using" | 1/1 (100%) | 🟢 (sample too small) |
+
+### Remaining Work to G1 Exit
+
+- [ ] **Recruit 4+ testers** with devices across 4+ OEMs (Transsion, Xiaomi, low-end, Android 14/15)
+- [ ] **Install on 5+ devices** via Play internal testing track
+- [ ] **Run each device ≥2 weeks as daily driver**
+- [ ] **Complete condition matrix** for all devices
+- [ ] **Battery drain measurement** on all devices (48h each)
+- [ ] **Recovery drill 12/12** on every device
+- [ ] **Weekly feedback forms** collected from all testers
+- [ ] **Final 7-day soak** with zero P0s and no silent-tracking-death
+- [ ] **Exit documentation** compiled (drill logs + feedback + fix list)
+
+### Key Files
+
+| Document | Purpose |
+|----------|--------|
+| `docs/REAL_WORLD_VALIDATION_PLAN.md` | Full program rules, device matrix, exit criteria |
+| `docs/tester-recruitment-message.md` | WhatsApp-ready tester invite copy |
+| `docs/tester-feedback-form.md` | Weekly check-in form + end-of-window verdict |
+| `docs/PLAY_INTERNAL_TESTING_SETUP.md` | Play Console upload + opt-in steps |
+| `docs/PLAY_READINESS_VERDICT.md` | Technical readiness assessment |
+| `docs/PLAY_STORE_LISTING.md` | Listing copy, Data Safety, permissions |
+
+---
+
+---
+
 ## 1. Device roster
 
 | Slot | Device (model) | Android | RAM | Tester | Install date | 2-week window ends | Status |
