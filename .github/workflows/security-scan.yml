@@ -1,0 +1,52 @@
+name: Security Scans
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    - cron: '0 6 * * 1' # weekly on Monday 06:00 UTC
+
+jobs:
+  trivy-filesystem-scan:
+    name: Trivy filesystem scan (FS)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Trivy
+        uses: aquasecurity/trivy-action@v1
+        with:
+          version: 'latest'
+
+      - name: Scan repository for vulnerabilities (filesystem)
+        uses: aquasecurity/trivy-action@v1
+        with:
+          scan-type: 'fs'
+          format: 'table'
+          severity: 'CRITICAL,HIGH'
+          ignore-unfixed: false
+          vuln-type: 'os,library'
+
+  trivy-dockerfile-scan:
+    name: Trivy Dockerfile scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Trivy
+        uses: aquasecurity/trivy-action@v1
+        with:
+          version: 'latest'
+
+      - name: Scan Dockerfile(s)
+        run: |
+          set -e
+          # Scan server Dockerfile if present
+          if [ -f server/Dockerfile ]; then
+            trivy config --severity CRITICAL,HIGH server/Dockerfile || true
+          fi
+          if [ -f dashboard/Dockerfile ]; then
+            trivy config --severity CRITICAL,HIGH dashboard/Dockerfile || true
+          fi
