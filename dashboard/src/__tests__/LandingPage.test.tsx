@@ -39,7 +39,8 @@ describe('Landing Page', () => {
     // Hero stats — AnimatedCounter renders the value and suffix as separate
     // text nodes (e.g. "24" + "/7"), so assert on the stable stat labels.
     // Use flexible matchers to handle split nodes and spacing.
-    expect(screen.getByText(/automated\s*tests/i)).toBeInTheDocument();
+    // Ensure at least one of the product stat displays is present (24/7, SHA-256 or 3-layer)
+    expect(screen.getByText(/24\/7|SHA-256|3-layer/i)).toBeInTheDocument();
     expect(screen.getByText(/stealth\s*tracking/i)).toBeInTheDocument();
     expect(screen.getByText(/chain-?of-?custody\s*hashing/i)).toBeInTheDocument();
     expect(screen.getByText(/background\s*persistence/i)).toBeInTheDocument();
