@@ -4,14 +4,14 @@ import { useState } from 'react';
 import { useStore } from '@/store/useStore';
 import { getAPI } from '@/lib/api';
 import { cn } from '@/lib/utils';
-import { LogOut, Bell, Settings } from 'lucide-react';
+import { LogOut, Bell, Settings, Menu } from 'lucide-react';
 import { SettingsModal } from '@/components/layout/SettingsModal';
 import { ThemeToggle } from '@/components/ui/DarkMode';
 
 export function Header() {
   const {
     serverUrl, apiKey, isAuthenticated, isConnected,
-    setCredentials, setConnected, logout, unreadAlertCount,
+    setCredentials, setConnected, logout, unreadAlertCount, sidebarOpen,
   } = useStore();
 
   const [inputUrl, setInputUrl] = useState(serverUrl);
@@ -42,18 +42,26 @@ export function Header() {
   };
 
   return (
-    <header className="h-14 bg-white border-b border-gray-200 flex items-center px-5 gap-4 z-50 relative">
+    <header className="h-14 bg-white dark:bg-gray-900 dark:border-gray-800 border-b border-gray-200 flex items-center px-5 gap-4 z-50 relative">
+      {/* Mobile hamburger — toggles sidebar overlay */}
+      <button
+        onClick={() => useStore.getState().setSidebarOpen(!sidebarOpen)}
+        className="md:hidden flex items-center justify-center w-8 h-8 rounded-lg hover:bg-gray-100 transition-colors shrink-0"
+        aria-label="Toggle sidebar"
+      >
+        <Menu size={16} className="text-gray-700" />
+      </button>
       {/* Subtle top hairline */}
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent pointer-events-none" />
 
       {/* ─── Brand — M Logo ──────────────────────────────────────────────── */}
-      <div className="flex items-center gap-3 shrink-0 relative">
+      <div className="flex items-center gap-3 shrink-0 relative dark:bg-gray-900">
         <img src="/magneetar-mhalf.svg" alt="Magneetar" className="w-8 h-8 rounded-lg" />
-        <div className="flex flex-col leading-none">
+        <div className="flex flex-col leading-none sm:flex">
           <span className="text-sm font-display font-bold tracking-[0.25em] text-gray-900">
             MAGNEETAR
           </span>
-          <span className="mt-1 text-[7px] font-mono tracking-[0.3em] text-gray-700 font-bold">
+          <span className="mt-1 text-[7px] font-mono tracking-[0.3em] text-gray-700 font-bold hidden sm:block">
             COMMAND CENTER
           </span>
         </div>

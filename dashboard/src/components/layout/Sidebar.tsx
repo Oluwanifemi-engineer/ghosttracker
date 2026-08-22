@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useStore } from '@/store/useStore';
 import { getAPI } from '@/lib/api';
 import { cn, relativeTime, isOnline, getSignalLevel, deviceDisplayName } from '@/lib/utils';
@@ -25,8 +25,23 @@ interface DashboardStats {
   alerts_today: number;
 }
 
+function useIsMobile() {
+  const [mobile, setMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 768px)');
+    setMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+  return mobile;
+}
+
 export function Sidebar() {
   const { devices, selectedDeviceId, selectDevice, sidebarOpen, setSidebarOpen, isConnected, setDevices } = useStore();
+  const isMobile = useIsMobile();
+  // On mobile, sidebar defaults closed and renders as overlay
+  const sidebarVisible = isMobile ? sidebarOpen : sidebarOpen;
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [showClaimModal, setShowClaimModal] = useState(false);
   // Bulk purge of stale/archived devices — step-up password gated like
@@ -92,9 +107,19 @@ export function Sidebar() {
   }, [fetchStats]);
 
   return (
+    <>
+    {/* Mobile backdrop */}
+    {isMobile && sidebarVisible && (
+      <div
+        className="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm md:hidden"
+        onClick={() => setSidebarOpen(false)}
+      />
+    )}
     <aside className={cn(
       'bg-white border-r border-gray-200 flex flex-col transition-all duration-300 ease-out relative overflow-hidden',
-      sidebarOpen ? 'w-72' : 'w-12'
+      isMobile
+        ? cn('fixed top-0 left-0 bottom-0 z-40', sidebarVisible ? 'w-72 translate-x-0' : 'w-72 -translate-x-full')
+        : cn(sidebarVisible ? 'w-72' : 'w-12')
     )}>
       {/* Subtle left accent rail */}
       <div className="absolute left-0 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-gray-300 to-transparent pointer-events-none" />
@@ -417,5 +442,6 @@ export function Sidebar() {
         </div>
       )}
     </aside>
+    </>
   );
 }

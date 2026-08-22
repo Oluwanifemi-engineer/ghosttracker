@@ -5,6 +5,21 @@ import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import { render, screen, act, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom/jest-globals';
 
+// Mock window.matchMedia for mobile detection
+Object.defineProperty(window, 'matchMedia', {
+  writable: true,
+  value: jest.fn().mockImplementation((query: unknown) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: jest.fn(),
+    removeListener: jest.fn(),
+    addEventListener: jest.fn(),
+    removeEventListener: jest.fn(),
+    dispatchEvent: jest.fn(),
+  })),
+});
+
 // Mock the store
 const mockSelectDevice = jest.fn();
 const mockSetSidebarOpen = jest.fn();

@@ -11,6 +11,7 @@ let mockIsConnected = true;
 let mockServerUrl = 'https://api.magneetar.me';
 let mockApiKey = 'test-api-key';
 let mockUnreadCount = 0;
+let mockSidebarOpen = false;
 
 const mockSetCredentials = jest.fn();
 const mockSetConnected = jest.fn();
@@ -23,8 +24,10 @@ jest.mock('@/store/useStore', () => ({    useStore: jest.fn((selector: any) => {
       isAuthenticated: mockIsAuthenticated,
       isConnected: mockIsConnected,
       unreadAlertCount: mockUnreadCount,
+      sidebarOpen: mockSidebarOpen,
       setCredentials: mockSetCredentials,
       setConnected: mockSetConnected,
+      setSidebarOpen: jest.fn(),
       logout: mockLogout,
     };
     return selector ? selector(state) : state;
@@ -38,6 +41,7 @@ jest.mock('lucide-react', () => ({
   Trash2: () => null,
   Moon: () => null,
   Sun: () => null,
+  Menu: () => null,
 }));
 
 jest.mock('@/lib/api', () => ({
@@ -60,6 +64,7 @@ describe('Header Component — Authenticated', () => {
     mockServerUrl = 'https://api.magneetar.me';
     mockApiKey = 'test-api-key';
     mockUnreadCount = 0;
+    mockSidebarOpen = false;
   });
 
   it('renders the Magneetar brand name', () => {
