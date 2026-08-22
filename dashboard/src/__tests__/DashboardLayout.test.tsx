@@ -43,6 +43,17 @@ jest.mock('@/store/useStore', () => ({
 // ─── Child components mocked (the data-layer mount is what we assert) ───────
 jest.mock('@/components/layout/Header', () => ({ Header: () => null }));
 jest.mock('@/components/layout/Sidebar', () => ({ Sidebar: () => null }));
+jest.mock('@/components/ui/DarkMode', () => ({
+  ThemeProvider: ({ children }: any) => children,
+  ThemeToggle: () => null,
+}));
+jest.mock('@/components/onboarding/OnboardingFlow', () => ({
+  OnboardingFlow: () => null,
+  useOnboarding: () => ({ showOnboarding: false, completeOnboarding: jest.fn(), skipOnboarding: jest.fn() }),
+}));
+jest.mock('@/components/ui/KeyboardShortcuts', () => ({
+  KeyboardShortcutsHelp: () => null,
+}));
 
 describe('DashboardLayout — data layer mount (regression)', () => {
   beforeEach(() => {

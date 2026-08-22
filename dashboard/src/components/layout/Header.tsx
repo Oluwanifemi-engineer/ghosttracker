@@ -6,6 +6,7 @@ import { getAPI } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { LogOut, Bell, Settings } from 'lucide-react';
 import { SettingsModal } from '@/components/layout/SettingsModal';
+import { ThemeToggle } from '@/components/ui/DarkMode';
 
 export function Header() {
   const {
@@ -121,8 +122,11 @@ export function Header() {
       {/* ─── Connected Info ──────────────────────────────────────────────── */}
       {isAuthenticated && (
         <div className="flex items-center gap-4 ml-auto">
+          {/* Dark mode toggle */}
+          <ThemeToggle />
+
           {/* Server URL */}
-          <div className="flex items-center gap-1.5 text-[10px] font-mono text-gray-700 px-2 py-1 rounded-lg bg-gray-50 border border-gray-200">
+          <div className="flex items-center gap-1.5 text-[10px] font-mono text-gray-700 dark:text-gray-400 px-2 py-1 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
             <Settings size={11} className="shrink-0" />
             <span className="truncate max-w-[140px]">{serverUrl}</span>
           </div>

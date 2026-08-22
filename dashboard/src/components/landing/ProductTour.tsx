@@ -1,0 +1,232 @@
+'use client';
+
+import { useState } from 'react';
+import { Play, Pause, MapPin, Shield, Camera, Lock, Zap } from 'lucide-react';
+
+const TOUR_STEPS = [
+  {
+    id: 'tracking',
+    icon: MapPin,
+    title: 'Real-time Tracking',
+    description: 'Watch your device move on the live map with 3-second GPS updates. Kalman-filtered coordinates, road-snapped markers, and accuracy circles.',
+    color: 'from-emerald-500 to-teal-600',
+    stat: '3s updates',
+  },
+  {
+    id: 'sentinel',
+    icon: Shield,
+    title: 'Sentinel AI Detection',
+    description: 'Weighted theft scoring across 8 signals: SIM change, failed unlocks, location off, airplane mode, geofence exit, and more.',
+    color: 'from-amber-500 to-orange-600',
+    stat: '8 signals',
+  },
+  {
+    id: 'evidence',
+    icon: Camera,
+    title: 'Evidence Capture',
+    description: 'Remote photo bursts and audio recording sealed with SHA-256 chain of custody — forensic-grade evidence for recovery.',
+    color: 'from-blue-500 to-indigo-600',
+    stat: 'SHA-256 chain',
+  },
+  {
+    id: 'commands',
+    icon: Lock,
+    title: 'Remote Commands',
+    description: 'Lock the screen, trigger a siren, or wipe data — one click from the dashboard. At-most-once execution prevents replay.',
+    color: 'from-red-500 to-rose-600',
+    stat: 'One-click',
+  },
+  {
+    id: 'offline',
+    icon: Zap,
+    title: 'Offline Resilience',
+    description: 'Pings queue when offline and sync on reconnect. The Guardian Network uses BLE mesh to find devices without internet.',
+    color: 'from-violet-500 to-purple-600',
+    stat: 'Zero gaps',
+  },
+];
+
+/* ── Animated Dashboard Mockup ─────────────────────────────────────────── */
+function DashboardMockup({ activeStep }: { activeStep: number }) {
+  const step = TOUR_STEPS[activeStep];
+
+  return (
+    <div className="relative bg-gray-900 rounded-2xl overflow-hidden shadow-2xl border border-gray-800">
+      {/* Title bar */}
+      <div className="flex items-center gap-2 px-4 py-2.5 bg-gray-800/80 border-b border-gray-700/50">
+        <div className="flex gap-1.5">
+          <div className="w-2.5 h-2.5 rounded-full bg-red-500/80" />
+          <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/80" />
+          <div className="w-2.5 h-2.5 rounded-full bg-green-500/80" />
+        </div>
+        <span className="text-[10px] font-mono text-gray-500 ml-2">MAGNEETAR COMMAND CENTER</span>
+        <div className="ml-auto flex items-center gap-1.5">
+          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="text-[9px] font-mono text-emerald-400">LIVE</span>
+        </div>
+      </div>
+
+      {/* Map area with animated marker */}
+      <div className="relative h-48 bg-gray-850 overflow-hidden">
+        {/* Grid overlay */}
+        <div className="absolute inset-0 opacity-10"
+          style={{
+            backgroundImage: 'linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)',
+            backgroundSize: '20px 20px',
+          }}
+        />
+
+        {/* Animated marker */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 transition-all duration-1000">
+          <div className="relative">
+            {/* Accuracy circle */}
+            <div className={`absolute -inset-8 rounded-full bg-gradient-to-br ${step.color} opacity-10 animate-pulse`} />
+            {/* Pin */}
+            <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${step.color} flex items-center justify-center shadow-lg`}>
+              <step.icon size={18} className="text-white" />
+            </div>
+            {/* Pulse ring */}
+            <div className={`absolute -inset-3 rounded-full border-2 border-white/20 animate-ping`} />
+          </div>
+        </div>
+
+        {/* Sidebar mockup */}
+        <div className="absolute right-0 top-0 bottom-0 w-48 bg-gray-900/90 border-l border-gray-700/50 p-3">
+          <div className="text-[9px] font-mono text-gray-500 mb-2">DEVICES</div>
+          {['Galaxy A03s', 'Pixel 8', 'Redmi Note 12'].map((name, i) => (
+            <div key={name} className={`flex items-center gap-2 p-2 rounded-lg mb-1.5 transition-all duration-300 ${
+              i === 0 ? 'bg-white/10 border border-white/10' : 'opacity-40'
+            }`}>
+              <div className={`w-2 h-2 rounded-full ${i === 0 ? 'bg-emerald-500' : 'bg-gray-600'}`} />
+              <span className="text-[10px] font-mono text-white/80">{name}</span>
+            </div>
+          ))}
+
+          <div className="mt-4 text-[9px] font-mono text-gray-500 mb-2">SENTINEL</div>
+          <div className="p-2 rounded-lg bg-white/5 border border-white/10">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[10px] font-mono text-gray-400">Score</span>
+              <span className="text-[10px] font-mono text-emerald-400 font-bold">0</span>
+            </div>
+            <div className="h-1 bg-gray-700 rounded-full overflow-hidden">
+              <div className="h-full w-0 bg-emerald-500 rounded-full transition-all duration-1000" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Status bar */}
+      <div className="flex items-center justify-between px-4 py-2 bg-gray-800/60 border-t border-gray-700/50">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5">
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            <span className="text-[9px] font-mono text-gray-400">Samsung A03s</span>
+          </div>
+          <span className="text-[9px] font-mono text-gray-500">•</span>
+          <span className="text-[9px] font-mono text-gray-400">Battery 84%</span>
+          <span className="text-[9px] font-mono text-gray-500">•</span>
+          <span className="text-[9px] font-mono text-gray-400">Wifi</span>
+        </div>
+        <span className="text-[9px] font-mono text-gray-500">2s ago</span>
+      </div>
+    </div>
+  );
+}
+
+export function ProductTour() {
+  const [activeStep, setActiveStep] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  const nextStep = () => setActiveStep((prev) => (prev + 1) % TOUR_STEPS.length);
+  const prevStep = () => setActiveStep((prev) => (prev - 1 + TOUR_STEPS.length) % TOUR_STEPS.length);
+
+  return (
+    <section className="py-20 sm:py-28 bg-gray-950 overflow-hidden">
+      <div className="max-w-7xl mx-auto px-5 sm:px-8">
+        {/* Section header */}
+        <div className="text-center mb-16">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gray-700 bg-gray-800/50 mb-5">
+            <Play size={10} className="text-emerald-400" />
+            <span className="text-[10px] font-mono font-bold tracking-[0.2em] text-gray-400">PRODUCT TOUR</span>
+          </div>
+          <h2 className="text-3xl sm:text-4xl font-display font-extrabold tracking-tight text-white mb-4">
+            See it in action.
+          </h2>
+          <p className="text-gray-400 text-base max-w-lg mx-auto">
+            Five core capabilities, one command center. Every feature is built for
+            the moment your phone disappears.
+          </p>
+        </div>
+
+        <div className="grid lg:grid-cols-2 gap-12 items-center">
+          {/* Mockup */}
+          <DashboardMockup activeStep={activeStep} />
+
+          {/* Step selector */}
+          <div className="space-y-3">
+            {TOUR_STEPS.map((step, i) => (
+              <button
+                key={step.id}
+                onClick={() => setActiveStep(i)}
+                className={`w-full text-left p-4 rounded-xl border transition-all duration-300 ${
+                  i === activeStep
+                    ? 'bg-white/5 border-white/10 shadow-lg'
+                    : 'bg-transparent border-transparent hover:bg-white/[0.02] hover:border-white/5'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
+                    i === activeStep
+                      ? `bg-gradient-to-br ${step.color}`
+                      : 'bg-white/5'
+                  }`}>
+                    <step.icon size={18} className={i === activeStep ? 'text-white' : 'text-gray-500'} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className={`text-sm font-bold transition-colors ${
+                        i === activeStep ? 'text-white' : 'text-gray-500'
+                      }`}>{step.title}</span>
+                      <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded bg-white/5 ${
+                        i === activeStep ? 'text-emerald-400' : 'text-gray-600'
+                      }`}>{step.stat}</span>
+                    </div>
+                    {i === activeStep && (
+                      <p className="text-xs text-gray-400 mt-1 leading-relaxed">{step.description}</p>
+                    )}
+                  </div>
+                </div>
+              </button>
+            ))}
+
+            {/* Navigation */}
+            <div className="flex items-center gap-3 pt-4">
+              <button
+                onClick={prevStep}
+                className="px-4 py-2 rounded-lg border border-gray-700 text-gray-400 text-xs font-mono hover:bg-white/5 transition-colors"
+              >
+                ← Prev
+              </button>
+              <button
+                onClick={nextStep}
+                className="px-4 py-2 rounded-lg border border-gray-700 text-gray-400 text-xs font-mono hover:bg-white/5 transition-colors"
+              >
+                Next →
+              </button>
+              <div className="flex gap-1.5 ml-auto">
+                {TOUR_STEPS.map((_, i) => (
+                  <div
+                    key={i}
+                    className={`w-1.5 h-1.5 rounded-full transition-all ${
+                      i === activeStep ? 'bg-white w-4' : 'bg-gray-600'
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}

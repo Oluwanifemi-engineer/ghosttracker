@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { LandingNav } from '@/components/landing/LandingNav';
 import { Hero } from '@/components/landing/Hero';
+import { ProductTour } from '@/components/landing/ProductTour';
 import { Features } from '@/components/landing/Features';
 import { HowItWorks } from '@/components/landing/HowItWorks';
 import { Africa } from '@/components/landing/Africa';
@@ -27,6 +28,7 @@ export default function HomePage() {
       <LandingNav authed={authed} />
       <main>
         <Hero authed={authed} />
+        <ProductTour />
         <Reveal><Features /></Reveal>
         <Reveal><HowItWorks /></Reveal>
         <Reveal><Africa /></Reveal>

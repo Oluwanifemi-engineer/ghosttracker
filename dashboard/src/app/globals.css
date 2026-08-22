@@ -1126,3 +1126,71 @@ input:-webkit-autofill:focus {
     transform: none !important;
   }
 }
+
+/* ─── Dark Mode ─────────────────────────────────────────────────────────── */
+@layer base {
+  .dark {
+    --mag-bg: #0a0a0f;
+    --mag-text: #e5e7eb;
+    --mag-border: #1f2937;
+  }
+
+  .dark body {
+    @apply bg-gray-950 text-gray-100;
+  }
+
+  .dark .mag-panel {
+    @apply bg-gray-900 border-gray-800;
+  }
+
+  .dark .mag-card {
+    @apply bg-gray-900 border-gray-800 hover:border-gray-700;
+  }
+
+  .dark .mag-input {
+    @apply bg-gray-800 border-gray-700 text-gray-100 placeholder:text-gray-500;
+  }
+
+  .dark .mag-tab {
+    @apply text-gray-500;
+  }
+  .dark .mag-tab:hover {
+    @apply text-gray-300;
+  }
+  .dark .mag-tab.active {
+    @apply text-white border-white bg-gray-800;
+  }
+
+  .dark .mag-badge-online {
+    @apply bg-emerald-900/30 text-emerald-400 border-emerald-800;
+  }
+  .dark .mag-badge-offline {
+    @apply bg-gray-800 text-gray-400 border-gray-700;
+  }
+  .dark .mag-badge-danger {
+    @apply bg-red-900/30 text-red-400 border-red-800;
+  }
+  .dark .mag-badge-info {
+    @apply bg-gray-800 text-gray-300 border-gray-700;
+  }
+
+  /* Dashboard layout dark overrides */
+  .dark [class*="bg-white"] {
+    @apply bg-gray-900;
+  }
+  .dark [class*="border-gray-200"] {
+    @apply border-gray-700;
+  }
+  .dark [class*="text-gray-900"] {
+    @apply text-gray-100;
+  }
+  .dark [class*="text-gray-700"] {
+    @apply text-gray-300;
+  }
+  .dark [class*="text-gray-500"] {
+    @apply text-gray-400;
+  }
+  .dark [class*="bg-gray-50"] {
+    @apply bg-gray-800;
+  }
+}

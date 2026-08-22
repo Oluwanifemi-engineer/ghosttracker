@@ -7,6 +7,7 @@ import { Sidebar } from '@/components/layout/Sidebar';
 import { useDevices } from '@/hooks/useDevices';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { ToastProvider } from '@/components/ui/Toast';
+import { ThemeProvider } from '@/components/ui/DarkMode';
 import { KeyboardShortcutsHelp } from '@/components/ui/KeyboardShortcuts';
 import { OnboardingFlow, useOnboarding } from '@/components/onboarding/OnboardingFlow';
 import { useRouter } from 'next/navigation';
@@ -130,8 +131,9 @@ export default function DashboardLayout({
   }
 
   return (
+    <ThemeProvider>
     <ToastProvider>
-    <div className="h-screen flex flex-col overflow-hidden">
+    <div className="h-screen flex flex-col overflow-hidden dark:bg-gray-950">
       {/* Subtle background grid — military feel */}
       <div className="fixed inset-0 mag-grid-bg opacity-[0.03] pointer-events-none z-0" />
 
@@ -155,5 +157,6 @@ export default function DashboardLayout({
       )}
     </div>
     </ToastProvider>
+    </ThemeProvider>
   );
 }
