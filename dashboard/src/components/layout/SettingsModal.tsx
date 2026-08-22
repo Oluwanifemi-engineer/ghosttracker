@@ -7,6 +7,7 @@ import { getAPI } from '@/lib/api';
 import { UserProfile } from '@/types';
 import { X, Trash2, ShieldAlert, ShieldCheck, Crown, ArrowUpRight, Smartphone, Mail, RefreshCw, KeyRound, Plus, Copy, Check, Ban, RotateCcw } from 'lucide-react';
 import { ApiKey, ApiKeyCreated, ApiKeyScope, ApiKeyType } from '@/types';
+import { SubscriptionPage } from '@/components/settings/SubscriptionPage';
 
 const PLAN_LABELS: Record<string, string> = {
   free: 'FREE',
@@ -760,6 +761,11 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
             )}
           </div>
         )}
+
+        {/* Subscription */}
+        <div>
+          <SubscriptionPage />
+        </div>
 
         {/* Danger Zone */}
         <div className="bg-red-50 border border-red-200 rounded-xl p-4">

@@ -129,6 +129,14 @@ async def register_user(req: UserRegisterRequest, request: Request):
 
         log_audit("user_registered", actor=user_id, ip_address=client_ip, details=req.email)
 
+    # Send welcome email (fire-and-forget)
+    try:
+        from email_service import send_welcome
+
+        send_welcome(req.display_name or req.email.split("@")[0], req.email)
+    except Exception:
+        pass  # Don't block signup if email fails
+
     # Issue tokens
     tokens = create_user_tokens(user_id)
     return TokenResponse(**tokens)

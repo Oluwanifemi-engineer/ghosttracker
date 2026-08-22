@@ -11,10 +11,11 @@ import { EvidencePanel } from '@/components/panels/EvidencePanel';
 import { GeofencePanel } from '@/components/panels/GeofencePanel';
 import { ErrorPanel } from '@/components/panels/ErrorPanel';
 import { GuardianPanel } from '@/components/panels/GuardianPanel';
+import { FamilyCircle } from '@/components/family/FamilyCircle';
 import { Tabs } from '@/components/ui/Tabs';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { TabId } from '@/types';
-import { Shield, Terminal, MapPin, Fence, Camera, ClipboardList, Bug, ShieldCheck } from 'lucide-react';
+import { Shield, Terminal, MapPin, Fence, Camera, ClipboardList, Bug, ShieldCheck, Users } from 'lucide-react';
 
 const PANEL_TABS = [
   { id: 'sentinel' as TabId, label: 'Sentinel', icon: Shield },
@@ -24,6 +25,7 @@ const PANEL_TABS = [
   { id: 'media' as TabId, label: 'Media', icon: Camera },
   { id: 'evidence' as TabId, label: 'Evidence', icon: ClipboardList },
   { id: 'guardian' as TabId, label: 'Guardian', icon: ShieldCheck },
+  { id: 'family' as TabId, label: 'Family', icon: Users },
   { id: 'errors' as TabId, label: 'Errors', icon: Bug },
 ];
 
@@ -88,6 +90,13 @@ export default function DashboardPage() {
               {effectiveTab === 'media' && <ErrorBoundary><MediaGallery /></ErrorBoundary>}
               {effectiveTab === 'evidence' && <ErrorBoundary><EvidencePanel /></ErrorBoundary>}
               {effectiveTab === 'guardian' && <ErrorBoundary><GuardianPanel /></ErrorBoundary>}
+              {effectiveTab === 'family' && (
+                <ErrorBoundary>
+                  <div className="p-4">
+                    <FamilyCircle />
+                  </div>
+                </ErrorBoundary>
+              )}
               {effectiveTab === 'errors' && <ErrorBoundary><ErrorPanel /></ErrorBoundary>}
             </div>
 

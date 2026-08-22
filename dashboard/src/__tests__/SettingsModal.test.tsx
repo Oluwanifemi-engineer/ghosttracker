@@ -69,6 +69,10 @@ jest.mock('lucide-react', () => {
   };
 });
 
+jest.mock('@/components/settings/SubscriptionPage', () => ({
+  SubscriptionPage: () => <div data-testid="subscription-page">Subscription</div>,
+}));
+
 import { SettingsModal } from '@/components/layout/SettingsModal';
 
 describe('SettingsModal — portal + danger zone', () => {

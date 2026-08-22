@@ -266,7 +266,7 @@ export interface Geofence {
 
 // ─── UI State ────────────────────────────────────────────────────────────────
 
-export type TabId = 'sentinel' | 'commands' | 'location' | 'zones' | 'media' | 'evidence' | 'guardian' | 'alerts' | 'errors';
+export type TabId = 'sentinel' | 'commands' | 'location' | 'zones' | 'media' | 'evidence' | 'guardian' | 'family' | 'alerts' | 'errors';
 
 export interface UIState {
   sidebarOpen: boolean;

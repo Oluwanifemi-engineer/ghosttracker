@@ -109,14 +109,14 @@ export const HERO_EXPERIMENT: Experiment = {
 
 export const HERO_COPY = {
   control: {
-    headline: 'Protect what you own.\nStay close to who you love.',
+    headline: 'Protect what you own.\nStay close to who matters.',
     subheadline:
-      'In Nigeria, only 11.7% of stolen phones are ever recovered. Magneetar is built to change that number — real-time tracking, forensic-grade evidence, and a route that walks you straight to your device.',
+      'In Nigeria, only 11.7% of stolen phones are ever recovered. Magneetar is built to change that number — real-time tracking, forensic-grade evidence, and a community that helps you recover.',
   },
   emotional: {
-    headline: "Your phone isn't just a phone.\nIt's your life.",
+    headline: "Your phone isn't just a phone.\nIt's your connection to everyone.",
     subheadline:
-      'Photos, contacts, banking, memories — everything you care about lives in your pocket. When it disappears, Magneetar brings it back. Real-time tracking, forensic evidence, and a path straight to your door.',
+      'Family, friends, coworkers — everyone you care about is a tap away. When your phone disappears, so does that connection. Magneetar brings it back. And keeps your people close, always.',
   },
   data: {
     headline: '87% of thefts happen in 4 seconds.\nWe respond in 3.',

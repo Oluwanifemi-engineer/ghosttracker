@@ -480,6 +480,51 @@ from routes.family import router as family_router  # noqa: E402
 
 app.include_router(family_router)
 
+# Community Watch Map routes
+from routes.community import router as community_router  # noqa: E402
+
+app.include_router(community_router)
+
+# Recovery Bounty routes
+from routes.bounties import router as bounties_router  # noqa: E402
+
+app.include_router(bounties_router)
+
+# Push Notification routes
+from routes.notifications import router as notifications_router  # noqa: E402
+
+app.include_router(notifications_router)
+
+# Support Ticket routes
+from routes.support import router as support_router  # noqa: E402
+
+app.include_router(support_router)
+
+# NPS Survey routes
+from routes.nps import router as nps_router  # noqa: E402
+
+app.include_router(nps_router)
+
+# Email Tracking routes
+from routes.email_tracking import router as email_tracking_router  # noqa: E402
+
+app.include_router(email_tracking_router)
+
+# Trust Score routes (IMEI verification, device reputation)
+from routes.trust_score import router as trust_score_router  # noqa: E402
+
+app.include_router(trust_score_router)
+
+# Digital Inheritance routes (emergency access, beneficiaries)
+from routes.inheritance import router as inheritance_router  # noqa: E402
+
+app.include_router(inheritance_router)
+
+# Smart Geofence routes (AI-powered zones, anomaly detection)
+from routes.smart_geofence import router as smart_geofence_router  # noqa: E402
+
+app.include_router(smart_geofence_router)
+
 # User data routes (GDPR export, deletion, retention)
 from routes.user_data import router as user_data_router  # noqa: E402
 
@@ -1194,6 +1239,61 @@ async def dashboard_websocket(websocket: WebSocket):
                 record_pong(websocket)
     except WebSocketDisconnect:
         remove_websocket(websocket)
+
+
+# ─── Admin WebSocket ────────────────────────────────────────────────────────
+
+
+@app.websocket("/ws/admin")
+async def admin_websocket(websocket: WebSocket):
+    """WebSocket for real-time admin dashboard updates.
+
+    Requires admin role. Broadcasts user signups, device registrations,
+    alerts, and live stats to all connected admin dashboards.
+    """
+    from database import get_db_context
+    from websocket_manager import admin_connect, admin_disconnect
+
+    await websocket.accept()
+
+    # Authenticate
+    token = websocket.query_params.get("token")
+    if not token:
+        await websocket.close(code=4408, reason="Authentication required")
+        return
+
+    try:
+        payload = decode_token(token)
+        user_id = payload.get("sub", "")
+
+        with get_db_context() as db:
+            user = db.execute("SELECT role FROM users WHERE id = ?", (user_id,)).fetchone()
+            if not user or user[0] != "admin":
+                await websocket.close(code=4003, reason="Admin access required")
+                return
+    except Exception:
+        await websocket.close(code=4001, reason="Invalid token")
+        return
+
+    await admin_connect(websocket)
+
+    try:
+        # Send initial stats
+        from routes.admin import get_admin_stats
+
+        stats = await get_admin_stats(admin=user_id)
+        await websocket.send_json({"type": "stats_update", "data": stats})
+
+        # Keep alive and handle messages
+        while True:
+            data = await websocket.receive_text()
+            if data == "ping":
+                await websocket.send_json({"type": "pong"})
+            elif data == "refresh":
+                stats = await get_admin_stats(admin=user_id)
+                await websocket.send_json({"type": "stats_update", "data": stats})
+    except WebSocketDisconnect:
+        await admin_disconnect(websocket)
 
 
 # ─── Run ─────────────────────────────────────────────────────────────────────

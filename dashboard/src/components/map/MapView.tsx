@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import { useStore } from '@/store/useStore';
+import { CommunityHeatmap } from './CommunityHeatmap';
 import { cn, openGoogleMapsDirections, formatDistance, formatDuration, isOnline, relativeTime, formatTimestamp, locationTimestamp } from '@/lib/utils';
 import { getOSRMRoute, snapToRoad, NavigationRoute } from '@/services/navigation';
 import type { Location } from '@/types';
@@ -529,6 +530,7 @@ export function MapView() {
   const [userGeoDenied, setUserGeoDenied] = useState(false);
   const [navigating, setNavigating] = useState(false);
   const [showSatellite, setShowSatellite] = useState(false);
+  const [showHeatmap, setShowHeatmap] = useState(false);
   const [deviceAddress, setDeviceAddress] = useState<string | null>(null);
   // Pinned operator position — the operator taps the map to say "I am here".
   // This is the PRIMARY source for a theft trail run from a laptop (no GPS)
@@ -731,6 +733,7 @@ export function MapView() {
           )}
 
           <MapController pinning={pinning} onPin={handlePin} replayActive={showPathTracker} />
+          <CommunityHeatmap visible={showHeatmap} onToggle={() => setShowHeatmap(!showHeatmap)} />
 
           {/* Distance / offline overlay */}
           {latestLocation && (effectiveUserPos || !deviceOnline) && (

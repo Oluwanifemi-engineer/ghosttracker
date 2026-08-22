@@ -20,7 +20,7 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: 'MAGNEETAR — Protect What You Own. Stay Close to Who You Love.',
   description:
-    'Military-grade anti-theft tracking and live location circles for Android, built for Africa. Sentinel AI theft detection, real-time tracking, remote evidence capture, family & team connectivity, and a tactical command center — because only 11.7% of stolen phones are ever recovered.',
+    'Military-grade anti-theft tracking and live location circles for Android, built for Africa. Sentinel AI theft detection, real-time tracking, remote evidence capture, family & team circles, community recovery bounties, and a tactical command center — because only 11.7% of stolen phones are ever recovered.',
   keywords: [
     'anti-theft',
     'device tracking',

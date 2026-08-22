@@ -441,6 +441,50 @@ async def prune_stale_connections():
         )
 
 
+# ── Admin WebSocket Channel ──────────────────────────────────────────────
+# Separate channel for admin dashboard real-time updates.
+_admin_connections: list[WebSocket] = []
+
+
+async def admin_connect(ws: WebSocket):
+    """Accept an admin WebSocket connection."""
+    await ws.accept()
+    _admin_connections.append(ws)
+    logger.info("Admin WS connected (%d total)", len(_admin_connections))
+
+
+async def admin_disconnect(ws: WebSocket):
+    """Remove an admin WebSocket connection."""
+    if ws in _admin_connections:
+        _admin_connections.remove(ws)
+    logger.info("Admin WS disconnected (%d total)", len(_admin_connections))
+
+
+async def broadcast_admin(event: dict):
+    """Broadcast an event to all connected admin dashboards."""
+    if not _admin_connections:
+        return
+    message = json.dumps(event)
+    dead = []
+    for ws in _admin_connections:
+        try:
+            await ws.send_text(message)
+        except Exception:
+            dead.append(ws)
+    for ws in dead:
+        _admin_connections.remove(ws)
+
+
+async def broadcast_admin_stats(stats: dict):
+    """Broadcast real-time stats to admin dashboards."""
+    await broadcast_admin({"type": "stats_update", "data": stats})
+
+
+async def broadcast_admin_event(event_type: str, data: dict):
+    """Broadcast a generic event to admin dashboards."""
+    await broadcast_admin({"type": event_type, "data": data})
+
+
 async def start_connection_heartbeat(interval: int = None):
     """Background asyncio task: periodically prune stale connections.
 

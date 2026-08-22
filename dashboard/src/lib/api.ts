@@ -597,6 +597,338 @@ class MagneetarAPI {
   async getTierLimits(): Promise<{ tier: string; limits: Record<string, any> }> {
     return this.request('/payments/tier-limits');
   }
+
+  // ── Community Watch Map ───────────────────────────────────────────────
+
+  async reportTheft(data: {
+    lat: number;
+    lng: number;
+    method: string;
+    notes?: string;
+  }): Promise<{ report_id: string; status: string }> {
+    return this.request('/community/report', 'POST', data);
+  }
+
+  async getHeatmap(lat: number, lng: number, radiusKm = 10): Promise<{
+    hotspots: Array<{
+      lat: number;
+      lng: number;
+      intensity: number;
+      count: number;
+      methods: string[];
+      risk_level: string;
+    }>;
+    total_reports: number;
+  }> {
+    return this.request(`/community/heatmap?lat=${lat}&lng=${lng}&radius_km=${radiusKm}`);
+  }
+
+  async getRecentReports(lat: number, lng: number, radiusKm = 5): Promise<{
+    reports: Array<{
+      id: string;
+      lat: number;
+      lng: number;
+      method: string;
+      time_of_day: string;
+      created_at: string;
+      verified: boolean;
+    }>;
+  }> {
+    return this.request(`/community/reports?lat=${lat}&lng=${lng}&radius_km=${radiusKm}`);
+  }
+
+  async getSafeRoute(startLat: number, startLng: number, endLat: number, endLng: number): Promise<{
+    waypoints: Array<{ lat: number; lng: number; label: string }>;
+    hotspots_avoided: number;
+    safety_score: number;
+  }> {
+    return this.request('/community/safe-route', 'POST', {
+      start_lat: startLat, start_lng: startLng, end_lat: endLat, end_lng: endLng,
+    });
+  }
+
+  // ── Recovery Bounties ──────────────────────────────────────────────────
+
+  async createBounty(data: {
+    device_id: string;
+    amount: number;
+    description?: string;
+    contact_phone?: string;
+  }): Promise<{ bounty_id: string; amount: number; expires_at: string }> {
+    return this.request('/bounties/create', 'POST', data);
+  }
+
+  async getActiveBounties(lat: number, lng: number, radiusKm = 20): Promise<{
+    bounties: Array<{
+      id: string;
+      device_id: string;
+      amount: number;
+      amount_display: string;
+      description: string;
+      device_name: string;
+      created_at: string;
+      expires_at: string;
+    }>;
+  }> {
+    return this.request(`/bounties/active?lat=${lat}&lng=${lng}&radius_km=${radiusKm}`);
+  }
+
+  async claimBounty(data: {
+    bounty_id: string;
+    finder_name: string;
+    finder_phone: string;
+    location_lat: number;
+    location_lng: number;
+    note?: string;
+  }): Promise<{ claim_id: string; status: string }> {
+    return this.request('/bounties/claim', 'POST', data);
+  }
+
+  async getMyBounties(): Promise<{
+    bounties: Array<{
+      id: string;
+      amount: number;
+      amount_display: string;
+      status: string;
+      device_name: string;
+      claim_count: number;
+    }>;
+  }> {
+    return this.request('/bounties/my');
+  }
+
+  // ── Admin Dashboard ────────────────────────────────────────────────────
+
+  async getAdminStats(): Promise<any> {
+    return this.request('/admin/stats');
+  }
+
+  async getAdminUsers(page = 1, limit = 50, search?: string): Promise<{
+    users: Array<{
+      id: string;
+      email: string;
+      display_name: string;
+      subscription_plan: string;
+      subscription_status: string;
+      created_at: string;
+      last_login: string | null;
+    }>;
+    total: number;
+    page: number;
+    limit: number;
+  }> {
+    const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+    if (search) params.set('search', search);
+    return this.request(`/admin/users?${params}`);
+  }
+
+  async getAdminDevices(page = 1, limit = 50, status?: string): Promise<any> {
+    const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+    if (status) params.set('status', status);
+    return this.request(`/admin/devices?${params}`);
+  }
+
+  // ── Support Tickets ────────────────────────────────────────────────────
+
+  async createTicket(data: {
+    subject: string;
+    description: string;
+    category: string;
+    priority?: string;
+    device_id?: string;
+  }): Promise<{ ticket_id: string; status: string }> {
+    return this.request('/support/tickets', 'POST', data);
+  }
+
+  async getMyTickets(status?: string): Promise<{
+    tickets: Array<{
+      id: string;
+      subject: string;
+      category: string;
+      priority: string;
+      status: string;
+      created_at: string;
+      updated_at: string;
+    }>;
+  }> {
+    const params = status ? `?status=${status}` : '';
+    return this.request(`/support/tickets${params}`);
+  }
+
+  async getTicketDetail(ticketId: string): Promise<any> {
+    return this.request(`/support/tickets/${ticketId}`);
+  }
+
+  async respondToTicket(ticketId: string, message: string): Promise<{ ok: boolean }> {
+    return this.request(`/support/tickets/${ticketId}/respond`, 'POST', { message });
+  }
+
+  async getAdminTickets(status?: string, category?: string, page = 1): Promise<any> {
+    const params = new URLSearchParams({ page: String(page) });
+    if (status) params.set('status', status);
+    if (category) params.set('category', category);
+    return this.request(`/support/admin/tickets?${params}`);
+  }
+
+  // ── NPS Survey ─────────────────────────────────────────────────────────
+
+  async submitNPS(data: {
+    ticket_id: string;
+    score: number;
+    comment?: string;
+  }): Promise<{ score: number; label: string }> {
+    return this.request('/nps/submit', 'POST', data);
+  }
+
+  async getNPSSummary(days = 30): Promise<{
+    total_responses: number;
+    average_score: number;
+    promoters: number;
+    passives: number;
+    detractors: number;
+    nps_score: number;
+  }> {
+    return this.request(`/nps/summary?days=${days}`);
+  }
+
+  async getNPSResponses(limit = 50): Promise<{
+    responses: Array<{
+      score: number;
+      comment: string | null;
+      category: string;
+      created_at: string;
+      user_name: string;
+      user_email: string;
+    }>;
+  }> {
+    return this.request(`/nps/responses?limit=${limit}`);
+  }
+
+  // ── Email Stats ────────────────────────────────────────────────────────
+
+  async getEmailStats(): Promise<{
+    total: number;
+    sent: number;
+    failed: number;
+    opened: number;
+    clicked: number;
+    open_rate: number;
+    click_rate: number;
+    delivery_rate: number;
+  }> {
+    return this.request('/email/stats');
+  }
+
+  // ── Trust Score ────────────────────────────────────────────────────────
+
+  async checkIMEI(imei: string): Promise<{
+    imei: string;
+    trust_score: number;
+    status: string;
+    device_info: { brand: string; model: string; type: string } | null;
+    owner_verified: boolean;
+    theft_reports: number;
+    last_active: string | null;
+    warnings: string[];
+  }> {
+    return this.request('/trust/check', 'POST', { imei, check_type: 'full' });
+  }
+
+  async reportTheftIMEI(data: {
+    imei: string;
+    theft_date: string;
+    theft_location?: string;
+    theft_method?: string;
+    description?: string;
+  }): Promise<{ ok: boolean; report_id: string }> {
+    return this.request('/trust/report-theft', 'POST', data);
+  }
+
+  async getTrustQRData(deviceId: string): Promise<{
+    device_id: string;
+    trust_score: number;
+    status: string;
+    qr_url: string;
+  }> {
+    return this.request(`/trust/qr-data/${deviceId}`);
+  }
+
+  // ── Digital Inheritance ─────────────────────────────────────────────────
+
+  async getBeneficiaries(): Promise<{
+    beneficiaries: Array<{
+      id: string;
+      name: string;
+      email: string;
+      relationship: string;
+      access_level: string;
+      delay_hours: number;
+      status: string;
+    }>;
+  }> {
+    return this.request('/inheritance/beneficiaries');
+  }
+
+  async addBeneficiary(data: {
+    name: string;
+    email: string;
+    relationship: string;
+    access_level?: string;
+    delay_hours?: number;
+  }): Promise<{ ok: boolean; access_code: string }> {
+    return this.request('/inheritance/beneficiary', 'POST', data);
+  }
+
+  async removeBeneficiary(id: string): Promise<{ ok: boolean }> {
+    return this.request(`/inheritance/beneficiary/${id}`, 'DELETE');
+  }
+
+  // ── Smart Geofencing ───────────────────────────────────────────────────
+
+  async getSmartZones(): Promise<{
+    zones: Array<{
+      id: string;
+      name: string;
+      zone_type: string;
+      lat: number;
+      lng: number;
+      radius_meters: number;
+    }>;
+  }> {
+    return this.request('/geofence/zones');
+  }
+
+  async createSmartZone(data: {
+    name: string;
+    zone_type?: string;
+    lat: number;
+    lng: number;
+    radius_meters?: number;
+  }): Promise<{ ok: boolean; zone_id: string }> {
+    return this.request('/geofence/zone', 'POST', data);
+  }
+
+  async deleteSmartZone(id: string): Promise<{ ok: boolean }> {
+    return this.request(`/geofence/zone/${id}`, 'DELETE');
+  }
+
+  async autoDiscoverZones(): Promise<{
+    zones: Array<{ zone_id: string; name: string; zone_type: string }>;
+  }> {
+    return this.request('/geofence/auto-discover', 'POST');
+  }
+
+  async getAnomalies(): Promise<{
+    anomalies: Array<{
+      device_id: string;
+      device_name: string;
+      anomaly_type: string;
+      description: string;
+      severity: string;
+    }>;
+  }> {
+    return this.request('/geofence/anomalies');
+  }
 }
 
 // ─── Singleton ───────────────────────────────────────────────────────────────
