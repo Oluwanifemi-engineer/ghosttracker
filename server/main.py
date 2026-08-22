@@ -470,6 +470,16 @@ from routes.metrics import router as metrics_router  # noqa: E402
 
 app.include_router(metrics_router)
 
+# Payment routes (Paystack subscriptions)
+from routes.payments import router as payments_router  # noqa: E402
+
+app.include_router(payments_router)
+
+# Family Safety Circles routes
+from routes.family import router as family_router  # noqa: E402
+
+app.include_router(family_router)
+
 # User data routes (GDPR export, deletion, retention)
 from routes.user_data import router as user_data_router  # noqa: E402
 

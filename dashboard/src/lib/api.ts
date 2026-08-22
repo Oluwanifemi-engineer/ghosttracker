@@ -526,6 +526,77 @@ class MagneetarAPI {
   }): Promise<{ status: string; sighting_id: number; guardian_handle: string }> {
     return this.request('/api/recovery/sightings', 'POST', data);
   }
+
+  // ── Family Safety Circles ──────────────────────────────────────────────
+
+  async getFamilyCircle(): Promise<{
+    circle_id: string;
+    circle_name: string;
+    member_count: number;
+    members: Array<{
+      user_id: string;
+      name: string;
+      email: string;
+      role: string;
+      joined_at: string;
+      last_seen: string | null;
+      location: { lat: number; lng: number } | null;
+      battery_percent: number | null;
+      is_online: boolean;
+    }>;
+  }> {
+    return this.request('/family/circle');
+  }
+
+  async inviteFamilyMember(email: string, role = 'member'): Promise<{ ok: boolean; message: string }> {
+    return this.request('/family/invite', 'POST', { email, role });
+  }
+
+  async removeFamilyMember(memberId: string): Promise<{ ok: boolean; message: string }> {
+    return this.request(`/family/member/${memberId}`, 'DELETE');
+  }
+
+  async getFamilyLocations(): Promise<{
+    members: Array<{
+      user_id: string;
+      name: string;
+      location: { lat: number; lng: number } | null;
+      battery_percent: number | null;
+      last_seen: string | null;
+      is_online: boolean;
+      device_name: string | null;
+    }>;
+  }> {
+    return this.request('/family/locations');
+  }
+
+  // ── Payments (Paystack) ────────────────────────────────────────────────
+
+  async initializePayment(plan: string, email: string, callbackUrl?: string): Promise<{
+    authorization_url: string;
+    access_code: string;
+    reference: string;
+  }> {
+    return this.request('/payments/initialize', 'POST', { plan, email, callback_url: callbackUrl });
+  }
+
+  async verifyPayment(reference: string): Promise<{ ok: boolean; plan: string; status: string; period_end: string }> {
+    return this.request(`/payments/verify/${reference}`);
+  }
+
+  async getSubscription(): Promise<{
+    plan: string;
+    status: string;
+    current_period_start: string | null;
+    current_period_end: string | null;
+    tier: string;
+  }> {
+    return this.request('/payments/subscription');
+  }
+
+  async getTierLimits(): Promise<{ tier: string; limits: Record<string, any> }> {
+    return this.request('/payments/tier-limits');
+  }
 }
 
 // ─── Singleton ───────────────────────────────────────────────────────────────
