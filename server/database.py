@@ -970,12 +970,28 @@ def get_device_info_cached(device_id: str) -> dict:
 
 
 def get_device_owner_cached(device_id: str) -> str:
-    """Get device owner ID with caching."""
+    """Get device owner ID with caching.
+
+    Cache hierarchy: Redis (shared across workers) → in-memory (per-worker) → SQLite.
+    Redis is checked only when MT_REDIS_URL is set and cache_redis is initialized.
+    """
+    # Layer 1: Redis (shared across all workers)
+    try:
+        from cache_redis import redis_get_cached_device_owner
+
+        redis_owner = redis_get_cached_device_owner(device_id)
+        if redis_owner is not None:
+            return redis_owner
+    except ImportError:
+        pass
+
+    # Layer 2: In-memory (per-worker)
     if CACHE_ENABLED:
         cached = get_cached_device_owner(device_id)
         if cached is not None:
             return cached
 
+    # Layer 3: SQLite (source of truth)
     with get_db_context() as conn:
         row = conn.execute(
             "SELECT owner_id FROM devices WHERE id=?",
@@ -985,6 +1001,13 @@ def get_device_owner_cached(device_id: str) -> str:
             owner_id = row["owner_id"]
             if CACHE_ENABLED:
                 cache_device_owner(device_id, owner_id)
+            # Also populate Redis for other workers
+            try:
+                from cache_redis import redis_cache_device_owner
+
+                redis_cache_device_owner(device_id, owner_id)
+            except ImportError:
+                pass
             return owner_id
     return None
 

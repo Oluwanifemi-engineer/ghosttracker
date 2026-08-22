@@ -6,7 +6,6 @@ import { getAPI } from '@/lib/api';
 import { cn, getCommandLabel, isDestructiveCommand, formatTimestamp, stepUpPasswordHint } from '@/lib/utils';
 import { CommandButton, type CommandTone } from '@/components/ui/CommandButton';
 import { Radio, Camera, Webcam, Mic, LocateFixed, Lock, Siren, ShieldAlert, AlertTriangle, CheckCircle2, Trash2, X, MessageSquareText, Zap } from 'lucide-react';
-import { CommandSkeleton } from '@/components/ui/Skeleton';
 import { useToast } from '@/components/ui/Toast';
 import type { CommandType } from '@/types';
 
@@ -201,6 +200,8 @@ export function CommandPanel() {
     }
     handleSend(command);
   };
+
+
 
   return (
     <div className="p-4 space-y-4">

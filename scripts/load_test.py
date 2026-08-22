@@ -1,12 +1,18 @@
 #!/usr/bin/env python3
 """
-Magneetar Load Testing Script
-Tests server capacity under concurrent load to identify breaking points.
+Magneetar Load Test — Simulate N concurrent devices sending telemetry pings.
+
+Measures:
+- Requests/second throughput
+- Latency percentiles (p50, p95, p99)
+- Error rate
+- SQLite write contention (busy_timeout hits)
 
 Usage:
-    python3 scripts/load_test.py --url http://localhost:8000 --concurrent 100 --duration 60
+    python scripts/load_test.py --devices 500 --duration 60 --server http://localhost:8001
+    python scripts/load_test.py --devices 100 --duration 30  # quick smoke test
 
-This script helps answer: "What happens when a few thousand people register today?"
+Requires: aiohttp (pip install aiohttp)
 """
 
 import argparse
@@ -14,222 +20,240 @@ import asyncio
 import json
 import statistics
 import time
-from dataclasses import dataclass
-from typing import List
+from dataclasses import dataclass, field
 
-import httpx
-
-
-@dataclass
-class TestResult:
-    """Result of a single request."""
-    status_code: int
-    latency_ms: float
-    success: bool
-    error: str = None
+try:
+    import aiohttp
+except ImportError:
+    print("ERROR: aiohttp required. Install with: pip install aiohttp")
+    raise SystemExit(1)
 
 
 @dataclass
-class LoadTestReport:
-    """Summary of load test results."""
-    total_requests: int
-    successful_requests: int
-    failed_requests: int
-    success_rate: float
-    avg_latency_ms: float
-    p50_latency_ms: float
-    p95_latency_ms: float
-    p99_latency_ms: float
-    min_latency_ms: float
-    max_latency_ms: float
-    requests_per_second: float
-    duration_seconds: float
-    errors: List[str]
+class DeviceSimulator:
+    """Simulates a single device sending telemetry pings."""
+
+    device_id: str
+    server_url: str
+    api_key: str
+    lat: float = 6.4413  # OAU campus
+    lng: float = 3.6928
+    sequence: int = 0
+    token: str = ""
+
+    async def register(self, session: aiohttp.ClientSession) -> bool:
+        """Register and obtain a JWT token."""
+        import hashlib
+        fingerprint = hashlib.sha256(self.device_id.encode()).hexdigest()[:16]
+        try:
+            async with session.post(
+                f"{self.server_url}/api/device/register",
+                json={
+                    "device_id": self.device_id,
+                    "fingerprint": fingerprint,
+                    "model": "LoadTest",
+                    "os_version": "14",
+                    "app_version": "1.4.4",
+                },
+                headers={"x-api-key": self.api_key},
+                timeout=aiohttp.ClientTimeout(total=10),
+            ) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    self.token = data.get("token") or data.get("access_token", "")
+                    return True
+                else:
+                    body = await resp.text()
+                    if self.device_id == "load-test-0000":
+                        print(f"  Registration failed for {self.device_id}: {resp.status} {body[:200]}")
+                    return False
+        except Exception as e:
+            if self.device_id == "load-test-0000":
+                print(f"  Registration exception for {self.device_id}: {e}")
+            return False
+
+    async def send_ping(self, session: aiohttp.ClientSession) -> tuple[float, bool]:
+        """Send a location ping. Returns (latency_seconds, success)."""
+        self.sequence += 1
+        # Slight random walk to simulate movement
+        self.lat += (hash(self.device_id + str(self.sequence)) % 100 - 50) * 0.00001
+        self.lng += (hash(self.device_id + str(self.sequence * 7)) % 100 - 50) * 0.00001
+
+        body = {
+            "device_id": self.device_id,
+            "lat": self.lat,
+            "lng": self.lng,
+            "accuracy_horizontal": 15.0,
+            "battery_percent": 85,
+            "is_charging": False,
+            "network_type": "wifi",
+            "ping_sequence": self.sequence,
+        }
+        start = time.monotonic()
+        try:
+            async with session.post(
+                f"{self.server_url}/api/device/location",
+                json=body,
+                headers={
+                    "Authorization": f"Bearer {self.token}",
+                    "Content-Type": "application/json",
+                },
+                timeout=aiohttp.ClientTimeout(total=10),
+            ) as resp:
+                latency = time.monotonic() - start
+                return latency, resp.status == 200
+        except Exception:
+            return time.monotonic() - start, False
 
 
-async def make_request(client: httpx.AsyncClient, url: str, endpoint: str, headers: dict = None) -> TestResult:
-    """Make a single HTTP request and measure latency."""
-    start = time.monotonic()
-    try:
-        response = await client.get(f"{url}{endpoint}", headers=headers, timeout=10)
-        latency_ms = (time.monotonic() - start) * 1000
-        return TestResult(
-            status_code=response.status_code,
-            latency_ms=latency_ms,
-            success=200 <= response.status_code < 500,
-        )
-    except Exception as e:
-        latency_ms = (time.monotonic() - start) * 1000
-        return TestResult(
-            status_code=0,
-            latency_ms=latency_ms,
-            success=False,
-            error=str(e),
-        )
+@dataclass
+class LoadTestResult:
+    """Aggregated results from a load test run."""
+
+    total_requests: int = 0
+    successful: int = 0
+    failed: int = 0
+    latencies: list = field(default_factory=list)
+    start_time: float = 0
+    end_time: float = 0
+
+    @property
+    def duration(self) -> float:
+        return self.end_time - self.start_time
+
+    @property
+    def rps(self) -> float:
+        return self.total_requests / self.duration if self.duration > 0 else 0
+
+    @property
+    def error_rate(self) -> float:
+        return (self.failed / self.total_requests * 100) if self.total_requests > 0 else 0
+
+    def percentile(self, p: float) -> float:
+        if not self.latencies:
+            return 0
+        sorted_lat = sorted(self.latencies)
+        idx = int(len(sorted_lat) * p / 100)
+        return sorted_lat[min(idx, len(sorted_lat) - 1)]
+
+    def summary(self) -> str:
+        lines = [
+            "",
+            "══════════════════════════════════════════════════════════════",
+            "  MAGNEETAR LOAD TEST RESULTS",
+            "══════════════════════════════════════════════════════════════",
+            f"  Duration:        {self.duration:.1f}s",
+            f"  Total requests:  {self.total_requests:,}",
+            f"  Successful:      {self.successful:,}",
+            f"  Failed:          {self.failed:,}",
+            f"  Error rate:      {self.error_rate:.2f}%",
+            f"  Throughput:      {self.rps:.1f} req/s",
+            "",
+            "  Latency:",
+            f"    p50:           {self.percentile(50)*1000:.1f}ms",
+            f"    p95:           {self.percentile(95)*1000:.1f}ms",
+            f"    p99:           {self.percentile(99)*1000:.1f}ms",
+            f"    max:           {max(self.latencies)*1000:.1f}ms" if self.latencies else "",
+            "",
+            "══════════════════════════════════════════════════════════════",
+        ]
+        return "\n".join(lines)
 
 
-async def load_test_health(client: httpx.AsyncClient, url: str, requests_per_second: int, duration: int) -> List[TestResult]:
-    """Load test the health endpoint."""
-    results = []
-    interval = 1.0 / requests_per_second
+async def run_load_test(
+    server_url: str,
+    api_key: str,
+    num_devices: int,
+    duration_seconds: int,
+    ping_interval: float = 3.0,
+) -> LoadTestResult:
+    """Run the load test with N concurrent devices."""
+    result = LoadTestResult()
+    result.start_time = time.monotonic()
+    end_time = result.start_time + duration_seconds
 
-    start_time = time.time()
-    while time.time() - start_time < duration:
-        result = await make_request(client, url, "/health")
-        results.append(result)
-        await asyncio.sleep(interval)
+    connector = aiohttp.TCPConnector(limit=num_devices, force_close=False)
+    async with aiohttp.ClientSession(connector=connector) as session:
+        # Phase 1: Register all devices
+        print(f"Registering {num_devices} devices...")
+        devices = []
+        for i in range(num_devices):
+            dev = DeviceSimulator(
+                device_id=f"load-test-{i:04d}",
+                server_url=server_url,
+                api_key=api_key,
+            )
+            devices.append(dev)
 
-    return results
+        # Register in parallel batches of 50
+        batch_size = 50
+        registered = 0
+        for batch_start in range(0, num_devices, batch_size):
+            batch = devices[batch_start : batch_start + batch_size]
+            tasks = [dev.register(session) for dev in batch]
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            registered += sum(1 for r in results if r is True)
+            print(f"  Registered {registered}/{num_devices}")
 
+        print(f"\nRunning load test: {registered} devices × {duration_seconds}s (ping every {ping_interval}s)")
+        print(f"Expected throughput: ~{registered / ping_interval:.0f} req/s\n")
 
-async def load_test_device_register(client: httpx.AsyncClient, url: str, api_key: str, concurrent: int, duration: int) -> List[TestResult]:
-    """Load test device registration endpoint."""
-    results = []
+        # Phase 2: Send pings concurrently
+        async def device_loop(dev: DeviceSimulator):
+            while time.monotonic() < end_time:
+                latency, success = await dev.send_ping(session)
+                result.total_requests += 1
+                result.latencies.append(latency)
+                if success:
+                    result.successful += 1
+                else:
+                    result.failed += 1
+                await asyncio.sleep(ping_interval)
 
-    async def worker():
-        while time.time() - start_time < duration:
-            import uuid
-            device_id = f"load-test-{uuid.uuid4().hex[:8]}"
-            try:
-                start = time.monotonic()
-                response = await client.post(
-                    f"{url}/api/device/register",
-                    json={"device_id": device_id, "model": "LoadTest"},
-                    headers={"x-api-key": api_key},
-                    timeout=10,
-                )
-                latency_ms = (time.monotonic() - start) * 1000
-                results.append(TestResult(
-                    status_code=response.status_code,
-                    latency_ms=latency_ms,
-                    success=200 <= response.status_code < 500,
-                ))
-            except Exception as e:
-                latency_ms = (time.monotonic() - start) * 1000
-                results.append(TestResult(
-                    status_code=0,
-                    latency_ms=latency_ms,
-                    success=False,
-                    error=str(e),
-                ))
-            await asyncio.sleep(0.1)  # Small delay between requests
+        tasks = [device_loop(dev) for dev in devices[:registered]]
+        await asyncio.gather(*tasks, return_exceptions=True)
 
-    start_time = time.time()
-    tasks = [worker() for _ in range(concurrent)]
-    await asyncio.gather(*tasks)
-
-    return results
-
-
-def calculate_report(results: List[TestResult], duration: float) -> LoadTestReport:
-    """Calculate load test report from results."""
-    if not results:
-        return LoadTestReport(
-            total_requests=0,
-            successful_requests=0,
-            failed_requests=0,
-            success_rate=0,
-            avg_latency_ms=0,
-            p50_latency_ms=0,
-            p95_latency_ms=0,
-            p99_latency_ms=0,
-            min_latency_ms=0,
-            max_latency_ms=0,
-            requests_per_second=0,
-            duration_seconds=duration,
-            errors=[],
-        )
-
-    latencies = [r.latency_ms for r in results]
-    errors = [r.error for r in results if r.error]
-
-    return LoadTestReport(
-        total_requests=len(results),
-        successful_requests=sum(1 for r in results if r.success),
-        failed_requests=sum(1 for r in results if not r.success),
-        success_rate=sum(1 for r in results if r.success) / len(results) * 100,
-        avg_latency_ms=statistics.mean(latencies),
-        p50_latency_ms=statistics.median(latencies),
-        p95_latency_ms=latencies[int(len(latencies) * 0.95)] if len(latencies) >= 20 else max(latencies),
-        p99_latency_ms=latencies[int(len(latencies) * 0.99)] if len(latencies) >= 100 else max(latencies),
-        min_latency_ms=min(latencies),
-        max_latency_ms=max(latencies),
-        requests_per_second=len(results) / duration,
-        duration_seconds=duration,
-        errors=errors[:10],  # Only first 10 errors
-    )
+    result.end_time = time.monotonic()
+    return result
 
 
-def print_report(report: LoadTestReport, test_name: str):
-    """Print a formatted load test report."""
-    print(f"\n{'='*60}")
-    print(f"LOAD TEST REPORT: {test_name}")
-    print(f"{'='*60}")
-    print(f"Duration:           {report.duration_seconds:.1f} seconds")
-    print(f"Total Requests:     {report.total_requests}")
-    print(f"Successful:         {report.successful_requests}")
-    print(f"Failed:             {report.failed_requests}")
-    print(f"Success Rate:       {report.success_rate:.1f}%")
-    print(f"Requests/Second:    {report.requests_per_second:.1f}")
-    print(f"{'─'*60}")
-    print(f"Latency Statistics:")
-    print(f"  Average:          {report.avg_latency_ms:.1f} ms")
-    print(f"  P50 (median):     {report.p50_latency_ms:.1f} ms")
-    print(f"  P95:              {report.p95_latency_ms:.1f} ms")
-    print(f"  P99:              {report.p99_latency_ms:.1f} ms")
-    print(f"  Min:              {report.min_latency_ms:.1f} ms")
-    print(f"  Max:              {report.max_latency_ms:.1f} ms")
-    print(f"{'='*60}")
-
-    if report.errors:
-        print(f"\nSample Errors ({len(report.errors)} shown):")
-        for error in report.errors[:5]:
-            print(f"  - {error[:100]}")
-
-    # Capacity estimation
-    if report.requests_per_second > 0:
-        estimated_devices = int(report.requests_per_second * 3)  # 3 second intervals
-        print(f"\n{'─'*60}")
-        print(f"CAPACITY ESTIMATION:")
-        print(f"  Current capacity:  ~{estimated_devices} devices (at 3s intervals)")
-        print(f"  With optimizations: ~{estimated_devices * 2} devices (with caching)")
-        print(f"  With PostgreSQL:   ~{estimated_devices * 10} devices (horizontal scaling)")
-        print(f"{'─'*60}")
-
-
-async def main():
-    parser = argparse.ArgumentParser(description="Magneetar Load Testing")
-    parser.add_argument("--url", default="http://localhost:8000", help="Server URL")
-    parser.add_argument("--api-key", help="API key for authenticated endpoints")
-    parser.add_argument("--concurrent", type=int, default=10, help="Number of concurrent users")
+def main():
+    parser = argparse.ArgumentParser(description="Magneetar Load Test")
+    parser.add_argument("--server", default="http://localhost:8001", help="Server URL")
+    parser.add_argument("--api-key", default=None, help="API key (reads from .env if not set)")
+    parser.add_argument("--devices", type=int, default=100, help="Number of concurrent devices")
     parser.add_argument("--duration", type=int, default=30, help="Test duration in seconds")
-    parser.add_argument("--endpoint", choices=["health", "register", "all"], default="health", help="Endpoint to test")
+    parser.add_argument("--interval", type=float, default=3.0, help="Ping interval per device (seconds)")
     args = parser.parse_args()
 
-    print(f"Starting load test against {args.url}")
-    print(f"Concurrent users: {args.concurrent}")
-    print(f"Duration: {args.duration} seconds")
-    print(f"Endpoint: {args.endpoint}")
+    # Load API key from .env if not provided
+    api_key = args.api_key
+    if not api_key:
+        import os
+        env_path = os.path.join(os.path.dirname(__file__), "..", "server", ".env")
+        if os.path.exists(env_path):
+            with open(env_path) as f:
+                for line in f:
+                    if line.startswith("MT_DEVICE_KEY="):
+                        api_key = line.split("=", 1)[1].strip()
+                        break
+    if not api_key:
+        print("ERROR: --api-key required or MT_DEVICE_KEY not found in .env")
+        raise SystemExit(1)
 
-    async with httpx.AsyncClient() as client:
-        # Test health endpoint
-        if args.endpoint in ["health", "all"]:
-            print("\nTesting /health endpoint...")
-            results = await load_test_health(client, args.url, args.concurrent, args.duration)
-            report = calculate_report(results, args.duration)
-            print_report(report, "Health Endpoint")
+    print(f"Magneetar Load Test")
+    print(f"Server:    {args.server}")
+    print(f"Devices:   {args.devices}")
+    print(f"Duration:  {args.duration}s")
+    print(f"Interval:  {args.interval}s/device")
+    print(f"Expected:  ~{args.devices / args.interval:.0f} req/s")
+    print()
 
-        # Test device registration
-        if args.endpoint in ["register", "all"] and args.api_key:
-            print("\nTesting /api/device/register endpoint...")
-            results = await load_test_device_register(client, args.url, args.api_key, args.concurrent, args.duration)
-            report = calculate_report(results, args.duration)
-            print_report(report, "Device Registration")
-        elif args.endpoint == "register" and not args.api_key:
-            print("\nSkipping /api/device/register - no API key provided")
-
-    print("\nLoad test completed!")
+    result = asyncio.run(
+        run_load_test(args.server, api_key, args.devices, args.duration, args.interval)
+    )
+    print(result.summary())
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()

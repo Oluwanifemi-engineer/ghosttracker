@@ -237,6 +237,14 @@ async def lifespan(app: FastAPI):
             "Realtime broadcast: Redis pub/sub enabled",
             extra={"extra_data": {"channel": "magneetar:ws"}},
         )
+        # Initialize shared Redis cache for cross-worker device→owner lookups
+        try:
+            from cache_redis import init_redis_cache
+
+            init_redis_cache(settings.REDIS_URL)
+            logger.info("Shared device cache: Redis-backed (cross-worker consistent)")
+        except Exception as e:
+            logger.warning(f"Redis cache init failed — using per-worker in-memory cache: {e}")
     else:
         logger.info("Realtime broadcast: local (single-worker mode)")
 

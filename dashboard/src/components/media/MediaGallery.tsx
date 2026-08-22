@@ -158,6 +158,16 @@ export function MediaGallery() {
 
   const viewerTimestamp = locationTimestamp(selectedItem);
 
+  // Show skeleton only when a device is selected but media hasn't loaded yet
+  // (avoids showing skeleton on the empty-state "no device selected" screen)
+  if (selectedDeviceId && media.length === 0 && !selectedItem) {
+    return (
+      <div className="p-4">
+        <MediaSkeleton />
+      </div>
+    );
+  }
+
   return (
     <div className="p-4 space-y-4">
       {selectedItem && !manageMode ? (

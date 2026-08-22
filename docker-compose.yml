@@ -54,6 +54,11 @@ services:
       # single-writer lock from the request path — lifts the ~370 req/s
       # sync-commit ceiling 5-10x). 0/absent = synchronous commits.
       - MT_WRITE_BATCH_MS=250
+      # Postgres adapter (Phase 2b — SQL portability rewrites applied).
+      # Uncomment to activate horizontal scale beyond ~1,000 devices.
+      # When set, the storage facade routes all reads/writes to Postgres.
+      # When empty/absent, SQLite remains the data plane (default).
+      # - MT_DATABASE_URL=postgresql://magneetar:magneetar@postgres:5432/magneetar
     volumes:
       - magneetar-data:/app/data
       - magneetar-media:/app/media
@@ -87,6 +92,27 @@ services:
       - "3000:80"
     depends_on:
       - server
+
+  # ── PostgreSQL (optional — activate for horizontal scale) ──────────────────
+  # Uncomment the postgres service AND the MT_DATABASE_URL line above to
+  # switch from SQLite to Postgres. The storage facade (storage.py) detects
+  # MT_DATABASE_URL and routes all reads/writes through PgStore. Schema is
+  # auto-created on first connect via database_postgres.py init.
+  # postgres:
+  #   image: postgres:16-alpine
+  #   container_name: magneetar-postgres
+  #   restart: unless-stopped
+  #   environment:
+  #     POSTGRES_DB: magneetar
+  #     POSTGRES_USER: magneetar
+  #     POSTGRES_PASSWORD: magneetar
+  #   volumes:
+  #     - magneetar-pgdata:/var/lib/postgresql/data
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U magneetar"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
 
   # ── Realtime Broadcast Bus (multi-worker WebSocket fan-out) ────────────────
   redis:
@@ -131,3 +157,4 @@ services:
 volumes:
   magneetar-data:
   magneetar-media:
+  # magneetar-pgdata:  # uncomment when activating Postgres

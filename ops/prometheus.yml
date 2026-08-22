@@ -1,0 +1,18 @@
+# Magneetar Prometheus Configuration
+# Add this to your prometheus.yml scrape_configs section.
+
+scrape_configs:
+  - job_name: 'magneetar'
+    scrape_interval: 15s
+    metrics_path: '/api/metrics'
+    # Metrics require admin JWT — use a service account token
+    # headers:
+    #   Authorization: 'Bearer <admin-jwt>'
+    static_configs:
+      - targets: ['api.magneetar.me:443']
+        labels:
+          environment: 'production'
+      # Local development:
+      # - targets: ['localhost:8001']
+      #   labels:
+      #     environment: 'development'

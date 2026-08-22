@@ -12,6 +12,7 @@ import { GeofencePanel } from '@/components/panels/GeofencePanel';
 import { ErrorPanel } from '@/components/panels/ErrorPanel';
 import { GuardianPanel } from '@/components/panels/GuardianPanel';
 import { Tabs } from '@/components/ui/Tabs';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { TabId } from '@/types';
 import { Shield, Terminal, MapPin, Fence, Camera, ClipboardList, Bug, ShieldCheck } from 'lucide-react';
 
@@ -77,16 +78,17 @@ export default function DashboardPage() {
               onTabChange={setActiveTab}
             />
 
-            {/* Tab Content */}
+            {/* Tab Content — each panel wrapped in ErrorBoundary so a
+                render crash in one panel doesn't take down the whole dashboard */}
             <div className="flex-1 overflow-y-auto">
-              {effectiveTab === 'sentinel' && <SentinelPanel />}
-              {effectiveTab === 'commands' && <CommandPanel />}
-              {effectiveTab === 'location' && <DevicePanel />}
-              {effectiveTab === 'zones' && <GeofencePanel />}
-              {effectiveTab === 'media' && <MediaGallery />}
-              {effectiveTab === 'evidence' && <EvidencePanel />}
-              {effectiveTab === 'guardian' && <GuardianPanel />}
-              {effectiveTab === 'errors' && <ErrorPanel />}
+              {effectiveTab === 'sentinel' && <ErrorBoundary><SentinelPanel /></ErrorBoundary>}
+              {effectiveTab === 'commands' && <ErrorBoundary><CommandPanel /></ErrorBoundary>}
+              {effectiveTab === 'location' && <ErrorBoundary><DevicePanel /></ErrorBoundary>}
+              {effectiveTab === 'zones' && <ErrorBoundary><GeofencePanel /></ErrorBoundary>}
+              {effectiveTab === 'media' && <ErrorBoundary><MediaGallery /></ErrorBoundary>}
+              {effectiveTab === 'evidence' && <ErrorBoundary><EvidencePanel /></ErrorBoundary>}
+              {effectiveTab === 'guardian' && <ErrorBoundary><GuardianPanel /></ErrorBoundary>}
+              {effectiveTab === 'errors' && <ErrorBoundary><ErrorPanel /></ErrorBoundary>}
             </div>
 
             {/* Panel footer — Military Status */}

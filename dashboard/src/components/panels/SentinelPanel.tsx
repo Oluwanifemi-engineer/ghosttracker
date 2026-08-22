@@ -1,14 +1,18 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useStore } from '@/store/useStore';
 import { cn, relativeTime } from '@/lib/utils';
 import { Shield, AlertTriangle, Battery, Wifi, MapPin, Clock, Smartphone } from 'lucide-react';
-// Smartphone may not exist in older lucide-react versions — fall back to Shield
 import { SentinelSkeleton } from '@/components/ui/Skeleton';
 
 export function SentinelPanel() {
   const { devices, selectedDeviceId, latestLocation } = useStore();
   const device = devices.find(d => d.id === selectedDeviceId);
+  const [initialLoad, setInitialLoad] = useState(true);
+  useEffect(() => { const t = setTimeout(() => setInitialLoad(false), 800); return () => clearTimeout(t); }, []);
+
+  if (initialLoad && selectedDeviceId && !device) return <SentinelSkeleton />;
 
   if (!device) {
     return (

@@ -1,0 +1,200 @@
+{
+  "dashboard": {
+    "title": "Magneetar Monitoring",
+    "tags": ["magneetar", "production"],
+    "timezone": "utc",
+    "panels": [
+      {
+        "title": "Server Uptime",
+        "type": "stat",
+        "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+        "targets": [{
+          "expr": "magneetar_uptime_seconds",
+          "legendFormat": "Uptime"
+        }],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s",
+            "thresholds": {
+              "steps": [
+                { "value": 0, "color": "red" },
+                { "value": 3600, "color": "green" }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "title": "Active Devices (1h)",
+        "type": "stat",
+        "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+        "targets": [{
+          "expr": "magneetar_devices_active",
+          "legendFormat": "Active"
+        }],
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "steps": [
+                { "value": 0, "color": "red" },
+                { "value": 1, "color": "green" }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "title": "Total Devices",
+        "type": "stat",
+        "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+        "targets": [{
+          "expr": "magneetar_devices_total",
+          "legendFormat": "Total"
+        }]
+      },
+      {
+        "title": "Total Users",
+        "type": "stat",
+        "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+        "targets": [{
+          "expr": "magneetar_users_total",
+          "legendFormat": "Users"
+        }]
+      },
+      {
+        "title": "Location Pings (1h)",
+        "type": "timeseries",
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+        "targets": [{
+          "expr": "magneetar_locations_1h",
+          "legendFormat": "Pings/hour"
+        }],
+        "fieldConfig": {
+          "defaults": { "unit": "short" }
+        }
+      },
+      {
+        "title": "Alerts (24h)",
+        "type": "timeseries",
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+        "targets": [
+          {
+            "expr": "magneetar_alerts_24h",
+            "legendFormat": "Total"
+          },
+          {
+            "expr": "magneetar_alerts_delivered_24h",
+            "legendFormat": "Delivered"
+          }
+        ]
+      },
+      {
+        "title": "Errors (1h)",
+        "type": "stat",
+        "gridPos": { "h": 4, "w": 6, "x": 0, "y": 12 },
+        "targets": [{
+          "expr": "magneetar_errors_1h",
+          "legendFormat": "Errors"
+        }],
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "steps": [
+                { "value": 0, "color": "green" },
+                { "value": 5, "color": "yellow" },
+                { "value": 20, "color": "red" }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "title": "Pending Commands",
+        "type": "stat",
+        "gridPos": { "h": 4, "w": 6, "x": 6, "y": 12 },
+        "targets": [{
+          "expr": "magneetar_commands_pending",
+          "legendFormat": "Pending"
+        }],
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "steps": [
+                { "value": 0, "color": "green" },
+                { "value": 10, "color": "yellow" },
+                { "value": 50, "color": "red" }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "title": "WebSocket Connections",
+        "type": "stat",
+        "gridPos": { "h": 4, "w": 6, "x": 12, "y": 12 },
+        "targets": [{
+          "expr": "magneetar_websocket_connections",
+          "legendFormat": "Connected"
+        }]
+      },
+      {
+        "title": "Cache Hit Rate",
+        "type": "gauge",
+        "gridPos": { "h": 4, "w": 6, "x": 18, "y": 12 },
+        "targets": [{
+          "expr": "magneetar_cache_hit_rate",
+          "legendFormat": "{{cache}}"
+        }],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percentunit",
+            "min": 0,
+            "max": 1,
+            "thresholds": {
+              "steps": [
+                { "value": 0, "color": "red" },
+                { "value": 0.5, "color": "yellow" },
+                { "value": 0.8, "color": "green" }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "title": "Alert Circuit Breaker",
+        "type": "timeseries",
+        "gridPos": { "h": 6, "w": 12, "x": 0, "y": 16 },
+        "targets": [
+          {
+            "expr": "magneetar_alert_circuit_failures",
+            "legendFormat": "{{channel}} failures"
+          },
+          {
+            "expr": "magneetar_alert_circuit_open",
+            "legendFormat": "{{channel}} open"
+          }
+        ]
+      },
+      {
+        "title": "External Service Circuit Breakers",
+        "type": "timeseries",
+        "gridPos": { "h": 6, "w": 12, "x": 12, "y": 16 },
+        "targets": [
+          {
+            "expr": "magneetar_external_circuit_failures",
+            "legendFormat": "{{service}} failures"
+          },
+          {
+            "expr": "magneetar_external_circuit_open",
+            "legendFormat": "{{service}} open"
+          }
+        ]
+      }
+    ],
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "refresh": "30s"
+  }
+}
