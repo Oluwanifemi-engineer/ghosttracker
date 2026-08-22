@@ -54,6 +54,15 @@ jest.mock('@/components/onboarding/OnboardingFlow', () => ({
 jest.mock('@/components/ui/KeyboardShortcuts', () => ({
   KeyboardShortcutsHelp: () => null,
 }));
+jest.mock('@/components/ui/PwaInstallPrompt', () => ({
+  PwaInstallPrompt: () => null,
+}));
+jest.mock('@/lib/abTest', () => ({
+  getVariant: () => 'control',
+  trackConversion: jest.fn(),
+  HERO_EXPERIMENT: { id: 'test', variants: ['control'] },
+  HERO_COPY: { control: { headline: 'Test', subheadline: 'Test' } },
+}));
 
 describe('DashboardLayout — data layer mount (regression)', () => {
   beforeEach(() => {

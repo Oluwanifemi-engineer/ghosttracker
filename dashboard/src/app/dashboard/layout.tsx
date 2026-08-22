@@ -9,6 +9,7 @@ import { useWebSocket } from '@/hooks/useWebSocket';
 import { ToastProvider } from '@/components/ui/Toast';
 import { ThemeProvider } from '@/components/ui/DarkMode';
 import { KeyboardShortcutsHelp } from '@/components/ui/KeyboardShortcuts';
+import { PwaInstallPrompt } from '@/components/ui/PwaInstallPrompt';
 import { OnboardingFlow, useOnboarding } from '@/components/onboarding/OnboardingFlow';
 import { useRouter } from 'next/navigation';
 
@@ -147,6 +148,9 @@ export default function DashboardLayout({
 
       {/* Keyboard shortcuts help */}
       <KeyboardShortcutsHelp />
+
+      {/* PWA install prompt for mobile */}
+      <PwaInstallPrompt />
 
       {/* Onboarding flow for new users */}
       {showOnboarding && (

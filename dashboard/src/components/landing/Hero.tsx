@@ -1,10 +1,12 @@
 'use client';
 
+import { useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowRight, ShieldCheck, Download, Check, Smartphone, Battery, MapPin, Camera, Lock } from 'lucide-react';
 import { VersionBadge } from './VersionBadge';
 import { AnimatedCounter } from '@/components/ui/AnimatedCounter';
 import { PRODUCT_STATS } from '@/lib/productStats';
+import { getVariant, trackConversion, HERO_EXPERIMENT, HERO_COPY } from '@/lib/abTest';
 
 const HERO_STATS: { value: number; label: string; prefix?: string; suffix?: string }[] = [
   ...PRODUCT_STATS.map((s) => ({ value: s.value, label: s.label, prefix: s.prefix, suffix: s.suffix })),
@@ -99,6 +101,14 @@ function ThreatTimeline() {
 }
 
 export function Hero({ authed }: { authed: boolean }) {
+  const variant = getVariant(HERO_EXPERIMENT);
+  const copy = HERO_COPY[variant as keyof typeof HERO_COPY] ?? HERO_COPY.control;
+
+  // Track initial variant exposure
+  useEffect(() => {
+    trackConversion(HERO_EXPERIMENT.id, variant, 'impression');
+  }, [variant]);
+
   return (
     <section className="relative pt-36 pb-24 sm:pt-44 sm:pb-32 overflow-hidden bg-white">
       {/* Subtle grid */}
@@ -119,24 +129,19 @@ export function Hero({ authed }: { authed: boolean }) {
             className="text-5xl sm:text-6xl lg:text-7xl font-display font-extrabold tracking-[-0.03em] text-gray-900 leading-[1.02] mt-8"
             style={{ animation: 'heroFadeIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both' }}
           >
-            Protect what
-            <br />
-            you own.
-            <br />
-            <span className="text-gray-400">
-              Stay close to
-              <br />
-              who you love.
-            </span>
+            {copy.headline.split('\n').map((line, i) => (
+              <span key={i}>
+                {i === 1 ? <span className="text-gray-400">{line}</span> : line}
+                {i < copy.headline.split('\n').length - 1 && <br />}
+              </span>
+            ))}
           </h1>
 
           <p
             className="mt-7 text-lg sm:text-xl text-gray-500 leading-relaxed max-w-xl"
             style={{ animation: 'heroFadeIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both' }}
           >
-            In Nigeria, only 11.7% of stolen phones are ever recovered. Magneetar is built to change
-            that number — real-time tracking, forensic-grade evidence, and a route that walks you
-            straight to your device.
+            {copy.subheadline}
           </p>
 
           {/* CTAs */}

@@ -5,6 +5,19 @@ import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import { render, screen, act, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom/jest-globals';
 
+// A/B test mock — always use control variant in tests
+jest.mock('@/lib/abTest', () => ({
+  getVariant: () => 'control',
+  trackConversion: jest.fn(),
+  HERO_EXPERIMENT: { id: 'test', variants: ['control'] },
+  HERO_COPY: {
+    control: {
+      headline: 'Protect what you own.\nStay close to who you love.',
+      subheadline: 'In Nigeria, only 11.7% of stolen phones are ever recovered. Magneetar is built to change that number.',
+    },
+  },
+}));
+
 // next/link requires a router context in tests — render a plain anchor instead.
 jest.mock('next/link', () => {
   const Link = ({ href, children, ...props }: any) => (

@@ -319,3 +319,58 @@ async def metrics_json(_: str = Depends(_require_operator)):
         metrics["redis_cache"] = {"connected": False}
 
     return metrics
+
+
+# ─── A/B Test Analytics ────────────────────────────────────────────────────
+# In-memory store for A/B test conversion events.
+# In production, wire this to a real analytics backend (PostHog, Mixpanel, etc.).
+_ab_test_events: list[dict] = []
+_AB_MAX_EVENTS = 10000  # ring buffer cap
+
+
+@router.post("/ab-event")
+async def track_ab_event(payload: dict):
+    """Receive an A/B test conversion event from the frontend.
+
+    Expected payload:
+        { experimentId, variant, event, value?, ts }
+
+    Stores in-memory for now; in production, forward to analytics service.
+    """
+    global _ab_test_events
+    event = {
+        "experiment_id": payload.get("experimentId", "unknown"),
+        "variant": payload.get("variant", "unknown"),
+        "event": payload.get("event", "unknown"),
+        "value": payload.get("value"),
+        "client_ts": payload.get("ts"),
+        "server_ts": datetime.now(timezone.utc).isoformat(),
+    }
+    _ab_test_events.append(event)
+    # Ring buffer: drop oldest if too many events
+    if len(_ab_test_events) > _AB_MAX_EVENTS:
+        _ab_test_events = _ab_test_events[-_AB_MAX_EVENTS:]
+    return {"ok": True}
+
+
+@router.get("/ab-summary")
+async def ab_test_summary():
+    """Return aggregated A/B test results for the dashboard."""
+    summary: dict = {}
+    for ev in _ab_test_events:
+        exp_id = ev["experiment_id"]
+        variant = ev["variant"]
+        event = ev["event"]
+        key = f"{exp_id}:{variant}:{event}"
+        if key not in summary:
+            summary[key] = {
+                "experiment_id": exp_id,
+                "variant": variant,
+                "event": event,
+                "count": 0,
+                "total_value": 0,
+            }
+        summary[key]["count"] += 1
+        if ev.get("value") is not None:
+            summary[key]["total_value"] += ev["value"]
+    return {"events": list(summary.values()), "total": len(_ab_test_events)}
