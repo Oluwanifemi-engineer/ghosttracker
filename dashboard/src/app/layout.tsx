@@ -1,6 +1,21 @@
 import type { Metadata, Viewport } from 'next';
+import { Inter, JetBrains_Mono } from 'next/font/google';
 import 'leaflet/dist/leaflet.css';
 import './globals.css';
+
+const inter = Inter({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800'],
+  display: 'swap',
+  variable: '--font-inter',
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  display: 'swap',
+  variable: '--font-jetbrains',
+});
 
 export const metadata: Metadata = {
   title: 'MAGNEETAR — Protect What You Own. Stay Close to Who You Love.',
@@ -50,8 +65,9 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="application-name" content="MAGNEETAR" />
         <link rel="manifest" href="/manifest.json" />
+
       </head>
-      <body className="bg-mag-bg text-mag-text min-h-screen antialiased">
+      <body className={`bg-mag-bg text-mag-text min-h-screen antialiased ${inter.variable} ${jetbrainsMono.variable}`}>
         <script
           dangerouslySetInnerHTML={{
             __html: `

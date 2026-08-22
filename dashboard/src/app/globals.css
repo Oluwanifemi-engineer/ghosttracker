@@ -1,5 +1,4 @@
 /* ─── Google Fonts (must come before Tailwind directives) ────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -190,7 +189,7 @@
   /* M-Brand Logo */
   .mag-m-logo {
     @apply inline-flex items-center justify-center;
-    font-family: 'Inter', sans-serif;
+    font-family: var(--font-inter), sans-serif;
     font-weight: 800;
     line-height: 1;
   }

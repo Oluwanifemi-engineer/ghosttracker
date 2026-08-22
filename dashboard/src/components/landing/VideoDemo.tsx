@@ -1,28 +1,241 @@
 'use client';
 
-import { useState } from 'react';
-import { Play, Pause, Volume2, VolumeX, Maximize } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Play, Pause, Volume2, VolumeX, Maximize, MapPin, Shield, Camera, Lock, Zap, ChevronRight } from 'lucide-react';
 
 /**
  * VideoDemo — embeds a product demo video with a cinematic overlay.
  *
- * Placeholders are shown until a real video URL is configured.
- * Supports YouTube, Loom, and direct MP4 URLs.
+ * When no video URL is configured, renders an animated step-through of the
+ * 5 core features with a simulated dashboard mockup that updates in real time.
+ * Set DEMO_VIDEO_URL to switch to a real embed (YouTube / Loom / MP4).
  */
 
 const DEMO_VIDEO_URL = ''; // Set to YouTube/Loom URL when available
 const DEMO_THUMBNAIL = '/magneetar-mhalf.svg';
 
+const DEMO_STEPS = [
+  {
+    icon: MapPin,
+    title: 'Real-time Tracking',
+    detail: '3-second GPS updates with Kalman filter',
+    marker: 'tracking',
+    color: 'from-emerald-500 to-teal-600',
+  },
+  {
+    icon: Shield,
+    title: 'Sentinel AI',
+    detail: '8-signal weighted theft scoring',
+    marker: 'sentinel',
+    color: 'from-amber-500 to-orange-600',
+  },
+  {
+    icon: Camera,
+    title: 'Evidence Capture',
+    detail: 'SHA-256 sealed photo + audio bursts',
+    marker: 'evidence',
+    color: 'from-blue-500 to-indigo-600',
+  },
+  {
+    icon: Lock,
+    title: 'Remote Commands',
+    detail: 'Lock, siren, wipe — one click',
+    marker: 'commands',
+    color: 'from-red-500 to-rose-600',
+  },
+  {
+    icon: Zap,
+    title: 'Offline Resilience',
+    detail: 'Queues pings, syncs on reconnect',
+    marker: 'offline',
+    color: 'from-violet-500 to-purple-600',
+  },
+];
+
+/* ── Animated Dashboard Mockup for video placeholder ────────────────────── */
+function DemoMockup({ activeStep }: { activeStep: number }) {
+  const step = DEMO_STEPS[activeStep];
+  const sentinelScore = activeStep === 1 ? 72 : activeStep === 2 ? 85 : 0;
+  const isLocked = activeStep === 3;
+  const battery = 84;
+
+  return (
+    <div className="relative bg-gray-900 rounded-2xl overflow-hidden shadow-2xl border border-gray-800">
+      {/* Title bar */}
+      <div className="flex items-center gap-2 px-4 py-2.5 bg-gray-800/80 border-b border-gray-700/50">
+        <div className="flex gap-1.5">
+          <div className="w-2.5 h-2.5 rounded-full bg-red-500/80" />
+          <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/80" />
+          <div className="w-2.5 h-2.5 rounded-full bg-green-500/80" />
+        </div>
+        <span className="text-[10px] font-mono text-gray-500 ml-2">MAGNEETAR COMMAND CENTER</span>
+        <div className="ml-auto flex items-center gap-1.5">
+          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="text-[9px] font-mono text-emerald-400">LIVE</span>
+        </div>
+      </div>
+
+      {/* Map area */}
+      <div className="relative h-48 overflow-hidden">
+        {/* Grid */}
+        <div
+          className="absolute inset-0 opacity-10"
+          style={{
+            backgroundImage:
+              'linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)',
+            backgroundSize: '20px 20px',
+          }}
+        />
+
+        {/* Animated marker */}
+        <div className="absolute top-1/2 left-1/3 -translate-x-1/2 -translate-y-1/2 transition-all duration-700">
+          <div className="relative">
+            <div className={`absolute -inset-8 rounded-full bg-gradient-to-br ${step.color} opacity-10 animate-pulse`} />
+            <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${step.color} flex items-center justify-center shadow-lg transition-all duration-500`}>
+              <step.icon size={18} className="text-white" />
+            </div>
+            <div className="absolute -inset-3 rounded-full border-2 border-white/20 animate-ping" />
+          </div>
+        </div>
+
+        {/* Trail dots */}
+        {activeStep === 0 && (
+          <div className="absolute top-1/2 left-[15%] flex gap-2 -translate-y-1/2">
+            {[...Array(5)].map((_, i) => (
+              <div
+                key={i}
+                className="w-1.5 h-1.5 rounded-full bg-emerald-400/40"
+                style={{ animationDelay: `${i * 200}ms`, opacity: 1 - i * 0.15 }}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Evidence overlay */}
+        {activeStep === 2 && (
+          <div className="absolute inset-0 bg-blue-500/5 flex items-center justify-center">
+            <div className="bg-gray-900/90 border border-blue-500/30 rounded-lg p-3 flex items-center gap-2">
+              <Camera size={14} className="text-blue-400" />
+              <span className="text-[10px] font-mono text-blue-300">Evidence capture in progress...</span>
+              <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+            </div>
+          </div>
+        )}
+
+        {/* Lock overlay */}
+        {isLocked && (
+          <div className="absolute inset-0 bg-red-500/5 flex items-center justify-center">
+            <div className="bg-gray-900/90 border border-red-500/30 rounded-lg p-3 flex items-center gap-2">
+              <Lock size={14} className="text-red-400" />
+              <span className="text-[10px] font-mono text-red-300">Screen locked remotely</span>
+            </div>
+          </div>
+        )}
+
+        {/* Sidebar */}
+        <div className="absolute right-0 top-0 bottom-0 w-48 bg-gray-900/90 border-l border-gray-700/50 p-3">
+          <div className="text-[9px] font-mono text-gray-500 mb-2">DEVICES</div>
+          {['Galaxy A03s', 'Pixel 8', 'Redmi Note 12'].map((name, i) => (
+            <div
+              key={name}
+              className={`flex items-center gap-2 p-2 rounded-lg mb-1.5 transition-all duration-300 ${
+                i === 0 ? 'bg-white/10 border border-white/10' : 'opacity-40'
+              }`}
+            >
+              <div className={`w-2 h-2 rounded-full ${i === 0 ? 'bg-emerald-500' : 'bg-gray-600'}`} />
+              <span className="text-[10px] font-mono text-white/80">{name}</span>
+            </div>
+          ))}
+
+          <div className="mt-4 text-[9px] font-mono text-gray-500 mb-2">SENTINEL</div>
+          <div className="p-2 rounded-lg bg-white/5 border border-white/10">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[10px] font-mono text-gray-400">Score</span>
+              <span className={`text-[10px] font-mono font-bold ${
+                sentinelScore >= 70 ? 'text-red-400' : sentinelScore >= 40 ? 'text-amber-400' : 'text-emerald-400'
+              }`}>
+                {sentinelScore}
+              </span>
+            </div>
+            <div className="h-1 bg-gray-700 rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-1000 ${
+                  sentinelScore >= 70 ? 'bg-red-500' : sentinelScore >= 40 ? 'bg-amber-500' : 'bg-emerald-500'
+                }`}
+                style={{ width: `${sentinelScore}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Command queue indicator */}
+          {activeStep >= 3 && (
+            <div className="mt-3">
+              <div className="text-[9px] font-mono text-gray-500 mb-1">COMMANDS</div>
+              <div className="p-2 rounded-lg bg-white/5 border border-white/10">
+                <div className="flex items-center gap-1.5">
+                  <div className={`w-1.5 h-1.5 rounded-full ${isLocked ? 'bg-red-500 animate-pulse' : 'bg-emerald-500'}`} />
+                  <span className="text-[9px] font-mono text-gray-400">
+                    {isLocked ? 'LOCK — executing' : 'DELIVERED'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Status bar */}
+      <div className="flex items-center justify-between px-4 py-2 bg-gray-800/60 border-t border-gray-700/50">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5">
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            <span className="text-[9px] font-mono text-gray-400">Samsung A03s</span>
+          </div>
+          <span className="text-[9px] font-mono text-gray-500">•</span>
+          <span className="text-[9px] font-mono text-gray-400">Battery {battery}%</span>
+          <span className="text-[9px] font-mono text-gray-500">•</span>
+          <span className="text-[9px] font-mono text-gray-400">Wifi</span>
+        </div>
+        <span className="text-[9px] font-mono text-gray-500">2s ago</span>
+      </div>
+    </div>
+  );
+}
+
 export function VideoDemo() {
   const [isPlaying, setIsPlaying] = useState(false);
+  const [activeStep, setActiveStep] = useState(0);
   const [isMuted, setIsMuted] = useState(true);
 
-  // If no video URL configured, show a cinematic placeholder
-  if (!DEMO_VIDEO_URL) {
+  const nextStep = useCallback(() => {
+    setActiveStep((prev) => (prev + 1) % DEMO_STEPS.length);
+  }, []);
+
+  // Auto-advance when playing
+  useEffect(() => {
+    if (!isPlaying) return;
+    const interval = setInterval(nextStep, 3000);
+    return () => clearInterval(interval);
+  }, [isPlaying, nextStep]);
+
+  // If a real video URL is configured, render the embed
+  if (DEMO_VIDEO_URL) {
+    const getEmbedUrl = (url: string) => {
+      if (url.includes('youtube.com') || url.includes('youtu.be')) {
+        const videoId = url.includes('youtu.be')
+          ? url.split('/').pop()?.split('?')[0]
+          : new URL(url).searchParams.get('v');
+        return `https://www.youtube.com/embed/${videoId}?autoplay=0&mute=1`;
+      }
+      if (url.includes('loom.com')) {
+        return `${url}/embed`;
+      }
+      return url;
+    };
+
     return (
       <section className="py-20 sm:py-28 bg-black relative overflow-hidden">
         <div className="max-w-5xl mx-auto px-5 sm:px-8">
-          {/* Section header */}
           <div className="text-center mb-12">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gray-700 bg-gray-800/50 mb-5">
               <Play size={10} className="text-emerald-400" />
@@ -31,154 +244,116 @@ export function VideoDemo() {
             <h2 className="text-3xl sm:text-4xl font-display font-extrabold tracking-tight text-white mb-4">
               See Magneetar in 30 seconds.
             </h2>
-            <p className="text-gray-400 text-base max-w-lg mx-auto">
-              From installation to theft detection — watch how the command center
-              protects your device in real time.
-            </p>
           </div>
-
-          {/* Video player frame */}
-          <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-gray-800 group">
-            {/* Cinematic letterbox frame */}
-            <div className="relative aspect-video bg-gray-900 flex items-center justify-center">
-              {/* Animated background grid */}
-              <div
-                className="absolute inset-0 opacity-5"
-                style={{
-                  backgroundImage:
-                    'linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)',
-                  backgroundSize: '40px 40px',
-                }}
+          <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-gray-800">
+            <div className="aspect-video">
+              <iframe
+                src={getEmbedUrl(DEMO_VIDEO_URL)}
+                className="w-full h-full"
+                allow="autoplay; encrypted-media"
+                allowFullScreen
+                title="Magneetar Product Demo"
               />
-
-              {/* Gradient overlay */}
-              <div className="absolute inset-0 bg-gradient-to-br from-emerald-900/20 via-transparent to-blue-900/20" />
-
-              {/* Center logo + play button */}
-              <div className="relative z-10 flex flex-col items-center gap-6">
-                {/* Logo */}
-                <div className="relative">
-                  <img
-                    src={DEMO_THUMBNAIL}
-                    alt="Magneetar"
-                    className="w-20 h-20 rounded-2xl opacity-60"
-                  />
-                  <div className="absolute -inset-1 rounded-2xl border border-white/5" />
-                </div>
-
-                {/* Play button */}
-                <button
-                  className="group/play relative"
-                  onClick={() => setIsPlaying(!isPlaying)}
-                  aria-label="Play demo video"
-                >
-                  {/* Outer ring */}
-                  <div className="absolute -inset-4 rounded-full border border-white/10 group-hover/play:border-white/20 transition-colors" />
-                  {/* Pulsing ring */}
-                  <div className="absolute -inset-6 rounded-full border border-white/5 animate-ping" />
-                  {/* Button */}
-                  <div className="w-16 h-16 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center group-hover/play:bg-white/20 transition-all duration-300 group-hover/play:scale-110">
-                    <Play size={24} className="text-white ml-1" fill="white" />
-                  </div>
-                </button>
-
-                {/* Duration badge */}
-                <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10">
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-[10px] font-mono text-gray-400 tracking-wider">30 SEC DEMO</span>
-                </div>
-              </div>
-
-              {/* Corner decorations — tactical feel */}
-              <div className="absolute top-4 left-4 w-6 h-6 border-t-2 border-l-2 border-white/10 rounded-tl" />
-              <div className="absolute top-4 right-4 w-6 h-6 border-t-2 border-r-2 border-white/10 rounded-tr" />
-              <div className="absolute bottom-4 left-4 w-6 h-6 border-b-2 border-l-2 border-white/10 rounded-bl" />
-              <div className="absolute bottom-4 right-4 w-6 h-6 border-b-2 border-r-2 border-white/10 rounded-br" />
             </div>
-
-            {/* Bottom controls bar (mockup) */}
-            <div className="flex items-center gap-3 px-4 py-2.5 bg-gray-800/80 border-t border-gray-700/50">
-              <button
-                onClick={() => setIsPlaying(!isPlaying)}
-                className="text-gray-400 hover:text-white transition-colors"
-              >
-                {isPlaying ? <Pause size={14} /> : <Play size={14} />}
-              </button>
-
-              {/* Progress bar */}
-              <div className="flex-1 h-1 bg-gray-700 rounded-full overflow-hidden">
-                <div className="h-full w-0 bg-emerald-500 rounded-full" />
-              </div>
-
-              <span className="text-[10px] font-mono text-gray-500">0:00 / 0:30</span>
-
-              <button
-                onClick={() => setIsMuted(!isMuted)}
-                className="text-gray-500 hover:text-gray-300 transition-colors"
-              >
-                {isMuted ? <VolumeX size={12} /> : <Volume2 size={12} />}
-              </button>
-
-              <button className="text-gray-500 hover:text-gray-300 transition-colors">
-                <Maximize size={12} />
-              </button>
-            </div>
-          </div>
-
-          {/* Below-video trust indicators */}
-          <div className="flex items-center justify-center gap-6 mt-8">
-            {[
-              { label: 'SHA-256 signed', icon: '🔐' },
-              { label: 'End-to-end encrypted', icon: '🛡️' },
-              { label: 'Open source', icon: '📂' },
-            ].map((item) => (
-              <div key={item.label} className="flex items-center gap-1.5">
-                <span className="text-xs">{item.icon}</span>
-                <span className="text-[10px] font-mono text-gray-500">{item.label}</span>
-              </div>
-            ))}
           </div>
         </div>
       </section>
     );
   }
 
-  // When a real video URL is provided, render the actual embed
-  const getEmbedUrl = (url: string) => {
-    if (url.includes('youtube.com') || url.includes('youtu.be')) {
-      const videoId = url.includes('youtu.be')
-        ? url.split('/').pop()?.split('?')[0]
-        : new URL(url).searchParams.get('v');
-      return `https://www.youtube.com/embed/${videoId}?autoplay=0&mute=1`;
-    }
-    if (url.includes('loom.com')) {
-      return `${url}/embed`;
-    }
-    return url;
-  };
-
+  // Interactive demo placeholder
   return (
     <section className="py-20 sm:py-28 bg-black relative overflow-hidden">
-      <div className="max-w-5xl mx-auto px-5 sm:px-8">
+      <div className="max-w-6xl mx-auto px-5 sm:px-8">
+        {/* Section header */}
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gray-700 bg-gray-800/50 mb-5">
             <Play size={10} className="text-emerald-400" />
-            <span className="text-[10px] font-mono font-bold tracking-[0.2em] text-gray-400">WATCH THE DEMO</span>
+            <span className="text-[10px] font-mono font-bold tracking-[0.2em] text-gray-400">LIVE DEMO</span>
           </div>
           <h2 className="text-3xl sm:text-4xl font-display font-extrabold tracking-tight text-white mb-4">
-            See Magneetar in 30 seconds.
+            See Magneetar in action.
           </h2>
+          <p className="text-gray-400 text-base max-w-lg mx-auto">
+            Click a feature below to watch the command center respond in real time.
+          </p>
         </div>
 
-        <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-gray-800">
-          <div className="aspect-video">
-            <iframe
-              src={getEmbedUrl(DEMO_VIDEO_URL)}
-              className="w-full h-full"
-              allow="autoplay; encrypted-media"
-              allowFullScreen
-              title="Magneetar Product Demo"
-            />
+        <div className="grid lg:grid-cols-5 gap-8 items-start">
+          {/* Mockup — takes 3 columns */}
+          <div className="lg:col-span-3">
+            <DemoMockup activeStep={activeStep} />
+          </div>
+
+          {/* Feature selector — takes 2 columns */}
+          <div className="lg:col-span-2 space-y-2">
+            {DEMO_STEPS.map((s, i) => (
+              <button
+                key={s.title}
+                onClick={() => { setActiveStep(i); setIsPlaying(false); }}
+                className={`w-full text-left p-3 rounded-xl border transition-all duration-300 ${
+                  i === activeStep
+                    ? 'bg-white/5 border-white/10 shadow-lg'
+                    : 'bg-transparent border-transparent hover:bg-white/[0.02] hover:border-white/5'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-300 ${
+                      i === activeStep ? `bg-gradient-to-br ${s.color}` : 'bg-white/5'
+                    }`}
+                  >
+                    <s.icon size={16} className={i === activeStep ? 'text-white' : 'text-gray-500'} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className={`text-sm font-bold transition-colors ${
+                      i === activeStep ? 'text-white' : 'text-gray-500'
+                    }`}>
+                      {s.title}
+                    </span>
+                    {i === activeStep && (
+                      <p className="text-xs text-gray-400 mt-0.5">{s.detail}</p>
+                    )}
+                  </div>
+                  {i === activeStep && (
+                    <ChevronRight size={14} className="text-gray-500 shrink-0" />
+                  )}
+                </div>
+              </button>
+            ))}
+
+            {/* Playback controls */}
+            <div className="flex items-center gap-3 pt-3">
+              <button
+                onClick={() => setIsPlaying(!isPlaying)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-xs font-mono transition-all ${
+                  isPlaying
+                    ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                    : 'border-gray-700 text-gray-400 hover:bg-white/5'
+                }`}
+              >
+                {isPlaying ? <Pause size={12} /> : <Play size={12} />}
+                {isPlaying ? 'Pause' : 'Auto-play'}
+              </button>
+
+              <div className="flex gap-1 ml-auto">
+                {DEMO_STEPS.map((_, i) => (
+                  <div
+                    key={i}
+                    className={`w-1.5 h-1.5 rounded-full transition-all ${
+                      i === activeStep ? 'bg-white w-4' : 'bg-gray-600'
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Trust badges */}
+            <div className="flex items-center gap-4 pt-4 border-t border-gray-800 mt-2">
+              {['SHA-256 signed', 'E2E encrypted', 'Open source'].map((label) => (
+                <span key={label} className="text-[9px] font-mono text-gray-600">{label}</span>
+              ))}
+            </div>
           </div>
         </div>
       </div>

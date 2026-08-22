@@ -45,8 +45,8 @@ describe('Landing Page', () => {
     expect(screen.getAllByText(/chain-?of-?custody\s*hashing/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/background\s*persistence/i).length).toBeGreaterThan(0);
 
-    // Features grid
-    expect(screen.getByText('Sentinel AI')).toBeInTheDocument();
+    // Features grid (may appear in both Features section and ComparisonTable)
+    expect(screen.getAllByText('Sentinel AI').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('Family & Team Circles')).toBeInTheDocument();
     expect(screen.getByText('Multi-Device Fleet')).toBeInTheDocument();
     expect(screen.getByText('Guardian Network')).toBeInTheDocument();

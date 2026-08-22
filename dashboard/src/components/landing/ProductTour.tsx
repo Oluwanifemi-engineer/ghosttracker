@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Play, Pause, MapPin, Shield, Camera, Lock, Zap } from 'lucide-react';
 
 const TOUR_STEPS = [
@@ -104,13 +104,22 @@ function DashboardMockup({ activeStep }: { activeStep: number }) {
 
           <div className="mt-4 text-[9px] font-mono text-gray-500 mb-2">SENTINEL</div>
           <div className="p-2 rounded-lg bg-white/5 border border-white/10">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px] font-mono text-gray-400">Score</span>
-              <span className="text-[10px] font-mono text-emerald-400 font-bold">0</span>
-            </div>
-            <div className="h-1 bg-gray-700 rounded-full overflow-hidden">
-              <div className="h-full w-0 bg-emerald-500 rounded-full transition-all duration-1000" />
-            </div>
+            {(() => {
+              const score = activeStep === 1 ? 72 : activeStep === 2 ? 85 : activeStep === 3 ? 45 : 0;
+              const scoreColor = score >= 70 ? 'text-red-400' : score >= 40 ? 'text-amber-400' : 'text-emerald-400';
+              const barColor = score >= 70 ? 'bg-red-500' : score >= 40 ? 'bg-amber-500' : 'bg-emerald-500';
+              return (
+                <>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[10px] font-mono text-gray-400">Score</span>
+                    <span className={`text-[10px] font-mono ${scoreColor} font-bold transition-colors duration-500`}>{score}</span>
+                  </div>
+                  <div className="h-1 bg-gray-700 rounded-full overflow-hidden">
+                    <div className={`h-full ${barColor} rounded-full transition-all duration-1000`} style={{ width: `${score}%` }} />
+                  </div>
+                </>
+              );
+            })()}
           </div>
         </div>
       </div>
@@ -137,8 +146,15 @@ export function ProductTour() {
   const [activeStep, setActiveStep] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
 
-  const nextStep = () => setActiveStep((prev) => (prev + 1) % TOUR_STEPS.length);
-  const prevStep = () => setActiveStep((prev) => (prev - 1 + TOUR_STEPS.length) % TOUR_STEPS.length);
+  const nextStep = useCallback(() => setActiveStep((prev) => (prev + 1) % TOUR_STEPS.length), []);
+  const prevStep = useCallback(() => setActiveStep((prev) => (prev - 1 + TOUR_STEPS.length) % TOUR_STEPS.length), []);
+
+  // Auto-advance when playing
+  useEffect(() => {
+    if (!isPlaying) return;
+    const interval = setInterval(nextStep, 3500);
+    return () => clearInterval(interval);
+  }, [isPlaying, nextStep]);
 
   return (
     <section className="py-20 sm:py-28 bg-gray-950 overflow-hidden">
@@ -202,16 +218,27 @@ export function ProductTour() {
             {/* Navigation */}
             <div className="flex items-center gap-3 pt-4">
               <button
-                onClick={prevStep}
-                className="px-4 py-2 rounded-lg border border-gray-700 text-gray-400 text-xs font-mono hover:bg-white/5 transition-colors"
+                onClick={() => setIsPlaying(!isPlaying)}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-mono transition-all ${
+                  isPlaying
+                    ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                    : 'border-gray-700 text-gray-400 hover:bg-white/5'
+                }`}
               >
-                ← Prev
+                {isPlaying ? <Pause size={12} /> : <Play size={12} />}
+                {isPlaying ? 'Pause' : 'Auto'}
+              </button>
+              <button
+                onClick={prevStep}
+                className="px-3 py-2 rounded-lg border border-gray-700 text-gray-400 text-xs font-mono hover:bg-white/5 transition-colors"
+              >
+                ←
               </button>
               <button
                 onClick={nextStep}
-                className="px-4 py-2 rounded-lg border border-gray-700 text-gray-400 text-xs font-mono hover:bg-white/5 transition-colors"
+                className="px-3 py-2 rounded-lg border border-gray-700 text-gray-400 text-xs font-mono hover:bg-white/5 transition-colors"
               >
-                Next →
+                →
               </button>
               <div className="flex gap-1.5 ml-auto">
                 {TOUR_STEPS.map((_, i) => (

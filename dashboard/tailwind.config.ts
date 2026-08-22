@@ -51,9 +51,9 @@ const config: Config = {
         },
       },
       fontFamily: {
-        mono: ['"JetBrains Mono"', '"SF Mono"', '"Share Tech Mono"', 'monospace'],
-        sans: ['"Inter"', '"SF Pro"', 'system-ui', 'sans-serif'],
-        display: ['"Inter"', '"SF Pro"', 'system-ui', 'sans-serif'],
+        mono: ['var(--font-jetbrains)', '"SF Mono"', '"Share Tech Mono"', 'monospace'],
+        sans: ['var(--font-inter)', '"SF Pro"', 'system-ui', 'sans-serif'],
+        display: ['var(--font-inter)', '"SF Pro"', 'system-ui', 'sans-serif'],
       },
       boxShadow: {
         'mag-glow': '0 0 24px rgba(255, 255, 255, 0.08)',
