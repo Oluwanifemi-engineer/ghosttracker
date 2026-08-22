@@ -2,7 +2,10 @@
 
 ## Overview
 
-This document outlines the complete process for submitting Magneetar to the Google Play Store.
+This document outlines the process for submitting Magneetar to the Google
+Play Store. The **canonical store listing copy** lives in
+`docs/play-listing-copy-1.4.4.md` — do not maintain duplicate descriptions
+here.
 
 **Timeline**: 2-4 weeks (including closed testing requirement)
 
@@ -22,7 +25,7 @@ This document outlines the complete process for submitting Magneetar to the Goog
 - [ ] Android App Bundle (.aab) format
 - [ ] Target SDK 36+ (required Aug 31, 2026)
 - [ ] Signed with release keystore
-- [ ] No SMS permissions (already handled via Play flavor)
+- [ ] No SMS permissions (handled via Play flavor)
 
 ---
 
@@ -30,92 +33,36 @@ This document outlines the complete process for submitting Magneetar to the Goog
 
 ### 3. Store Listing
 
-**Short Description** (80 characters max):
-```
-Anti-theft protection: track, lock, and recover your stolen phone.
-```
+> **Copy source:** `docs/play-listing-copy-1.4.4.md` — short description,
+> full description, permissions explanations, and Play Console form answers
+> are all maintained there. Copy-paste from that file.
 
-**Full Description** (4,000 characters max):
-```
-Magneetar is a powerful anti-theft app that protects your Android phone from theft and loss.
+**Graphics & Media:**
+- [ ] **App Icon**: 512 x 512 px PNG (`docs/play-assets/icon-512.png`)
+- [ ] **Feature Graphic**: 1024 x 500 px (`docs/play-assets/feature-graphic-1024x500.png`)
+- [ ] **Phone Screenshots**: 6–8 screenshots (16:9 or 9:16)
+  - [ ] Prominent-disclosure dialog (background location) — **required**
+  - [ ] Dashboard device map view
+  - [ ] Command panel (lock / alarm / evidence)
+  - [ ] Evidence case (photos + audio)
+  - [ ] Guardian Network view
 
-CORE FEATURES:
-• Real-time GPS tracking with turn-by-turn navigation
-• Remote lock and alarm activation
-• Remote wipe (factory reset) for data protection
-• Photo and audio evidence capture
-• Sentinel AI theft detection
-• Guardian Network for community recovery
+### 4. Privacy Policy
 
-HOW IT WORKS:
-1. Install Magneetar and link it to your account
-2. If your phone is stolen, use the web dashboard to:
-   - Track its real-time location
-   - Lock it remotely
-   - Trigger a loud alarm
-   - Capture photos and audio evidence
-   - Wipe all data if recovery is impossible
-
-PRIVACY & SECURITY:
-• bcrypt password hashing, TOTP two-factor auth, and TLS transport
-• No ads, no tracking, no data selling
-• Open source and transparent
-• You control all your data
-
-PERMISSIONS:
-• Location: Required for theft tracking
-• Camera/Microphone: For evidence capture (only when armed)
-• Notifications: For theft alerts and command results
-
-Magneetar is designed for device owners who want to protect their phones from theft. It is not designed for surveillance or monitoring others without their consent.
-```
-
-### 4. Graphics & Media
-
-- [ ] **App Icon**: 512 x 512 px PNG with transparency
-- [ ] **Feature Graphic**: 1024 x 500 px JPEG or PNG
-- [ ] **Phone Screenshots**: Minimum 2 screenshots (16:9 or 9:16 aspect ratio)
-  - Screenshot 1: Dashboard showing device location
-  - Screenshot 2: Command panel with lock/wipe options
-  - Screenshot 3: Evidence capture results
-  - Screenshot 4: Guardian Network view
-
-### 5. Privacy Policy
-
-Create a privacy policy page at `https://magneetar.me/privacy` with:
-
-- What data is collected (location, device info, photos/audio)
-- How data is used (theft recovery only)
-- How data is stored (encrypted, user-controlled)
-- How to delete data (account deletion)
-- Contact information for privacy questions
+Publicly hosted at `https://magneetar.me/privacy` (verified 200).
 
 ---
 
 ## Data Safety Form
 
-### 6. Complete Data Safety Section
-
-**Data Collection:**
-| Data Type | Purpose | Required? | Shared? |
-|-----------|---------|-----------|---------|
-| Location | Theft tracking | Yes | No |
-| Device IDs | Device identification | Yes | No |
-| Photos/Videos | Evidence capture | Optional | No |
-| Audio | Evidence capture | Optional | No |
-| App Activity | Theft detection | Yes | No |
-
-**Security Practices:**
-- [x] Data is encrypted in transit (TLS)
-- [x] At-rest encryption (AES-256-GCM) for account secrets and location telemetry (when `MT_ENCRYPTION_KEY` is set) + bcrypt hashing (stated honestly in the listing)
-- [ ] Users can request data deletion
-- [ ] Data is not sold to third parties
+> **Answers:** see `docs/play-listing-copy-1.4.4.md` § Play Console form
+> answers → Data Safety Form section.
 
 ---
 
 ## Testing Requirements
 
-### 7. Closed Testing (Required for New Accounts)
+### 5. Closed Testing (Required for New Accounts)
 
 For personal developer accounts created after Nov 13, 2023:
 
@@ -125,37 +72,33 @@ For personal developer accounts created after Nov 13, 2023:
 - [ ] Collect feedback and fix any issues
 - [ ] Document test results
 
-**Tester Requirements:**
-- Must be opted-in continuously for 14 days
-- Should test on different Android versions
-- Should test core features: tracking, lock, alarm
-
 ---
 
 ## Submission Checklist
 
-### 8. Pre-Submission Verification
+### 6. Pre-Submission Verification
 
-- [ ] App builds successfully with `./gradlew bundlePlayRelease`
-- [ ] App installs on test device
-- [ ] All features work correctly
-- [ ] No crashes or errors
-- [ ] Privacy policy URL is accessible
-- [ ] Store listing is complete
-- [ ] Screenshots are uploaded
-- [ ] Data safety form is complete
-- [ ] Content rating is complete
+- [ ] AAB builds successfully: `./gradlew bundlePlayRelease`
+- [ ] AAB installs on test device via internal testing track
+- [ ] All features work correctly — no crashes, no errors
+- [ ] Privacy policy URL accessible
+- [ ] Store listing complete (copy from `play-listing-copy-1.4.4.md`)
+- [ ] Screenshots uploaded (6–8, incl. prominent disclosure)
+- [ ] Data safety form complete
+- [ ] Content rating complete
 
-### 9. Upload to Play Console
+### 7. Upload to Play Console
 
-- [ ] Upload AAB to production track
-- [ ] Add release notes
-- [ ] Review all sections
-- [ ] Submit for review
+- [ ] Upload AAB to internal testing track
+- [ ] Add tester emails
+- [ ] Send tester invite links
+- [ ] Iterate on feedback
+- [ ] Promote to closed testing (G2 gate)
+- [ ] After G1 + G2 pass → production release
 
-### 10. Review Process
+### 8. Review Process
 
-- [ ] Wait for Google review (typically 3-7 days)
+- [ ] Wait for Google review (typically 3–7 days)
 - [ ] Address any rejection feedback
 - [ ] Resubmit if needed
 
@@ -163,24 +106,24 @@ For personal developer accounts created after Nov 13, 2023:
 
 ## Common Rejection Reasons to Avoid
 
-1. **SMS Permissions**: Already removed in Play flavor ✅
-2. **Background Location Disclosure**: Add prominent in-app disclosure ✅
-3. **Device Admin Explanation**: Clearly explain lock/wipe purpose
+1. **SMS Permissions**: Removed in Play flavor ✅
+2. **Background Location Disclosure**: In-app prominent disclosure shipped ✅
+3. **Device Admin**: Declare via Permissions Declaration (not EMM) ✅
 4. **Demo Credentials**: Provide test account for reviewers
-5. **Misleading Description**: Don't claim features app doesn't have
+5. **Misleading Description**: All claims verifiable (S-7 rule) ✅
 
 ---
 
 ## Post-Approval
 
-### 11. Production Release
+### 9. Production Release
 
-- [ ] Release to production track
-- [ ] Monitor crash reports
+- [ ] Staged rollout: 1–5% → 10–20% → 50% → 100%
+- [ ] Monitor crash reports (Play Console quality page)
 - [ ] Respond to user reviews
 - [ ] Plan regular updates
 
-### 12. Ongoing Compliance
+### 10. Ongoing Compliance
 
 - [ ] Update target SDK when required
 - [ ] Respond to policy changes

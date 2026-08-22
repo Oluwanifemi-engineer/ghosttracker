@@ -70,7 +70,7 @@ Supporting artifacts live next to this file: the recruitment message
 | 3 | Xiaomi / Redmi |  |  |  |  |  | ☐ running |
 | 4 | Low-end 2–3 GB RAM |  |  |  |  |  | ☐ running |
 | 5 | Android 14/15 device |  |  |  |  |  | ☐ running |
-| 6 | AOSP image — **no "network" provider** (regression: v1.4.2 crash fix) |  |  |  |  |  | ☐ running |
+| 6 | AOSP emulator — **no "network" provider** (regression: v1.4.2 crash fix) | 14 | — | Owner | `scripts/setup-aosp-emulator.sh --run` |  | ☐ setup |
 | 7+ | (extra real users) |  |  |  |  |  | ☐ running |
 
 ## 2. Condition matrix (per device — mark PASS / FAIL / N-TESTED + note)

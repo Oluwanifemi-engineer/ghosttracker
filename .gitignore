@@ -107,3 +107,4 @@ android-app/**/google-services.json
 # Release source tarballs + staged APKs live on the server, never in git
 # (build artifacts; the repo is private and the tarball is served from /apk/source).
 server/static/apk/
+coverage.xml

@@ -4,7 +4,8 @@
 > Military-grade anti-theft tracking and live location circles for Android — track, protect, and recover your devices while keeping family, coworkers, and teams in sync.
 
 ![Status](https://img.shields.io/badge/status-production-green)
-![Tests](https://img.shields.io/badge/tests-549%20backend%20%2B%20198%20dashboard-brightgreen)
+![Tests](https://img.shields.io/badge/tests-596%20backend%20%2B%20198%20dashboard-brightgreen)
+![Coverage](docs/coverage-badge.svg)
 ![Python](https://img.shields.io/badge/python-3.12-blue)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.115-green)
 ![Kotlin](https://img.shields.io/badge/kotlin-Android-orange)

@@ -26,55 +26,49 @@ stock Android — no root, no jailbreak — and turns your phone into a
 theft-resistant device.
 
 WHAT MAGNEETAR DOES
-• Real-time tracking — follow your device on a map, with fresh location
-  updates every few seconds while the protection service is active.
-• Sentinel theft detection — a weighted score watches for theft signals:
-  SIM removal/change, repeated failed unlock attempts, location services
-  being switched off, airplane mode, device-admin being disabled, unusual
-  movement, and leaving a geofenced safe zone. When the score crosses the
-  threshold, the device escalates to evidence mode automatically.
-• Evidence capture — during an active theft response the device takes a
-  front-camera photo burst and records ambient audio (VAD-gated), building
-  a SHA-256-chained evidence case for the owner.
-• Remote commands — lock the screen, sound an alarm, or (on the sideload
-  build) wipe the device, from the web dashboard.
-• Geofences — mark a safe zone; leaving it triggers an alert and an
-  optional on-device reaction (evidence capture, siren, or alert only).
-• Always-deliver alerts — theft signals reach you through every channel
-  you enable: push notification, email, SMS, or WhatsApp.
-• Role-based sharing — grant family or trusted contacts viewer, admin, or
-  privacy-only (status glance, no location) access to a device.
-• Community recovery — the optional Guardian Network lets nearby
-  volunteers (opted in by you) receive a blurred, privacy-preserving
-  beacon when your device is reported stolen.
+• Real-time tracking — follow your device on a live map with fresh
+  location updates every few seconds.
+• Sentinel theft detection — an AI score watches for theft signals: SIM
+  change, failed unlocks, location off, airplane mode, device-admin
+  disabled, unusual movement, geofence exit. When the threshold is
+  crossed, the device escalates to evidence mode automatically.
+• Evidence capture — during a theft response the device takes a front-
+  camera photo burst and records ambient audio (VAD-gated), building a
+  SHA-256-chained evidence case for the owner.
+• Remote commands — lock the screen, sound an alarm, or wipe the device
+  from the web dashboard.
+• Geofences — mark a safe zone; leaving it triggers an alert and optional
+  on-device reaction (capture, siren, or alert only).
+• Always-deliver alerts — theft signals reach you through every enabled
+  channel: push notification, email, SMS, or WhatsApp.
+• Role-based sharing — grant family or team members viewer, admin, or
+  privacy-only (status glance, no location) access.
+• Guardian Network — the optional community recovery feature lets nearby
+  opted-in volunteers receive a privacy-preserving beacon when your
+  device is reported stolen.
 
 PRIVACY & SECURITY
-• Location and evidence are encrypted in transit (TLS) and at rest
-  (AES-256-GCM where enabled on your server).
-• Evidence is captured only when the device is armed and a theft signal
-  has escalated it — not continuously in normal use.
-• TOTP two-factor authentication protects your account; destructive
-  actions re-verify your password.
-• No ads, no analytics SDKs, no data sold. Your data lives on your
-  Magneetar server and is yours to export or delete (account + device
-  deletion supported).
-• Source is published (release tarballs) so the claims above can be
-  checked against the code.
+• Encrypted in transit (TLS) and at rest (AES-256-GCM).
+• Evidence captured only during an armed theft response — never
+  continuously.
+• TOTP two-factor authentication; destructive actions re-verify your
+  password.
+• No ads, no analytics SDKs, no data sold. Your data lives on your own
+  Magneetar server and is yours to export or delete.
+• Source is published as release tarballs so claims can be verified.
 
 PERMISSIONS — WHAT THEY ARE FOR
-• Location (incl. background): theft tracking and detection. Shown with a
-  prominent disclosure at first launch; tracking can be switched off.
-• Camera + Microphone: evidence capture during an armed theft response
-  only.
+• Location (incl. background): theft tracking. Prominent disclosure shown
+  at first launch; tracking can be switched off anytime.
+• Camera + Microphone: evidence capture during a theft response only.
 • Notifications: theft alerts and command results.
-• Device admin: keeps the protection service running so a thief cannot
-  simply uninstall the app, and enables remote lock during an armed theft
-  response. Activated with your explicit consent on the first launch.
-• Overlay: shows the theft-deterrent warning screen during a response.
+• Device admin: prevents a thief from uninstalling the app and enables
+  remote lock. Activated with your explicit consent.
+• Overlay: theft-deterrent warning screen during a response.
 
-Magneetar is designed for owners protecting their own devices. It is not a
-surveillance tool: you may only use it on devices you own or have explicit
-permission to protect.
+Magneetar is for owners protecting their own devices. It is not a
+surveillance tool — you may only use it on devices you own or have
+explicit permission to protect.
 ```
 
 ## Play Console form answers (mapped from docs/play-store-checklist.md)
