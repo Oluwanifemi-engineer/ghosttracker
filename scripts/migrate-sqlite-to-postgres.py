@@ -55,7 +55,7 @@ TABLES = [
 ]
 
 
-def migrate_table(sqlite_conn, pg_conn, table_name: str) -> int:
+def migrate_table(sqlite_conn, pg_cur, table_name: str, pg_conn=None) -> int:
     """Copy all rows from one SQLite table to Postgres. Returns row count."""
     try:
         rows = sqlite_conn.execute(f"SELECT * FROM {table_name}").fetchall()
@@ -70,12 +70,12 @@ def migrate_table(sqlite_conn, pg_conn, table_name: str) -> int:
 
     # Check which columns exist in Postgres
     try:
-        pg_cols = pg_conn.execute(
+        pg_cur.execute(
             "SELECT column_name FROM information_schema.columns "
             "WHERE table_name = %s ORDER BY ordinal_position",
             (table_name,),
         ).fetchall()
-        pg_col_names = {row[0] for row in pg_cols}
+        pg_col_names = {row[0] for row in pg_cur.fetchall()}
     except Exception:
         pg_col_names = set(columns)
 
@@ -88,18 +88,36 @@ def migrate_table(sqlite_conn, pg_conn, table_name: str) -> int:
     col_names = ", ".join(common_cols)
     sql = f"INSERT INTO {table_name} ({col_names}) VALUES ({placeholders}) ON CONFLICT DO NOTHING"
 
+    # Identify boolean columns (SQLite stores 0/1, Postgres expects true/false)
+    bool_cols = set()
+    try:
+        pg_cur.execute(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_name = %s AND data_type = 'boolean'",
+            (table_name,),
+        )
+        bool_cols = {row[0] for row in pg_cur.fetchall()}
+    except Exception:
+        pass
+
     count = 0
     for row in rows:
         # Map row dict to common columns
         row_dict = dict(zip(columns, row))
-        values = [row_dict[c] for c in common_cols]
+        values = []
+        for c in common_cols:
+            v = row_dict[c]
+            # Coerce SQLite integer booleans to Python bool for Postgres
+            if c in bool_cols and isinstance(v, int):
+                v = bool(v)
+            values.append(v)
         try:
-            pg_conn.execute(sql, values)
+            pg_cur.execute(sql, values)
             count += 1
         except Exception as e:
             if count == 0:
                 print(f"  WARNING: {table_name}: {e}")
-    pg_conn.commit()
+    (pg_conn or pg_cur.connection).commit()  # commit once per table
     return count
 
 
@@ -131,12 +149,13 @@ def main():
 
     pg_conn = psycopg2.connect(args.postgres)
     pg_conn.autocommit = False
+    pg_cur = pg_conn.cursor()
 
     total_rows = 0
     start = time.time()
 
     for table in TABLES:
-        count = migrate_table(sqlite_conn, pg_conn, table)
+        count = migrate_table(sqlite_conn, pg_cur, table, pg_conn)
         total_rows += count
         if count > 0:
             print(f"  {table}: {count:,} rows")

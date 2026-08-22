@@ -628,12 +628,20 @@ class PgStore:
 
 def init_pg_store(database_url: str = None) -> bool:
     """Connect the facade pool and apply the full schema. Returns True on
-    success, raises on failure (main.py falls back to SQLite)."""
+    success. Concurrent workers may race on composite types — catch and
+    treat as success (the first worker already created the schema)."""
     url = database_url or settings.DATABASE_URL
     if not url:
         return False
     db = _get_pg_db(url)
-    _pg_loop.run(db.init_schema)
+    try:
+        _pg_loop.run(db.init_schema)
+    except Exception as e:
+        if "duplicate key" in str(e) and "pg_type" in str(e):
+            # Concurrent workers racing on composite types — schema exists
+            pass
+        else:
+            raise
     return True
 
 

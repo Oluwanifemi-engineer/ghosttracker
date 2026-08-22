@@ -185,13 +185,29 @@ async def lifespan(app: FastAPI):
         try:
             from storage import init_pg_store
 
-            if init_pg_store():
-                pg_connected = True
+            # Schema creation races across workers — only the leader creates tables.
+            # Other workers connect to the pool (pool is shared) but skip DDL.
+            # Schema creation races across 4 workers — all try to CREATE TABLE,
+            # but PostgreSQL auto-creates composite types on first CREATE TABLE.
+            # The second worker hits a duplicate-type error. We catch it and
+            # treat it as success: the first worker already created the schema.
+            try:
+                if init_pg_store():
+                    pg_connected = True
+            except Exception as schema_err:
+                if "duplicate key" in str(schema_err) and "pg_type" in str(schema_err):
+                    # Concurrent workers racing on composite types — schema exists
+                    from storage import _get_pg_db
+
+                    _get_pg_db(settings.DATABASE_URL)
+                    pg_connected = True
+                    logger.info("PostgreSQL schema already exists (concurrent init)")
+                else:
+                    raise
+
+            if pg_connected:
                 logger.info(
-                    "PostgreSQL wired via the storage facade (ADR-0005 Phase 2a): "
-                    "routes read/write Postgres. Phase 2b (SQL portability pass, "
-                    "docs/postgres-migration.md §6.4) is the remaining work before "
-                    "production cutover."
+                    "PostgreSQL wired via the storage facade (ADR-0005 Phase 2a): " "routes read/write Postgres."
                 )
         except Exception as e:
             logger.warning(f"PostgreSQL setup failed, falling back to SQLite: {e}")

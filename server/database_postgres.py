@@ -69,9 +69,10 @@ class PostgresDatabase:
             self._connected = False
 
     async def init_schema(self):
-        """Create all tables if they don't exist."""
+        """Create all tables if not exist. Concurrent workers may race on
+        PostgreSQL composite types — catch and ignore duplicate-type errors."""
         async with self._pool.acquire() as conn:
-            async with conn.transaction():
+            try:
                 await conn.execute(
                     """
                     CREATE TABLE IF NOT EXISTS devices (
@@ -437,6 +438,12 @@ class PostgresDatabase:
                     CREATE INDEX IF NOT EXISTS idx_email_verify_user ON email_verify_tokens(user_id);
                 """
                 )
+            except Exception as e:
+                if "duplicate key" in str(e) and "pg_type" in str(e):
+                    # Concurrent workers racing on composite types — harmless
+                    pass
+                else:
+                    raise
 
     async def purge_old_data(self, retention_days: int = 90):
         """Purge data older than retention_days (in days)."""

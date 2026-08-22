@@ -1,0 +1,134 @@
+{
+  "rules": [
+    {
+      "uid": "magneetar-cache-hit-rate",
+      "title": "Cache Hit Rate Below 50%",
+      "condition": "C",
+      "data": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "model": {
+            "expr": "magneetar_cache_hit_rate < 0.5",
+            "legendFormat": "{{cache}}"
+          }
+        }
+      ],
+      "noDataState": "OK",
+      "execErrState": "Error",
+      "for": "5m",
+      "annotations": {
+        "summary": "Cache hit rate for {{ $labels.cache }} is below 50% ({{ $value | humanizePercentage }})",
+        "description": "Device or user cache hit rate has dropped below 50% for 5 minutes. This may indicate stale data, excessive invalidation, or cache thrashing."
+      },
+      "labels": {
+        "severity": "warning",
+        "team": "backend"
+      }
+    },
+    {
+      "uid": "magneetar-error-rate",
+      "title": "High Error Rate (>20 errors/hour)",
+      "condition": "C",
+      "data": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "model": {
+            "expr": "magneetar_errors_1h > 20",
+            "legendFormat": "Errors/hour"
+          }
+        }
+      ],
+      "noDataState": "OK",
+      "execErrState": "Error",
+      "for": "5m",
+      "annotations": {
+        "summary": "Error rate is {{ $value }} errors/hour (threshold: 20)",
+        "description": "Server error count exceeds 20 per hour. Check the error log panel for details."
+      },
+      "labels": {
+        "severity": "warning",
+        "team": "backend"
+      }
+    },
+    {
+      "uid": "magneetar-circuit-breaker-open",
+      "title": "Alert Circuit Breaker Open",
+      "condition": "C",
+      "data": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "model": {
+            "expr": "magneetar_alert_circuit_open == 1",
+            "legendFormat": "{{ channel }}"
+          }
+        }
+      ],
+      "noDataState": "OK",
+      "execErrState": "Error",
+      "for": "2m",
+      "annotations": {
+        "summary": "Alert circuit breaker open for {{ $labels.channel }}",
+        "description": "The {{ $labels.channel }} alert channel circuit breaker has tripped. Alerts via this channel are being suppressed. Check the external service (Twilio/FCM/SendGrid) status."
+      },
+      "labels": {
+        "severity": "critical",
+        "team": "backend"
+      }
+    },
+    {
+      "uid": "magneetar-low-devices",
+      "title": "No Active Devices (>1 hour)",
+      "condition": "C",
+      "data": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "model": {
+            "expr": "magneetar_devices_active == 0",
+            "legendFormat": "Active devices"
+          }
+        }
+      ],
+      "noDataState": "OK",
+      "execErrState": "Error",
+      "for": "1h",
+      "annotations": {
+        "summary": "No active devices for over 1 hour",
+        "description": "Zero devices have reported in the last hour. This may indicate a server connectivity issue, or all devices are offline."
+      },
+      "labels": {
+        "severity": "info",
+        "team": "ops"
+      }
+    },
+    {
+      "uid": "magneetar-high-latency",
+      "title": "Pending Commands Stacking Up",
+      "condition": "C",
+      "data": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "model": {
+            "expr": "magneetar_commands_pending > 50",
+            "legendFormat": "Pending commands"
+          }
+        }
+      ],
+      "noDataState": "OK",
+      "execErrState": "Error",
+      "for": "10m",
+      "annotations": {
+        "summary": "{{ $value }} pending commands (threshold: 50)",
+        "description": "More than 50 commands are stuck in PENDING state. Devices may not be polling, or the command queue is backing up."
+      },
+      "labels": {
+        "severity": "warning",
+        "team": "backend"
+      }
+    }
+  ]
+}

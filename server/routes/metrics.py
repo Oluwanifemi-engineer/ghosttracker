@@ -212,6 +212,23 @@ async def metrics(_: str = Depends(_require_operator)):
     except Exception:
         pass
 
+    # Redis cache statistics
+    try:
+        from cache_redis import get_redis_cache
+
+        rc = get_redis_cache()
+        if rc:
+            stats = rc.get_stats()
+            connected = 1 if stats["connected"] else 0
+            metrics_lines.append("# HELP magneetar_redis_connected Redis cache connection status")
+            metrics_lines.append("# TYPE magneetar_redis_connected gauge")
+            metrics_lines.append(f"magneetar_redis_connected {connected}")
+            metrics_lines.append("# HELP magneetar_cache_evictions_total Total cache evictions")
+            metrics_lines.append("# TYPE magneetar_cache_evictions_total counter")
+            metrics_lines.append(f"magneetar_cache_evictions_total {stats.get('evictions', 0)}")
+    except Exception:
+        pass
+
     return Response(
         content="\n".join(metrics_lines) + "\n",
         media_type="text/plain; version=0.0.4; charset=utf-8",
@@ -289,5 +306,16 @@ async def metrics_json(_: str = Depends(_require_operator)):
         }
     except Exception:
         metrics["websocket"] = {"active_connections": 0}
+
+    try:
+        from cache_redis import get_redis_cache
+
+        rc = get_redis_cache()
+        if rc:
+            metrics["redis_cache"] = rc.get_stats()
+        else:
+            metrics["redis_cache"] = {"connected": False}
+    except Exception:
+        metrics["redis_cache"] = {"connected": False}
 
     return metrics

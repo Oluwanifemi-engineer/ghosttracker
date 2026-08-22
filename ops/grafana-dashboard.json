@@ -189,6 +189,68 @@
             "legendFormat": "{{service}} open"
           }
         ]
+      },
+      {
+        "title": "Redis Cache Hit Rate",
+        "type": "gauge",
+        "gridPos": { "h": 4, "w": 6, "x": 0, "y": 22 },
+        "targets": [{
+          "expr": "magneetar_cache_hit_rate",
+          "legendFormat": "{{cache}}"
+        }],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percentunit",
+            "min": 0,
+            "max": 1,
+            "thresholds": {
+              "steps": [
+                { "value": 0, "color": "red" },
+                { "value": 0.5, "color": "yellow" },
+                { "value": 0.8, "color": "green" }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "title": "Redis Cache Size",
+        "type": "stat",
+        "gridPos": { "h": 4, "w": 6, "x": 6, "y": 22 },
+        "targets": [{
+          "expr": "magneetar_cache_size",
+          "legendFormat": "{{cache}}"
+        }]
+      },
+      {
+        "title": "Redis Cache Evictions",
+        "type": "timeseries",
+        "gridPos": { "h": 4, "w": 6, "x": 12, "y": 22 },
+        "targets": [{
+          "expr": "rate(magneetar_cache_evictions_total[5m])",
+          "legendFormat": "{{cache}} evictions/s"
+        }],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short"
+          }
+        }
+      },
+      {
+        "title": "Redis Connection Status",
+        "type": "stat",
+        "gridPos": { "h": 4, "w": 6, "x": 18, "y": 22 },
+        "targets": [{
+          "expr": "magneetar_redis_connected",
+          "legendFormat": "Connected"
+        }],
+        "fieldConfig": {
+          "defaults": {
+            "mappings": [
+              { "type": "value", "options": { "0": { "text": "Disconnected", "color": "red" }, "1": { "text": "Connected", "color": "green" } } }
+            ]
+          }
+        }
       }
     ],
     "time": {
