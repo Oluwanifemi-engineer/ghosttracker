@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { getAPI } from "@/lib/api";
 import {
   ShieldCheck,
   ShieldAlert,
@@ -19,18 +18,29 @@ import {
   Lock,
 } from "lucide-react";
 
+// Trust page is PUBLIC — no login required. Call the API server directly.
+const API_SERVER = "https://api.magneetar.me";
+
 interface TrustResult {
   imei: string;
   trust_score: number;
-  status: "clean" | "suspicious" | "stolen" | "unknown";
-  device_info: { brand: string; model: string; type: string } | null;
+  status: "clean" | "suspicious" | "stolen" | "unknown" | "registered";
+  device_info: { brand: string; model: string; type: string; id?: string; name?: string } | null;
   owner_verified: boolean;
   theft_reports: number;
   last_active: string | null;
   warnings: string[];
 }
 
-const STATUS_CONFIG = {
+const STATUS_CONFIG: Record<string, {
+  color: string;
+  bg: string;
+  border: string;
+  ring: string;
+  icon: typeof ShieldCheck;
+  label: string;
+  description: string;
+}> = {
   clean: {
     color: "text-emerald-600",
     bg: "bg-emerald-50",
@@ -39,6 +49,15 @@ const STATUS_CONFIG = {
     icon: ShieldCheck,
     label: "Clean",
     description: "No theft reports. Device is verified.",
+  },
+  registered: {
+    color: "text-blue-600",
+    bg: "bg-blue-50",
+    border: "border-blue-200",
+    ring: "ring-blue-500/20",
+    icon: ShieldCheck,
+    label: "Registered",
+    description: "Device is registered with Magneetar and verified.",
   },
   suspicious: {
     color: "text-amber-600",
@@ -87,8 +106,19 @@ export default function TrustPage() {
     setResult(null);
 
     try {
-      const api = getAPI();
-      const data = await api.checkIMEI(cleanImei);
+      // Call the API server directly — this is a PUBLIC endpoint
+      const res = await fetch(`${API_SERVER}/trust/check`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imei: cleanImei, check_type: "full" }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => null);
+        throw new Error(errorData?.detail || `HTTP ${res.status}`);
+      }
+
+      const data = await res.json();
       setResult(data as TrustResult);
     } catch (e: any) {
       setError(e?.message || "Failed to check IMEI. Please try again.");
@@ -97,7 +127,7 @@ export default function TrustPage() {
     }
   };
 
-  const config = result ? STATUS_CONFIG[result.status] : null;
+  const config = result ? STATUS_CONFIG[result.status] || STATUS_CONFIG.unknown : null;
   const Icon = config?.icon ?? ShieldQuestion;
 
   return (
@@ -227,7 +257,7 @@ export default function TrustPage() {
                     Brand
                   </p>
                   <p className="text-xs sm:text-sm font-medium text-gray-900">
-                    {result.device_info.brand}
+                    {result.device_info.brand || result.device_info.model || "—"}
                   </p>
                 </div>
                 <div className="bg-white/60 rounded-lg p-2 sm:p-3 text-center">
@@ -235,13 +265,13 @@ export default function TrustPage() {
                     Model
                   </p>
                   <p className="text-xs sm:text-sm font-medium text-gray-900">
-                    {result.device_info.model}
+                    {result.device_info.model || "—"}
                   </p>
                 </div>
                 <div className="bg-white/60 rounded-lg p-2 sm:p-3 text-center">
-                  <p className="text-[10px] sm:text-xs text-gray-500">Type</p>
-                  <p className="text-xs sm:text-sm font-medium text-gray-900">
-                    {result.device_info.type}
+                  <p className="text-[10px] sm:text-xs text-gray-500">Status</p>
+                  <p className="text-xs sm:text-sm font-medium text-gray-900 capitalize">
+                    {result.status}
                   </p>
                 </div>
               </div>
