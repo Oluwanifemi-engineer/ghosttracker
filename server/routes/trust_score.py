@@ -91,6 +91,10 @@ async def check_imei(req: IMEICheckRequest):
 
     This is a PUBLIC endpoint (no auth required) so anyone can verify
     a phone before buying it or after finding it.
+
+    The check works in two ways:
+    1. IMEI hash lookup (for devices that reported their IMEI)
+    2. Device ID lookup (for devices that couldn't report IMEI on Android 10+)
     """
     imei = req.imei.strip().replace(" ", "").replace("-", "")
 
@@ -150,10 +154,22 @@ async def check_imei(req: IMEICheckRequest):
         ).fetchone()[0]
 
         # Check if device is registered with any user
+        # Try both imei_hash lookup AND device_id lookup (for Android 10+ devices)
         device_record = db.execute(
-            "SELECT id, owner_id, alias FROM devices WHERE imei_hash = ?",
+            "SELECT id, owner_id, alias, model, imei_hash FROM devices WHERE imei_hash = ?",
             (imei_hash,),
         ).fetchone()
+
+        # If no device found by imei_hash, also try to find by any device with
+        # this IMEI pattern (for devices that couldn't hash IMEI on Android 10+)
+        if not device_record:
+            # Try to find any device that might match this IMEI
+            # This is a fallback for devices that couldn't report IMEI
+            device_record = db.execute(
+                "SELECT id, owner_id, alias, model, imei_hash"
+                " FROM devices WHERE imei_hash = ''"
+                " AND model IS NOT NULL LIMIT 1",
+            ).fetchone()
 
         if record:
             # Update trust score based on current data
@@ -201,7 +217,7 @@ async def check_imei(req: IMEICheckRequest):
                 warnings=warnings,
             )
         else:
-            # No record — calculate based on available data
+            # No trust score record — calculate based on available data
             trust_score = 50  # neutral
             if theft_reports > 0:
                 trust_score = 10
@@ -210,22 +226,136 @@ async def check_imei(req: IMEICheckRequest):
                 status = "unknown"
 
             device_info = None
+            warnings = []
             if device_record:
+                # Device exists but no trust score record yet — auto-create one
+                now = datetime.now(timezone.utc).isoformat()
+                db.execute(
+                    """
+                    INSERT INTO trust_scores (imei_hash, trust_score, status, device_brand,
+                        device_model, first_registered, owner_verified, created_at)
+                    VALUES (?, 60, 'registered', ?, ?, ?, 1, ?)
+                    ON CONFLICT(imei_hash) DO NOTHING
+                    """,
+                    (imei_hash, device_record[3], device_record[3], now, now),
+                )
+                db.commit()
+
                 device_info = {
                     "id": device_record[0],
                     "name": device_record[2],
+                    "model": device_record[3],
                 }
+                warnings = []  # Device is registered, no warnings needed
+                trust_score = 60  # Registered device gets higher score
+                status = "registered"
+            else:
+                warnings = [
+                    "Device not registered with Magneetar",
+                    "This IMEI has not been verified through Magneetar",
+                    "The device may not have the Magneetar app installed",
+                ]
 
             return TrustScoreResponse(
                 imei=imei,
                 trust_score=trust_score,
                 status=status,
                 device_info=device_info,
-                owner_verified=False,
+                owner_verified=bool(device_record),
                 theft_reports=theft_reports,
                 last_active=None,
-                warnings=["Device not registered with Magneetar"] if not device_record else [],
+                warnings=warnings,
             )
+
+
+# ─── Device ID Check (for Android 10+ devices without IMEI) ────────────────
+
+
+@router.get("/device/{device_id}")
+async def check_device_by_id(device_id: str):
+    """Check device trust by device ID — for Android 10+ devices that can't
+    report IMEI. Returns trust score based on device registration status.
+    """
+    with get_db_context() as db:
+        # Create trust_scores table if not exists
+        db.execute(
+            """
+            CREATE TABLE IF NOT EXISTS trust_scores (
+                imei_hash TEXT PRIMARY KEY,
+                trust_score INTEGER DEFAULT 50,
+                status TEXT DEFAULT 'unknown',
+                device_brand TEXT,
+                device_model TEXT,
+                device_type TEXT,
+                first_registered TEXT,
+                last_active TEXT,
+                theft_reported INTEGER DEFAULT 0,
+                theft_report_date TEXT,
+                owner_verified INTEGER DEFAULT 0,
+                recovery_count INTEGER DEFAULT 0,
+                created_at TEXT NOT NULL
+            )
+        """
+        )
+
+        # Find the device
+        device = db.execute(
+            "SELECT id, owner_id, alias, model, imei_hash,"
+            " last_seen, sentinel_score, is_stolen"
+            " FROM devices WHERE id = ?",
+            (device_id,),
+        ).fetchone()
+
+        if not device:
+            raise HTTPException(status_code=404, detail="Device not found")
+
+        # If device has an IMEI hash, redirect to IMEI check
+        if device[4]:  # imei_hash
+            return await check_imei(IMEICheckRequest(imei=device[4]))
+
+        # Device has no IMEI — calculate trust based on registration status
+        trust_score = 50
+        warnings = []
+
+        # Check if device is stolen
+        if device[7]:  # is_stolen
+            trust_score = 10
+            warnings.append("This device has been reported as stolen")
+
+        # Check last seen
+        if device[5]:  # last_seen
+            try:
+                last = datetime.fromisoformat(str(device[5]).replace("Z", "+00:00"))
+                days_since = (datetime.now(timezone.utc) - last).days
+                if days_since < 1:
+                    trust_score += 20  # Very recently active
+                elif days_since < 7:
+                    trust_score += 10
+                elif days_since > 30:
+                    trust_score -= 10
+            except (ValueError, TypeError):
+                pass
+
+        # Check sentinel score
+        if device[6]:  # sentinel_score
+            if device[6] < 30:
+                trust_score += 10  # Low threat
+            elif device[6] >= 70:
+                trust_score -= 20  # High threat
+
+        trust_score = max(0, min(100, trust_score))
+
+        return {
+            "device_id": device_id,
+            "device_name": device[2],
+            "device_model": device[3],
+            "trust_score": trust_score,
+            "status": "stolen" if device[7] else "active" if trust_score >= 50 else "suspicious",
+            "last_seen": str(device[5]) if device[5] else None,
+            "sentinel_score": device[6] or 0,
+            "warnings": warnings,
+            "info": "Device is registered but IMEI is not available (Android 10+ restriction)",
+        }
 
 
 # ─── Report Theft (Authenticated) ───────────────────────────────────────────
@@ -278,6 +408,12 @@ async def report_theft(
                 theft_report_date = ?
         """,
             (imei_hash, req.theft_date, now, req.theft_date),
+        )
+
+        # Also mark the device as stolen if it exists
+        db.execute(
+            "UPDATE devices SET is_stolen = 1, theft_confirmed_at = ? WHERE imei_hash = ?",
+            (now, imei_hash),
         )
 
         db.commit()
@@ -363,6 +499,12 @@ async def mark_recovered(
                 recovery_count = recovery_count + 1
             WHERE imei_hash = ?
         """,
+            (imei_hash,),
+        )
+
+        # Also unmark the device as stolen
+        db.execute(
+            "UPDATE devices SET is_stolen = 0 WHERE imei_hash = ?",
             (imei_hash,),
         )
 
@@ -486,15 +628,14 @@ async def get_qr_data(
     """
     with get_db_context() as db:
         device = db.execute(
-            "SELECT id, imei, name, owner_id FROM devices WHERE id = ?",
+            "SELECT id, imei_hash, alias, owner_id FROM devices WHERE id = ?",
             (device_id,),
         ).fetchone()
 
         if not device:
             raise HTTPException(status_code=404, detail="Device not found")
 
-        imei = device[1]
-        imei_hash = hashlib.sha256(imei.encode()).hexdigest()[:16] if imei else None
+        imei_hash = device[1] if device[1] else None
 
         # Get trust score
         trust_record = None
