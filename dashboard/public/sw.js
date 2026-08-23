@@ -3,9 +3,9 @@
  * Provides offline support and caching for the dashboard.
  */
 
-const CACHE_NAME = 'magneetar-v3';
-const STATIC_CACHE = 'magneetar-static-v3';
-const DYNAMIC_CACHE = 'magneetar-dynamic-v3';
+const CACHE_NAME = 'magneetar-v4';
+const STATIC_CACHE = 'magneetar-static-v4';
+const DYNAMIC_CACHE = 'magneetar-dynamic-v4';
 
 // Assets to cache on install. NOTE: /download is deliberately EXCLUDED —
 // its APK ticket logic must always come from the latest bundle, and a stale
@@ -34,7 +34,7 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Activate event - clean up old caches
+// Activate event - clean up ALL old caches (including v1, v2, v3)
 self.addEventListener('activate', (event) => {
   console.log('[SW] Activating service worker...');
   event.waitUntil(
@@ -73,7 +73,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Network-first strategy for HTML pages
+  // Network-first strategy for HTML pages (navigations)
   if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request)
@@ -93,7 +93,28 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Cache-first strategy for static assets
+  // Stale-while-revalidate for JS/CSS chunks (_next/static/*)
+  // Serves cached version instantly, then updates cache in background
+  if (url.pathname.startsWith('/_next/static/')) {
+    event.respondWith(
+      caches.open(DYNAMIC_CACHE).then((cache) => {
+        return cache.match(request).then((cachedResponse) => {
+          const fetchPromise = fetch(request).then((networkResponse) => {
+            if (networkResponse && networkResponse.status === 200) {
+              cache.put(request, networkResponse.clone());
+            }
+            return networkResponse;
+          }).catch(() => cachedResponse);
+
+          // Return cached version immediately if available, otherwise wait for network
+          return cachedResponse || fetchPromise;
+        });
+      })
+    );
+    return;
+  }
+
+  // Cache-first for other static assets (images, fonts, etc.)
   event.respondWith(
     caches.match(request)
       .then((cachedResponse) => {
