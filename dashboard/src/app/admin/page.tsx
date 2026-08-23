@@ -1,14 +1,16 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { useStore } from '@/store/useStore';
 import { getAPI } from '@/lib/api';
-import { Users, Smartphone, DollarSign, AlertTriangle, Activity, Shield, TrendingUp, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Users, Smartphone, DollarSign, AlertTriangle, Activity, Shield, TrendingUp, Search, ChevronLeft, ChevronRight, Lock } from 'lucide-react';
 import { NPSDashboard } from '@/components/admin/NPSDashboard';
 
 /**
- * Admin Dashboard — internal company dashboard for Magneetar workers.
- * Shows user analytics, revenue metrics, system health, and management tools.
+ * Admin Dashboard — INTERNAL company dashboard for Magneetar workers ONLY.
+ * Access is restricted to users with admin tier (API key / master key login).
+ * Regular users are redirected to the main dashboard.
  */
 
 interface AdminStats {
@@ -29,8 +31,32 @@ interface UserData {
   last_login: string | null;
 }
 
+function AccessDenied() {
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-8">
+      <div className="max-w-md text-center">
+        <div className="w-16 h-16 rounded-2xl bg-red-50 border border-red-200 flex items-center justify-center mx-auto mb-6">
+          <Lock size={28} className="text-red-500" />
+        </div>
+        <h1 className="text-xl font-display font-bold text-gray-900 mb-2">Access Restricted</h1>
+        <p className="text-sm text-gray-600 mb-6">
+          This dashboard is for Magneetar company workers only.
+          Regular users cannot access this area.
+        </p>
+        <a
+          href="/dashboard"
+          className="inline-flex items-center gap-2 px-6 py-3 bg-gray-900 text-white rounded-xl text-sm font-bold hover:bg-gray-800 transition-colors"
+        >
+          Return to Dashboard
+        </a>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminPage() {
-  const { isConnected } = useStore();
+  const { isConnected, userProfile } = useStore();
+  const router = useRouter();
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,20 +64,49 @@ export default function AdminPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [userPage, setUserPage] = useState(1);
   const [userTotal, setUserTotal] = useState(0);
+  const [accessChecked, setAccessChecked] = useState(false);
+
+  // Check admin access
+  useEffect(() => {
+    const checkAccess = async () => {
+      // If we already have the profile, check immediately
+      if (userProfile) {
+        if (userProfile.tier !== 'admin') {
+          setAccessChecked(true);
+          return;
+        }
+        setAccessChecked(true);
+        return;
+      }
+
+      // Otherwise, fetch the profile
+      try {
+        const api = getAPI();
+        const profile = await api.fetchMe();
+        useStore.getState().setUserProfile(profile);
+        if (profile.tier !== 'admin') {
+          setAccessChecked(true);
+          return;
+        }
+        setAccessChecked(true);
+      } catch (e) {
+        // Can't verify — treat as non-admin
+        setAccessChecked(true);
+      }
+    };
+
+    checkAccess();
+  }, [userProfile]);
 
   // Real-time WebSocket connection
   const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
     const { serverUrl, apiKey } = useStore.getState();
-    if (!serverUrl || !apiKey) return;
+    if (!serverUrl || !apiKey || userProfile?.tier !== 'admin') return;
 
-    // Get a fresh token for WebSocket auth
     const connectWs = async () => {
       try {
-        const api = getAPI();
-        const profile = await api.fetchMe();
-        // WebSocket URL
         const wsUrl = serverUrl.replace(/^http/, 'ws') + '/ws/admin';
         const ws = new WebSocket(`${wsUrl}?token=${apiKey}`);
 
@@ -69,7 +124,6 @@ export default function AdminPage() {
 
         ws.onerror = () => console.log('Admin WS error');
         ws.onclose = () => {
-          // Reconnect after 5 seconds
           setTimeout(connectWs, 5000);
         };
 
@@ -84,9 +138,10 @@ export default function AdminPage() {
     return () => {
       wsRef.current?.close();
     };
-  }, []);
+  }, [userProfile?.tier]);
 
   const fetchStats = useCallback(async () => {
+    if (userProfile?.tier !== 'admin') return;
     try {
       const api = getAPI();
       const data = await api.getAdminStats();
@@ -96,9 +151,10 @@ export default function AdminPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [userProfile?.tier]);
 
   const fetchUsers = useCallback(async () => {
+    if (userProfile?.tier !== 'admin') return;
     try {
       const api = getAPI();
       const data = await api.getAdminUsers(userPage, 50, searchQuery || undefined);
@@ -107,12 +163,35 @@ export default function AdminPage() {
     } catch (e) {
       console.log('Admin users not available');
     }
-  }, [userPage, searchQuery]);
+  }, [userPage, searchQuery, userProfile?.tier]);
 
   useEffect(() => {
-    fetchStats();
-    fetchUsers();
-  }, [fetchStats, fetchUsers]);
+    if (userProfile?.tier === 'admin') {
+      fetchStats();
+      fetchUsers();
+    }
+  }, [fetchStats, fetchUsers, userProfile?.tier]);
+
+  // Show loading while checking access
+  if (!accessChecked) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-8">
+        <div className="max-w-7xl mx-auto space-y-6">
+          <div className="h-8 bg-gray-200 rounded animate-pulse w-1/4" />
+          <div className="grid grid-cols-4 gap-4">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-24 bg-gray-100 rounded-xl animate-pulse" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Access denied — not an admin
+  if (userProfile?.tier !== 'admin') {
+    return <AccessDenied />;
+  }
 
   if (loading) {
     return (
@@ -136,11 +215,17 @@ export default function AdminPage() {
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div>
             <h1 className="text-lg font-display font-bold text-gray-900">Magneetar Admin</h1>
-            <p className="text-xs font-mono text-gray-700">Internal dashboard for company workers</p>
+            <p className="text-xs font-mono text-gray-700">Internal dashboard — company workers only</p>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-[10px] font-mono text-gray-700">LIVE</span>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-200">
+              <Shield size={12} className="text-amber-600" />
+              <span className="text-[10px] font-mono font-bold text-amber-700 uppercase">Admin Access</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-[10px] font-mono text-gray-700">LIVE</span>
+            </div>
           </div>
         </div>
       </div>
@@ -229,10 +314,9 @@ export default function AdminPage() {
                 </div>
                 <div className="text-center p-4 bg-gray-50 rounded-lg">
                   <div className="text-2xl font-display font-extrabold text-gray-900">
-                    {stats.revenue.monthly_estimate_usd}
+                    ${stats.revenue.monthly_estimate_usd}
                   </div>
                   <div className="text-[10px] font-mono text-gray-700 mt-1">USD Equivalent</div>
-                  <div className="text-[10px] font-mono text-gray-700">~${stats.revenue.monthly_estimate_usd}</div>
                 </div>
               </div>
             </div>

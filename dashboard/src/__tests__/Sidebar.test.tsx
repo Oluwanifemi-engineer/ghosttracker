@@ -32,10 +32,12 @@ Object.defineProperty(window, 'matchMedia', {
 const mockSelectDevice = jest.fn();
 const mockSetSidebarOpen = jest.fn();
 const mockSetDevices = jest.fn();
+const mockSetUserProfile = jest.fn();
 let mockDevices: any[] = [];
 let mockSidebarOpen = true;
 let mockSelectedDeviceId: string | null = null;
 let mockIsConnected = true;
+let mockUserProfile: any = null;
 
 jest.mock('@/store/useStore', () => ({
   useStore: jest.fn(() => ({
@@ -46,6 +48,8 @@ jest.mock('@/store/useStore', () => ({
     setSidebarOpen: mockSetSidebarOpen,
     isConnected: mockIsConnected,
     setDevices: mockSetDevices,
+    userProfile: mockUserProfile,
+    setUserProfile: mockSetUserProfile,
   })),
 }));
 
@@ -58,6 +62,15 @@ jest.mock('@/lib/api', () => ({
       total_locations: 100,
       total_media: 5,
       alerts_today: 0,
+    }),
+    fetchMe: jest.fn<any>().mockResolvedValue({
+      id: 'user-1',
+      email: 'test@example.com',
+      display_name: 'Test User',
+      tier: 'admin',
+      is_active: true,
+      device_count: 1,
+      max_devices: 999,
     }),
     deleteArchivedDevices: jest.fn<any>().mockResolvedValue({ deleted: [], count: 0 }),
     getDevices: jest.fn<any>().mockResolvedValue({ devices: [] as any[] }),
@@ -112,6 +125,15 @@ describe('Sidebar Component', () => {
     mockSidebarOpen = true;
     mockSelectedDeviceId = 'device-001';
     mockIsConnected = true;
+    mockUserProfile = {
+      id: 'user-1',
+      email: 'test@example.com',
+      display_name: 'Test User',
+      tier: 'admin',
+      is_active: true,
+      device_count: 1,
+      max_devices: 999,
+    };
   });
 
   it('renders the sidebar with devices', async () => {
@@ -122,12 +144,30 @@ describe('Sidebar Component', () => {
     expect(screen.getByText('My Phone')).toBeInTheDocument();
   });
 
-  it('shows navigation links', async () => {
+  it('shows navigation links for admin users', async () => {
     await act(async () => {
       render(<Sidebar />);
     });
     expect(screen.getByText('Dashboard')).toBeInTheDocument();
     expect(screen.getByText('Admin')).toBeInTheDocument();
+    expect(screen.getByText('Trust')).toBeInTheDocument();
+  });
+
+  it('hides Admin link for non-admin users', async () => {
+    mockUserProfile = {
+      id: 'user-2',
+      email: 'user@example.com',
+      display_name: 'Regular User',
+      tier: 'free',
+      is_active: true,
+      device_count: 1,
+      max_devices: 1,
+    };
+    await act(async () => {
+      render(<Sidebar />);
+    });
+    expect(screen.getByText('Dashboard')).toBeInTheDocument();
+    expect(screen.queryByText('Admin')).not.toBeInTheDocument();
     expect(screen.getByText('Trust')).toBeInTheDocument();
   });
 

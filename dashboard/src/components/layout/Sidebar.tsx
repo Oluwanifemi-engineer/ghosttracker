@@ -39,15 +39,11 @@ function useIsMobile() {
 }
 
 export function Sidebar() {
-  const { devices, selectedDeviceId, selectDevice, sidebarOpen, setSidebarOpen, isConnected, setDevices } = useStore();
+  const { devices, selectedDeviceId, selectDevice, sidebarOpen, setSidebarOpen, isConnected, setDevices, userProfile, setUserProfile } = useStore();
   const isMobile = useIsMobile();
-  // On mobile, sidebar defaults closed and renders as overlay
   const sidebarVisible = isMobile ? sidebarOpen : sidebarOpen;
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [showClaimModal, setShowClaimModal] = useState(false);
-  // Bulk purge of stale/archived devices — step-up password gated like
-  // single-device deletion, so a stolen session can't wipe the account's
-  // device history in one click.
   const [confirmPurge, setConfirmPurge] = useState(false);
   const [purgePassword, setPurgePassword] = useState('');
   const [purgeError, setPurgeError] = useState('');
@@ -55,11 +51,27 @@ export function Sidebar() {
 
   const onlineCount = devices.filter(d => isOnline(d.last_seen)).length;
   const offlineCount = devices.filter(d => !isOnline(d.last_seen)).length;
-  // Archived = soft-flagged by the server after ~30 days of silence. Kept at
-  // the bottom of the list and dimmed so long-dead rows stop dominating the
-  // sidebar, while remaining visible for review & purge (password-gated).
   const archivedDevices = devices.filter(d => !!d.archived_at);
   const activeDevices = devices.filter(d => !d.archived_at);
+
+  // Check if user is admin (for showing Admin link)
+  const isAdmin = userProfile?.tier === 'admin';
+
+  // Fetch user profile on mount to determine admin status
+  const fetchUserProfile = useCallback(async () => {
+    if (!isConnected || userProfile) return;
+    try {
+      const api = getAPI();
+      const profile = await api.fetchMe();
+      setUserProfile(profile);
+    } catch (e) {
+      console.log('Could not fetch user profile');
+    }
+  }, [isConnected, userProfile, setUserProfile]);
+
+  useEffect(() => {
+    fetchUserProfile();
+  }, [fetchUserProfile]);
 
   const fetchStats = useCallback(async () => {
     if (!isConnected) return;
@@ -72,10 +84,6 @@ export function Sidebar() {
     }
   }, [isConnected]);
 
-  // Bulk-delete all archived (stale) devices after verifying the step-up
-  // password. The server re-checks it (account password for users, master API
-  // key for admins), so this UI prompt is the confirmation layer, not the
-  // security boundary.
   const confirmPurgeArchived = async () => {
     if (purging || archivedDevices.length === 0) return;
     if (!purgePassword.trim()) {
@@ -86,7 +94,6 @@ export function Sidebar() {
     setPurgeError('');
     try {
       const res = await getAPI().deleteArchivedDevices(purgePassword);
-      // Refresh the device list so the sidebar drops the removed rows.
       const { devices: freshDevices } = await getAPI().getDevices();
       setDevices(freshDevices);
       if (res.count === 0) {
@@ -163,17 +170,20 @@ export function Sidebar() {
                 <Smartphone size={10} />
                 <span>Dashboard</span>
               </Link>
-              <Link
-                href="/admin"
-                className={cn(
-                  "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[9px] font-mono font-bold uppercase tracking-wider transition-all",
-                  "hover:bg-amber-50 text-amber-600 hover:text-amber-700 border border-amber-200 hover:border-amber-300"
-                )}
-                title="Admin Panel (company internal)"
-              >
-                <Shield size={10} />
-                <span>Admin</span>
-              </Link>
+              {/* Admin link — only visible for admin users */}
+              {isAdmin && (
+                <Link
+                  href="/admin"
+                  className={cn(
+                    "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[9px] font-mono font-bold uppercase tracking-wider transition-all",
+                    "hover:bg-amber-50 text-amber-600 hover:text-amber-700 border border-amber-200 hover:border-amber-300"
+                  )}
+                  title="Admin Panel (company internal)"
+                >
+                  <Shield size={10} />
+                  <span>Admin</span>
+                </Link>
+              )}
               <Link
                 href="/trust"
                 target="_blank"
@@ -238,7 +248,6 @@ export function Sidebar() {
                 )}
                 <span className="text-gray-700">{activeDevices.length}</span>
               </span>
-              {/* Link a device — claim an ownerless phone via its pairing code */}
               <button
                 onClick={() => setShowClaimModal(true)}
                 title="Link a device (pairing code)"
@@ -249,7 +258,6 @@ export function Sidebar() {
                 Link
               </button>
             </div>
-            {/* Purge stale/archived devices — password-gated (step-up) */}
             {archivedDevices.length > 0 && (
               <button
                 onClick={() => { setConfirmPurge(true); setPurgeError(''); }}
@@ -313,8 +321,6 @@ export function Sidebar() {
                           Archived
                         </span>
                       )}
-                      {/* Shared-access chip (Milestone 2 P1) — shown only when
-                          this account does not own the device */}
                       {!device.is_owner && device.access_role && (
                         <span
                           className={cn(
@@ -351,7 +357,6 @@ export function Sidebar() {
                       </span>
                     </div>
 
-                    {/* Mini Sentinel score — always visible, not just in the tab */}
                     <div className="flex items-center gap-1.5 mt-1.5">
                       <span className={cn(
                         'text-[8px] font-mono font-bold uppercase px-1.5 py-0.5 rounded',

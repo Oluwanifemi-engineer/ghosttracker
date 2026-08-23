@@ -2,7 +2,7 @@
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { Device, Location, Command, MediaItem, TabId, Alert } from '@/types';
+import { Device, Location, Command, MediaItem, TabId, Alert, UserProfile } from '@/types';
 import { isOnline, getSignalLevel, calculateDistance, calculateBearing, bearingToLabel, pickLiveLocation } from '@/lib/utils';
 
 // ─── Store Types ─────────────────────────────────────────────────────────────
@@ -13,8 +13,10 @@ interface MagneetarState {
   apiKey: string;
   isAuthenticated: boolean;
   isConnected: boolean;
+  userProfile: UserProfile | null;
   setCredentials: (serverUrl: string, apiKey: string) => void;
   setConnected: (connected: boolean) => void;
+  setUserProfile: (profile: UserProfile | null) => void;
   logout: () => void;
 
   // Devices
@@ -31,10 +33,6 @@ interface MagneetarState {
   // Commands
   commands: Command[];
   setCommands: (commands: Command[]) => void;
-  // Live command-ack merge (from the WebSocket feed): updates a single command
-  // row's status/executed_at/failure_reason in place instead of waiting for
-  // the next 10s history poll — the status flips to executed/failed the moment
-  // the device acks.
   applyCommandAck: (commandId: number, status: string, failureReason?: string | null) => void;
 
   // Media
@@ -78,8 +76,6 @@ interface MagneetarState {
 }
 
 // ─── Persist Configuration ──────────────────────────────────────────────────
-// Only persist auth credentials, UI preferences, and map state.
-// Ephemeral data (devices, locations, alerts) is reloaded on each session.
 
 const PERSIST_KEYS: (keyof MagneetarState)[] = [
   'serverUrl',
@@ -103,6 +99,7 @@ export const useStore = create<MagneetarState>()(
       apiKey: '',
       isAuthenticated: false,
       isConnected: false,
+      userProfile: null,
 
       setCredentials: (serverUrl, apiKey) =>
         set({ serverUrl, apiKey, isAuthenticated: true }),
@@ -110,12 +107,16 @@ export const useStore = create<MagneetarState>()(
       setConnected: (connected) =>
         set({ isConnected: connected }),
 
+      setUserProfile: (profile) =>
+        set({ userProfile: profile }),
+
       logout: () =>
         set({
           isAuthenticated: false,
           isConnected: false,
           serverUrl: '',
           apiKey: '',
+          userProfile: null,
           devices: [],
           selectedDeviceId: null,
           locations: [],
@@ -147,10 +148,6 @@ export const useStore = create<MagneetarState>()(
       latestLocation: null,
 
       setLocations: (locations) => {
-        // Live pin = most recent GOOD fix (quality gate, see pickLiveLocation):
-        // the newest row is often a degraded cell-tower fix that can be km off
-        // the true GPS position — pinning it made the map teleport after GPS
-        // dropped (G1 finding 2026-08-15: 3.5km jump to a cell centroid).
         const latest = pickLiveLocation(locations);
         set({ locations, latestLocation: latest });
         if (latest && get().followDevice) {
@@ -169,10 +166,6 @@ export const useStore = create<MagneetarState>()(
               ? {
                   ...c,
                   status: status as Command['status'],
-                  // NOTE: the broadcast carries no executed_at, so we leave the
-                  // server's value (or null) untouched — the next history poll
-                  // fills the real server timestamp. Never fabricate a
-                  // client-clock time that could disagree with the server.
                   failure_reason: failureReason ?? c.failure_reason,
                 }
               : c
@@ -217,8 +210,7 @@ export const useStore = create<MagneetarState>()(
           unreadAlertCount: Math.max(0, state.unreadAlertCount - 1),
         })),
 
-      clearAlerts: () =>
-        set({ alerts: [], unreadAlertCount: 0 }),
+      clearAlerts: () => set({ alerts: [], unreadAlertCount: 0 }),
 
       // Computed helpers
       getSelectedDevice: () => {
