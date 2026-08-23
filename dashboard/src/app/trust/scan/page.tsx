@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   ShieldCheck,
   ShieldAlert,
@@ -66,13 +67,19 @@ const STATUS_CONFIG = {
   },
 };
 
-export default function TrustScanPage({ params }: { params: Promise<{ deviceId: string }> }) {
-  const { deviceId } = use(params);
+function TrustScanContent() {
+  const searchParams = useSearchParams();
+  const deviceId = searchParams.get("device") || "";
   const [data, setData] = useState<TrustData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (!deviceId) {
+      setLoading(false);
+      return;
+    }
+
     const fetchTrustData = async () => {
       try {
         const res = await fetch(`/api/trust/qr-data/${deviceId}`);
@@ -87,6 +94,29 @@ export default function TrustScanPage({ params }: { params: Promise<{ deviceId: 
     };
     fetchTrustData();
   }, [deviceId]);
+
+  if (!deviceId) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
+        <div className="max-w-md w-full text-center">
+          <div className="w-20 h-20 rounded-full bg-amber-500/20 flex items-center justify-center mx-auto mb-6">
+            <AlertTriangle size={40} className="text-amber-400" />
+          </div>
+          <h1 className="text-2xl font-bold text-white mb-2">No Device Specified</h1>
+          <p className="text-white/60 mb-6">
+            Scan a QR code on a Magneetar-protected device to verify its status.
+          </p>
+          <a
+            href="/trust"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-white/10 text-white rounded-xl hover:bg-white/20 transition-colors"
+          >
+            Check IMEI Instead
+            <ExternalLink size={16} />
+          </a>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -109,7 +139,7 @@ export default function TrustScanPage({ params }: { params: Promise<{ deviceId: 
           <h1 className="text-2xl font-bold text-white mb-2">Verification Failed</h1>
           <p className="text-white/60 mb-6">{error}</p>
           <a
-            href="/"
+            href="/trust"
             className="inline-flex items-center gap-2 px-6 py-3 bg-white/10 text-white rounded-xl hover:bg-white/20 transition-colors"
           >
             Go to Magneetar
@@ -228,7 +258,7 @@ export default function TrustScanPage({ params }: { params: Promise<{ deviceId: 
           {/* Stolen Warning */}
           {data.status === "stolen" && (
             <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
-              <h3 className="font-semibold text-red-900 mb-2">⚠️ This Device is Stolen</h3>
+              <h3 className="font-semibold text-red-900 mb-2">This Device is Stolen</h3>
               <p className="text-sm text-red-700 mb-3">
                 This device has been reported stolen to Magneetar. If you purchased this device,
                 you may be in possession of stolen property. We recommend:
@@ -254,15 +284,20 @@ export default function TrustScanPage({ params }: { params: Promise<{ deviceId: 
           <p className="text-white/40 text-sm">
             Powered by Magneetar · Device Trust Verification
           </p>
-          <a
-            href="/"
-            className="inline-flex items-center gap-2 text-white/60 hover:text-white text-sm mt-2"
-          >
-            Learn more about Magneetar
-            <ExternalLink size={14} />
-          </a>
         </div>
       </div>
     </div>
+  );
+}
+
+export default function TrustScanPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
+        <Loader2 size={48} className="text-white animate-spin" />
+      </div>
+    }>
+      <TrustScanContent />
+    </Suspense>
   );
 }
