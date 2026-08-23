@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useStore } from '@/store/useStore';
+import { Header } from '@/components/layout/Header';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { useDevices } from '@/hooks/useDevices';
 import { useWebSocket } from '@/hooks/useWebSocket';
@@ -38,27 +39,11 @@ function PremiumLoadingScreen() {
 
   return (
     <div className="h-screen flex items-center justify-center bg-[#0a0a0f] relative overflow-hidden">
-      {/* Subtle grid background */}
       <div className="absolute inset-0 mag-grid-bg opacity-[0.03]" />
-
-      {/* Center content */}
       <div className="text-center relative z-10 flex flex-col items-center justify-center">
-        {/* Logo — large and centered */}
-        <img
-          src="/magneetar-mhalf.svg"
-          alt="Magneetar"
-          className="w-28 h-28 rounded-3xl mb-6"
-        />
-
-        {/* Brand name */}
-        <div className="text-2xl font-display font-bold tracking-[0.3em] mb-2 text-white/90">
-          MAGNEETAR
-        </div>
-        <div className="text-[10px] font-mono text-white/30 tracking-[0.25em] mb-10">
-          COMMAND CENTER
-        </div>
-
-        {/* Progress bar */}
+        <img src="/magneetar-mhalf.svg" alt="Magneetar" className="w-28 h-28 rounded-3xl mb-6" />
+        <div className="text-2xl font-display font-bold tracking-[0.3em] mb-2 text-white/90">MAGNEETAR</div>
+        <div className="text-[10px] font-mono text-white/30 tracking-[0.25em] mb-10">COMMAND CENTER</div>
         <div className="w-64 mx-auto mb-4">
           <div className="h-1 bg-white/[0.06] rounded-full overflow-hidden">
             <div
@@ -67,16 +52,12 @@ function PremiumLoadingScreen() {
             />
           </div>
         </div>
-
-        {/* Status text */}
         <div className="flex items-center justify-center gap-2 text-white/40 text-[10px] font-mono font-bold">
           <svg className="animate-spin" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
           </svg>
           {status}
         </div>
-
-        {/* Security badge */}
         <div className="mt-8 inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/[0.06] bg-white/[0.03]">
           <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
           <span className="text-[9px] font-mono font-bold text-white/30 tracking-wider">SECURE CHANNEL</span>
@@ -95,7 +76,6 @@ export default function DashboardLayout({
   const [mounted, setMounted] = useState(false);
   const { showOnboarding, completeOnboarding, skipOnboarding } = useOnboarding();
 
-  // Mount the data layer ONCE for the whole dashboard
   useDevices();
   useWebSocket();
 
@@ -103,7 +83,6 @@ export default function DashboardLayout({
     setMounted(true);
   }, []);
 
-  // Check auth on mount
   useEffect(() => {
     const serverUrl = sessionStorage.getItem('mt_server_url');
     const apiKey = sessionStorage.getItem('mt_api_key');
@@ -113,7 +92,6 @@ export default function DashboardLayout({
       return;
     }
 
-    // Restore credentials from sessionStorage
     if (!isAuthenticated) {
       useStore.getState().setCredentials(serverUrl, apiKey);
       useStore.getState().setConnected(true);
@@ -128,28 +106,18 @@ export default function DashboardLayout({
     <ThemeProvider>
     <ToastProvider>
     <div className="h-screen flex flex-col overflow-hidden bg-[#0a0a0f]">
-      {/* Subtle background grid — military feel */}
       <div className="fixed inset-0 mag-grid-bg opacity-[0.02] pointer-events-none z-0" />
-
+      <Header />
       <div className="flex flex-1 overflow-hidden relative z-10">
         <Sidebar />
         <main className="flex-1 overflow-hidden">
           {children}
         </main>
       </div>
-
-      {/* Keyboard shortcuts help */}
       <KeyboardShortcutsHelp />
-
-      {/* PWA install prompt for mobile */}
       <PwaInstallPrompt />
-
-      {/* Onboarding flow for new users */}
       {showOnboarding && (
-        <OnboardingFlow
-          onComplete={completeOnboarding}
-          onSkip={skipOnboarding}
-        />
+        <OnboardingFlow onComplete={completeOnboarding} onSkip={skipOnboarding} />
       )}
     </div>
     </ToastProvider>
