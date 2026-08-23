@@ -690,6 +690,19 @@ export function MapView() {
     initIcons().then(() => setIconsReady(true));
   }, []);
 
+  // After map mounts, invalidate its size to force tile loading.
+  // Leaflet sometimes renders blank tiles when the container dimensions
+  // aren't fully resolved at mount time (e.g. flex layout, animation).
+  useEffect(() => {
+    if (mapReady && mapRef.current) {
+      // Small delay to let the flex layout settle
+      const timer = setTimeout(() => {
+        mapRef.current?.invalidateSize();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [mapReady]);
+
   // Place the operator's pinned position (from pin mode) and persist it.
   const handlePin = useCallback((pos: [number, number]) => {
     setUserPinned(pos);
@@ -732,7 +745,7 @@ export function MapView() {
   );
 
   return (
-    <div className="relative flex-1 h-full bg-white">
+    <div className="relative flex-1 h-full bg-gray-900">
       {/* Map */}
       {mapReady && (
         <MapContainer
