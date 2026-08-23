@@ -106,6 +106,12 @@ class Settings:
     # e.g. '{"1": "location", "2": "time", "3": "score"}'. Unset/invalid JSON
     # degrades to a sensible default mapping.
     TWILIO_WHATSAPP_TEMPLATE_VARIABLES: dict = _env_json_dict("MT_TWILIO_WHATSAPP_TEMPLATE_VARIABLES")
+    # ── WhatsApp Bot (Meta Cloud API) ────────────────────────────────────
+    # WhatsApp Business API for interactive bot (IMEI checks, theft reports)
+    WHATSAPP_ACCESS_TOKEN: str = os.environ.get("MT_WHATSAPP_ACCESS_TOKEN", "")
+    WHATSAPP_PHONE_NUMBER_ID: str = os.environ.get("MT_WHATSAPP_PHONE_NUMBER_ID", "")
+    WHATSAPP_VERIFY_TOKEN: str = os.environ.get("MT_WHATSAPP_VERIFY_TOKEN", "magneetar-whatsapp-verify")
+    WHATSAPP_APP_SECRET: str = os.environ.get("MT_WHATSAPP_APP_SECRET", "")
     # Firebase service-account JSON for FCM v1 push alerts. Accepts a path to
     # a downloaded service-account key file OR the JSON contents as a string.
     # NOTE: the legacy FCM "server key" (API key) is deprecated since June

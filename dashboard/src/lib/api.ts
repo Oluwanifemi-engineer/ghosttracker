@@ -929,6 +929,58 @@ class MagneetarAPI {
   }> {
     return this.request('/geofence/anomalies');
   }
+
+  // ── Referral Program ──────────────────────────────────────────────────
+
+  async getReferralCode(): Promise<{
+    code: string;
+    share_url: string;
+    share_message: string;
+    total_referrals: number;
+    successful_referrals: number;
+    pending_referrals: number;
+    reward_balance: number;
+    tier: string;
+  }> {
+    return this.request('/referrals/code');
+  }
+
+  async getReferralStats(): Promise<{
+    total_referrals: number;
+    successful_referrals: number;
+    pending_referrals: number;
+    reward_balance: number;
+    tier: string;
+    next_tier_referrals: number;
+    next_tier_name: string;
+    recent_referrals: Array<{
+      id: string;
+      email: string;
+      name: string;
+      status: string;
+    }>;
+  }> {
+    return this.request('/referrals/stats');
+  }
+
+  async applyReferralCode(code: string): Promise<{ ok: boolean; referrer_reward: string }> {
+    return this.request('/referrals/apply', 'POST', { code });
+  }
+
+  async trackReferralShare(platform: string): Promise<{ ok: boolean }> {
+    return this.request(`/referrals/share?platform=${platform}`, 'POST');
+  }
+
+  async getReferralLeaderboard(): Promise<{
+    leaders: Array<{
+      rank: number;
+      name: string;
+      referral_count: number;
+      tier: string;
+    }>;
+  }> {
+    return this.request('/referrals/leaderboard');
+  }
 }
 
 // ─── Singleton ───────────────────────────────────────────────────────────────

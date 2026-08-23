@@ -525,6 +525,31 @@ from routes.smart_geofence import router as smart_geofence_router  # noqa: E402
 
 app.include_router(smart_geofence_router)
 
+# Referral Program routes
+from routes.referrals import router as referrals_router  # noqa: E402
+
+app.include_router(referrals_router)
+
+# WhatsApp Bot routes
+from routes.whatsapp import router as whatsapp_router  # noqa: E402
+
+app.include_router(whatsapp_router)
+
+# USSD Menu routes
+from routes.ussd import router as ussd_router  # noqa: E402
+
+app.include_router(ussd_router)
+
+# USSD Payment routes
+from routes.ussd_payments import router as ussd_payments_router  # noqa: E402
+
+app.include_router(ussd_payments_router)
+
+# WhatsApp Catalog routes
+from routes.whatsapp_catalog import router as whatsapp_catalog_router  # noqa: E402
+
+app.include_router(whatsapp_catalog_router)
+
 # User data routes (GDPR export, deletion, retention)
 from routes.user_data import router as user_data_router  # noqa: E402
 
