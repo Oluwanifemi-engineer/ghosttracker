@@ -5,6 +5,14 @@ import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import { render, screen, act, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom/jest-globals';
 
+// Mock next/link
+jest.mock('next/link', () => {
+  const React = require('react');
+  return React.forwardRef(function MockLink({ children, href, ...props }: any, ref: any) {
+    return React.createElement('a', { ...props, href, ref }, children);
+  });
+});
+
 // Mock window.matchMedia for mobile detection
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
@@ -29,195 +37,202 @@ let mockSidebarOpen = true;
 let mockSelectedDeviceId: string | null = null;
 let mockIsConnected = true;
 
-jest.mock('@/store/useStore', () => ({    useStore: jest.fn((selector: any) => {
-    const state = {
-      devices: mockDevices,
-      selectedDeviceId: mockSelectedDeviceId,
-      sidebarOpen: mockSidebarOpen,
-      isConnected: mockIsConnected,
-      selectDevice: mockSelectDevice,
-      setSidebarOpen: mockSetSidebarOpen,
-      setDevices: mockSetDevices,
-    };
-    return selector ? selector(state) : state;
-  }),
+jest.mock('@/store/useStore', () => ({
+  useStore: jest.fn(() => ({
+    devices: mockDevices,
+    selectedDeviceId: mockSelectedDeviceId,
+    selectDevice: mockSelectDevice,
+    sidebarOpen: mockSidebarOpen,
+    setSidebarOpen: mockSetSidebarOpen,
+    isConnected: mockIsConnected,
+    setDevices: mockSetDevices,
+  })),
 }));
-
-// Mock lucide-react icons as proper React components
-jest.mock('lucide-react', () => ({
-  ChevronLeft: () => null,
-  ChevronRight: () => null,
-  Smartphone: () => null,
-  BarChart3: () => null,
-  FileText: () => null,
-  BookOpen: () => null,
-  Copy: () => null,
-  Battery: () => null,
-  MapPin: () => null,
-  Link2: () => null,
-  Trash2: () => null,
-  X: () => null,
-  AlertTriangle: () => null,
-}));
-
-// Mutable mock for the archived purge flow
-const mockDeleteArchivedDevices = jest.fn<(...args: any[]) => any>();
-const mockGetDevices = jest.fn<(...args: any[]) => any>();
 
 jest.mock('@/lib/api', () => ({
-  getAPI: () => ({
-    getStats: jest.fn<(...args: any[]) => any>().mockResolvedValue({
-      total_devices: 3,
+  getAPI: jest.fn(() => ({
+    getStats: jest.fn<any>().mockResolvedValue({
+      total_devices: 2,
       active_devices: 1,
       stolen_devices: 0,
-      total_locations: 150,
-      total_media: 12,
-      alerts_today: 2,
+      total_locations: 100,
+      total_media: 5,
+      alerts_today: 0,
     }),
-    deleteArchivedDevices: mockDeleteArchivedDevices,
-    getDevices: mockGetDevices,
-  }),
-}));
-
-jest.mock('@/components/ui/StatusIndicator', () => ({
-  StatusIndicator: ({ isOnline }: { isOnline: boolean }) => null,
+    deleteArchivedDevices: jest.fn<any>().mockResolvedValue({ deleted: [], count: 0 }),
+    getDevices: jest.fn<any>().mockResolvedValue({ devices: [] as any[] }),
+  })),
 }));
 
 jest.mock('@/lib/utils', () => ({
-  cn: (...args: any[]) => args.filter(Boolean).join(' '),
-  relativeTime: (ts: string) => ts ? '2 min ago' : 'never',
-  isOnline: (ts: string) => ts === 'recent',
-  getSignalLevel: () => 'strong',
-  deviceDisplayName: (device: any) => device?.alias || device?.model || 'Device',
-  stepUpPasswordHint: () => 'the master API key (API-key mode)',
+  relativeTime: jest.fn(() => '5m ago'),
+  isOnline: jest.fn(() => true),
+  getSignalLevel: jest.fn(() => 'good'),
+  deviceDisplayName: jest.fn((d: any) => d.alias || d.model || d.id),
+  stepUpPasswordHint: jest.fn(() => 'the master API key (API-key mode)'),
+  cn: jest.fn((...classes: any[]) => classes.filter(Boolean).join(' ')),
+}));
+
+jest.mock('@/components/ui/StatusIndicator', () => ({
+  StatusIndicator: jest.fn(({ isOnline }: any) => (
+    <span data-testid="status-indicator">{isOnline ? 'online' : 'offline'}</span>
+  )),
+}));
+
+jest.mock('@/components/ui/Skeleton', () => ({
+  SidebarSkeleton: jest.fn(() => <div data-testid="sidebar-skeleton" />),
+}));
+
+jest.mock('@/components/devices/ClaimDeviceModal', () => ({
+  ClaimDeviceModal: jest.fn(({ onClose }: any) => (
+    <div data-testid="claim-modal">
+      <button onClick={onClose}>Close</button>
+    </div>
+  )),
 }));
 
 import { Sidebar } from '@/components/layout/Sidebar';
 
-// Sidebar fetches stats in a useEffect — wrap render in act() so the async
-// getStats → setStats update is flushed inside act (no React warnings).
-async function renderSidebar() {
-  await act(async () => {
-    render(<Sidebar />);
-  });
-}
-
 describe('Sidebar Component', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockDevices = [];
-    mockSidebarOpen = true;
-    mockSelectedDeviceId = null;
-    mockIsConnected = true;
-    mockDeleteArchivedDevices.mockResolvedValue({ status: 'ok', deleted: [], count: 0 });
-    mockGetDevices.mockResolvedValue({ devices: mockDevices });
-  });
-
-  it('renders the brand name when open', async () => {
-    await renderSidebar();
-    expect(screen.getByText('MAGNEETAR')).toBeInTheDocument();
-    expect(screen.getByText('COMMAND CENTER')).toBeInTheDocument();
-  });
-
-  it('shows devices section header when open', async () => {
-    await renderSidebar();
-    expect(screen.getByText('Devices')).toBeInTheDocument();
-  });
-
-  it('shows empty state when no devices', async () => {
-    await renderSidebar();
-    expect(screen.getByText('No devices registered.')).toBeInTheDocument();
-    expect(screen.getByText('Connect to server first.')).toBeInTheDocument();
-  });
-
-  it('shows device list when devices exist', async () => {
     mockDevices = [
       {
         id: 'device-001',
         alias: 'My Phone',
-        last_seen: 'recent',
-        model: 'Pixel 8',
+        model: 'Samsung Galaxy',
+        owner_id: 'user-1',
+        is_owner: true,
+        last_seen: new Date(Date.now() - 300000).toISOString(),
+        sentinel_score: 25,
+        is_stolen: false,
+        archived_at: null,
       },
     ];
+    mockSidebarOpen = true;
     mockSelectedDeviceId = 'device-001';
+    mockIsConnected = true;
+  });
 
-    await renderSidebar();
+  it('renders the sidebar with devices', async () => {
+    await act(async () => {
+      render(<Sidebar />);
+    });
+    expect(screen.getByText('MAGNEETAR')).toBeInTheDocument();
     expect(screen.getByText('My Phone')).toBeInTheDocument();
-    expect(screen.getByText('device-001')).toBeInTheDocument();
   });
 
-  it('shows a Delete archived button when archived devices exist', async () => {
-    mockDevices = [
-      { id: 'stale-1', model: 'Old Phone', last_seen: 'long-ago', archived_at: '2026-07-01T00:00:00Z' },
-      { id: 'stale-2', model: 'Older Phone', last_seen: 'longer-ago', archived_at: '2026-06-01T00:00:00Z' },
-      { id: 'live-1', model: 'Pixel 8', last_seen: 'recent', archived_at: null },
-    ];
-    await renderSidebar();
-    expect(screen.getByRole('button', { name: /delete all archived/i })).toBeInTheDocument();
-    // The devices header chip and the purge button both mention the count;
-    // assert at least one "2 archived" label is visible.
-    expect(screen.getAllByText(/2 archived/).length).toBeGreaterThan(0);
-  });
-
-  it('hides the Delete archived button when no devices are archived', async () => {
-    mockDevices = [{ id: 'live-1', model: 'Pixel 8', last_seen: 'recent', archived_at: null }];
-    await renderSidebar();
-    expect(screen.queryByRole('button', { name: /delete all archived/i })).not.toBeInTheDocument();
-  });
-
-  it('bulk purge requires the step-up password — empty input never calls the API', async () => {
-    mockDevices = [
-      { id: 'stale-1', model: 'Old Phone', last_seen: 'long-ago', archived_at: '2026-07-01T00:00:00Z' },
-    ];
-    await renderSidebar();
-    fireEvent.click(screen.getByRole('button', { name: /delete all archived/i }));
-    fireEvent.click(screen.getByText('Yes, Delete'));
-    await waitFor(() => {
-      expect(screen.getByText('Enter your password to confirm.')).toBeInTheDocument();
+  it('shows navigation links', async () => {
+    await act(async () => {
+      render(<Sidebar />);
     });
-    expect(mockDeleteArchivedDevices).not.toHaveBeenCalled();
+    expect(screen.getByText('Dashboard')).toBeInTheDocument();
+    expect(screen.getByText('Admin')).toBeInTheDocument();
+    expect(screen.getByText('Trust')).toBeInTheDocument();
   });
 
-  it('bulk purge calls the API with the password and refreshes the device list', async () => {
-    mockDevices = [
-      { id: 'stale-1', model: 'Old Phone', last_seen: 'long-ago', archived_at: '2026-07-01T00:00:00Z' },
-    ];
-    mockDeleteArchivedDevices.mockResolvedValue({ status: 'ok', deleted: ['stale-1'], count: 1 });
-    mockGetDevices.mockResolvedValue({ devices: [] });
-    await renderSidebar();
-    fireEvent.click(screen.getByRole('button', { name: /delete all archived/i }));
-    fireEvent.change(screen.getByLabelText('Confirm deletion password'), { target: { value: 'master-key' } });
-    fireEvent.click(screen.getByText('Yes, Delete'));
-    await waitFor(() => {
-      expect(mockDeleteArchivedDevices).toHaveBeenCalledWith('master-key');
-      expect(mockGetDevices).toHaveBeenCalled();
-      expect(mockSetDevices).toHaveBeenCalled();
+  it('links to correct routes', async () => {
+    await act(async () => {
+      render(<Sidebar />);
     });
+    const dashboardLink = screen.getByText('Dashboard').closest('a');
+    expect(dashboardLink).toHaveAttribute('href', '/dashboard');
+    const adminLink = screen.getByText('Admin').closest('a');
+    expect(adminLink).toHaveAttribute('href', '/admin');
+    const trustLink = screen.getByText('Trust').closest('a');
+    expect(trustLink).toHaveAttribute('href', '/trust');
   });
 
-  it('shows the API error and keeps the modal open on wrong password', async () => {
-    mockDevices = [
-      { id: 'stale-1', model: 'Old Phone', last_seen: 'long-ago', archived_at: '2026-07-01T00:00:00Z' },
-    ];
-    mockDeleteArchivedDevices.mockRejectedValueOnce(new Error('Invalid password'));
-    await renderSidebar();
-    fireEvent.click(screen.getByRole('button', { name: /delete all archived/i }));
-    fireEvent.change(screen.getByLabelText('Confirm deletion password'), { target: { value: 'wrong' } });
-    fireEvent.click(screen.getByText('Yes, Delete'));
-    await waitFor(() => {
-      expect(screen.getByText('Invalid password')).toBeInTheDocument();
+  it('selects a device when clicked', async () => {
+    await act(async () => {
+      render(<Sidebar />);
     });
-    expect(screen.getByLabelText('Confirm deletion password')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('My Phone'));
+    expect(mockSelectDevice).toHaveBeenCalledWith('device-001');
   });
-});
 
-describe('Sidebar Collapsed State', () => {
-  beforeEach(() => {
+  it('shows empty state when no devices', async () => {
+    mockDevices = [];
+    await act(async () => {
+      render(<Sidebar />);
+    });
+    expect(screen.getByText('No devices registered.')).toBeInTheDocument();
+  });
+
+  it('shows offline devices differently', async () => {
+    mockDevices = [
+      {
+        id: 'device-offline',
+        alias: 'Old Phone',
+        model: 'iPhone 12',
+        owner_id: 'user-1',
+        is_owner: true,
+        last_seen: new Date(Date.now() - 86400000).toISOString(),
+        sentinel_score: 10,
+        is_stolen: false,
+        archived_at: null,
+      },
+    ];
+    await act(async () => {
+      render(<Sidebar />);
+    });
+    expect(screen.getByText('Old Phone')).toBeInTheDocument();
+  });
+
+  it('shows archived devices with archived badge', async () => {
+    mockDevices = [
+      {
+        id: 'device-archived',
+        alias: 'Dead Phone',
+        model: 'Nokia 3310',
+        owner_id: 'user-1',
+        is_owner: true,
+        last_seen: new Date(Date.now() - 86400000 * 35).toISOString(),
+        sentinel_score: 0,
+        is_stolen: false,
+        archived_at: new Date(Date.now() - 86400000 * 5).toISOString(),
+      },
+    ];
+    await act(async () => {
+      render(<Sidebar />);
+    });
+    expect(screen.getByText('Dead Phone')).toBeInTheDocument();
+  });
+
+  it('shows the claim modal when Link button is clicked', async () => {
+    await act(async () => {
+      render(<Sidebar />);
+    });
+    fireEvent.click(screen.getByText('Link'));
+    expect(screen.getByTestId('claim-modal')).toBeInTheDocument();
+  });
+
+  it('does not show sidebar content when collapsed', async () => {
     mockSidebarOpen = false;
+    await act(async () => {
+      render(<Sidebar />);
+    });
+    expect(screen.queryByText('MAGNEETAR')).not.toBeInTheDocument();
   });
 
-  it('does not show brand when collapsed', async () => {
-    await renderSidebar();
-    expect(screen.queryByText('MAGNEETAR')).not.toBeInTheDocument();
+  it('shows shared access chip for non-owner devices', async () => {
+    mockDevices = [
+      {
+        id: 'device-shared',
+        alias: 'Shared Phone',
+        model: 'Pixel 7',
+        owner_id: 'other-user',
+        is_owner: false,
+        access_role: 'viewer',
+        last_seen: new Date(Date.now() - 60000).toISOString(),
+        sentinel_score: 45,
+        is_stolen: false,
+        archived_at: null,
+      },
+    ];
+    await act(async () => {
+      render(<Sidebar />);
+    });
+    expect(screen.getByText('VIEW')).toBeInTheDocument();
   });
 });

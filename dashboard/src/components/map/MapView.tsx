@@ -134,8 +134,12 @@ const Popup = dynamic(() => import('react-leaflet').then(m => m.Popup), { ssr: f
 const Circle = dynamic(() => import('react-leaflet').then(m => m.Circle), { ssr: false });
 
 import { useMap } from 'react-leaflet';
+import { MapPin } from 'lucide-react';
 
-// ─── Refined Map Icons (white on dark themed) ──────────────────────────────────────
+// ─── Professional SVG Map Icons ──────────────────────────────────────────────
+// These use inline SVG for crisp rendering at any zoom level.
+// The device marker is a premium pin with gradient and pulse animation.
+// The user marker is a clean crosshair with a subtle glow.
 
 let deviceIcon: any = null;
 let userIcon: any = null;
@@ -146,42 +150,75 @@ async function initIcons() {
   if (deviceIcon) return;
   const L = await import('leaflet');
 
-  // Device marker — white dot with ring
+  // ── Device marker: premium pin with gradient + pulse ring ──
   deviceIcon = L.divIcon({
     className: '',
     html: `
-      <div style="position:relative;width:40px;height:40px;">
-        <div style="position:absolute;top:4px;left:4px;width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.2);animation:none;"></div>
-        <div style="position:absolute;top:8px;left:8px;width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#FFFFFF,#C4176E);border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.2);"></div>
-        <div style="position:absolute;top:14px;left:14px;width:12px;height:12px;border-radius:50%;background:#fff;opacity:0.9;"></div>
+      <div style="position:relative;width:44px;height:52px;filter:drop-shadow(0 4px 12px rgba(0,0,0,0.35));">
+        <!-- Pulse ring -->
+        <div style="position:absolute;top:6px;left:6px;width:32px;height:32px;border-radius:50%;border:2px solid rgba(255,255,255,0.3);animation:none;"></div>
+        <!-- Pin body -->
+        <svg width="44" height="52" viewBox="0 0 44 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Shadow -->
+          <ellipse cx="22" cy="49" rx="10" ry="3" fill="rgba(0,0,0,0.2)"/>
+          <!-- Pin shape -->
+          <path d="M22 2C12.06 2 4 10.06 4 20c0 12 18 28 18 28s18-16 18-28C40 10.06 31.94 2 22 2z" fill="url(#deviceGrad)"/>
+          <!-- Inner circle -->
+          <circle cx="22" cy="20" r="10" fill="white" fill-opacity="0.95"/>
+          <!-- Pulse dot -->
+          <circle cx="22" cy="20" r="4" fill="#10B981">
+            <animate attributeName="r" values="3;5;3" dur="2s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" values="1;0.6;1" dur="2s" repeatCount="indefinite"/>
+          </circle>
+          <defs>
+            <linearGradient id="deviceGrad" x1="4" y1="2" x2="40" y2="48" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#111827"/>
+              <stop offset="100%" stop-color="#374151"/>
+            </linearGradient>
+          </defs>
+        </svg>
       </div>
     `,
-    iconSize: [40, 40],
-    iconAnchor: [20, 20],
+    iconSize: [44, 52],
+    iconAnchor: [22, 48],
   });
 
-  // User location — cyan dot
+  // ── User/operator marker: clean crosshair with glow ──
   userIcon = L.divIcon({
     className: '',
     html: `
-      <div style="position:relative;width:24px;height:24px;">
-        <div style="position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:rgba(6,182,212,0.3);animation:none;"></div>
-        <div style="position:absolute;top:4px;left:4px;width:16px;height:16px;border-radius:50%;background:#06B6D4;border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.2);"></div>
+      <div style="position:relative;width:28px;height:28px;filter:drop-shadow(0 2px 6px rgba(6,182,212,0.4));">
+        <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Outer ring -->
+          <circle cx="14" cy="14" r="13" stroke="#06B6D4" stroke-width="2" fill="rgba(6,182,212,0.1)"/>
+          <!-- Inner dot -->
+          <circle cx="14" cy="14" r="5" fill="#06B6D4"/>
+          <!-- Crosshairs -->
+          <line x1="14" y1="0" x2="14" y2="6" stroke="#06B6D4" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="14" y1="22" x2="14" y2="28" stroke="#06B6D4" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="0" y1="14" x2="6" y2="14" stroke="#06B6D4" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="22" y1="14" x2="28" y2="14" stroke="#06B6D4" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
       </div>
     `,
-    iconSize: [24, 24],
-    iconAnchor: [12, 12],
+    iconSize: [28, 28],
+    iconAnchor: [14, 14],
   });
 
-  // Waypoint flag
+  // ── Waypoint flag: premium marker ──
   waypointIcon = L.divIcon({
     className: '',
     html: `
-      <div style="position:relative;width:28px;height:36px;">
-        <svg width="28" height="36" viewBox="0 0 28 36" fill="none">
-          <path d="M14 0C6.268 0 0 6.268 0 14c0 10.5 14 22 14 22s14-11.5 14-22C28 6.268 21.732 0 14 0z" fill="url(#pinGrad)" stroke="#fff" stroke-width="1.5"/>
-          <circle cx="14" cy="14" r="6" fill="#fff" opacity="0.9"/>
-          <defs><linearGradient id="pinGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#FFFFFF"/><stop offset="100%" stop-color="#C4176E"/></linearGradient></defs>
+      <div style="position:relative;width:28px;height:36px;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.3));">
+        <svg width="28" height="36" viewBox="0 0 28 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M14 0C6.268 0 0 6.268 0 14c0 10.5 14 22 14 22s14-11.5 14-22C28 6.268 21.732 0 14 0z" fill="url(#waypointGrad)"/>
+          <circle cx="14" cy="14" r="5" fill="white" fill-opacity="0.9"/>
+          <defs>
+            <linearGradient id="waypointGrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#F59E0B"/>
+              <stop offset="100%" stop-color="#D97706"/>
+            </linearGradient>
+          </defs>
         </svg>
       </div>
     `,
@@ -189,10 +226,10 @@ async function initIcons() {
     iconAnchor: [14, 36],
   });
 
-  // Trail dot
+  // ── Trail dot: clean white dot with subtle border ──
   trailDotIcon = L.divIcon({
     className: '',
-    html: `<div style="width:8px;height:8px;border-radius:50%;background:#FFFFFF;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.2);"></div>`,
+    html: `<div style="width:8px;height:8px;border-radius:50%;background:#FFFFFF;border:2px solid rgba(255,255,255,0.6);box-shadow:0 1px 3px rgba(0,0,0,0.2);"></div>`,
     iconSize: [8, 8],
     iconAnchor: [4, 4],
   });
@@ -958,334 +995,220 @@ export function MapView() {
               }}
             >
               <Popup>
-                <div className="font-sans text-sm min-w-[160px]">
-                  <div className="font-bold text-gray-200 mb-1 flex items-center gap-1.5">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="12" cy="12" r="10"/></svg>
-                    {userPinned ? 'PINNED POSITION' : 'YOUR LOCATION'}
+                <div className="font-sans text-sm">
+                  <div className="font-bold text-white mb-1">YOUR POSITION</div>
+                  <div className="text-white text-xs">
+                    {effectiveUserPos[0].toFixed(5)}, {effectiveUserPos[1].toFixed(5)}
+                    {userPinned && <span className="text-emerald-400 ml-1">(pinned)</span>}
                   </div>
-                  <div className="text-gray-200 font-mono text-[11px] font-bold">
-                    {effectiveUserPos[0].toFixed(6)}, {effectiveUserPos[1].toFixed(6)}
-                  </div>
-                  {userPinned ? (
-                    <div className="text-gray-200 font-mono text-[10px] font-bold mt-1">
-                      Set by you on the map — used for distance & route
-                    </div>
-                  ) : (
-                    userAccuracy != null && (
-                      <div className="text-gray-200 font-mono text-[10px] font-bold mt-1">
-                        Accuracy ±{formatAccuracyMeters(userAccuracy)}
-                        {userAccuracy > USER_ACCURACY_DISTANCE_MAX && (
-                          <span className="text-amber-600"> — IP-based, not GPS</span>
-                        )}
-                      </div>
-                    )
-                  )}
                 </div>
               </Popup>
             </Marker>
           )}
 
-          {/* Route Waypoints */}
-          {iconsReady && waypointIcon && navigationRoute?.steps.map((step, idx) => {
-            const coord = navigationRoute.geometry[Math.min(
-              Math.floor((idx / navigationRoute.steps.length) * navigationRoute.geometry.length),
-              navigationRoute.geometry.length - 1
-            )];
-            if (!coord || idx === 0) return null;
-            return (
-              <Marker key={idx} position={coord} icon={waypointIcon}>
-                <Popup>
-                  <div className="font-sans text-xs max-w-[200px]">
-                    <div className="font-bold text-white mb-1">Step {idx}</div>
-                    <div className="text-gray-200 font-bold">{step.instruction}</div>
-                    <div className="text-gray-200 mt-1 font-mono text-[10px] font-bold">
-                      {formatDistance(step.distance)} • {formatDuration(Math.round(step.duration))}
-                    </div>
-                  </div>
-                </Popup>
-              </Marker>
-            );
-          })}
         </MapContainer>
       )}
 
-      {/* ── Trail Replay Timeline (video-scrubber style) ────────────────── */}
-      {showPathTracker && latestLocation && trailLocations.length > 2 && (
-        <div className="absolute top-14 left-1/2 -translate-x-1/2 z-[1000] w-[min(520px,calc(100%-2rem))] bg-gray-900/90 border border-gray-700 px-4 py-3 animate-fade-in">
-          <div className="flex items-center justify-between gap-3 mb-2">
-            <span className="text-[9px] font-mono font-bold uppercase tracking-widest text-gray-200">
-              Trail Replay
+      {/* Map controls — bottom left (mobile: raised above bottom nav) */}
+      <div className="absolute bottom-4 left-3 z-[1000] flex flex-col gap-2 md:bottom-4 bottom-20">
+        {/* PIN POSITION */}
+        <button
+          onClick={() => setPinning(!pinning)}
+          className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-[10px] font-mono font-bold uppercase tracking-wider transition-all ${
+            pinning
+              ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30'
+              : 'bg-white text-gray-700 border border-gray-200 shadow-sm hover:bg-gray-50'
+          }`}
+          title="Pin your position on the map"
+        >
+          <MapPin size={12} />
+          {pinning ? 'Tap the map...' : 'Pin Position'}
+        </button>
+
+        {/* FOLLOW TOGGLE */}
+        <button
+          onClick={() => setFollowDevice(!followDevice)}
+          className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-[10px] font-mono font-bold uppercase tracking-wider transition-all ${
+            followDevice
+              ? 'bg-white text-gray-700 border border-gray-200 shadow-sm'
+              : 'bg-white text-gray-700 border border-gray-200 shadow-sm hover:bg-gray-50'
+          }`}
+          title={followDevice ? 'Stop following device' : 'Follow device'}
+        >
+          {followDevice ? (
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          ) : (
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10"/>
+              <circle cx="12" cy="12" r="1"/>
+            </svg>
+          )}
+          {followDevice ? 'Following' : 'Follow'}
+        </button>
+
+        {/* TRAIL TOGGLE */}
+        <button
+          onClick={() => setShowTrail(!showTrail)}
+          className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-[10px] font-mono font-bold uppercase tracking-wider transition-all ${
+            showTrail
+              ? 'bg-white text-gray-700 border border-gray-200 shadow-sm'
+              : 'bg-white text-gray-700 border border-gray-200 shadow-sm hover:bg-gray-50'
+          }`}
+          title={showTrail ? 'Hide trail' : 'Show trail'}
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M3 17l4-4 4 4 4-4 4 4"/>
+          </svg>
+          Trail
+        </button>
+
+        {/* SATELLITE / MAP */}
+        <button
+          onClick={() => setShowSatellite(!showSatellite)}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-[10px] font-mono font-bold uppercase tracking-wider transition-all bg-white text-gray-700 border border-gray-200 shadow-sm hover:bg-gray-50"
+          title={showSatellite ? 'Switch to map view' : 'Switch to satellite view'}
+        >
+          {showSatellite ? (
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+              <circle cx="12" cy="10" r="3"/>
+            </svg>
+          ) : (
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M2 12h20"/>
+              <path d="M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20z"/>
+            </svg>
+          )}
+          {showSatellite ? 'Map' : 'Sat'}
+        </button>
+      </div>
+
+      {/* Map controls — bottom right (mobile: raised above bottom nav) */}
+      <div className="absolute bottom-4 right-3 z-[1000] flex flex-col gap-2 md:bottom-4 bottom-20">
+        {/* HEATMAP TOGGLE */}
+        <button
+          onClick={() => setShowHeatmap(!showHeatmap)}
+          className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-[10px] font-mono font-bold uppercase tracking-wider transition-all ${
+            showHeatmap
+              ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/30'
+              : 'bg-white text-gray-700 border border-gray-200 shadow-sm hover:bg-gray-50'
+          }`}
+          title={showHeatmap ? 'Hide theft heatmap' : 'Show theft heatmap'}
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M12 2C8 6 4 10 4 14a8 8 0 0 0 16 0c0-4-4-8-8-12z"/>
+          </svg>
+          Heatmap
+        </button>
+
+        {/* Navigate button */}
+        {effectiveUserPos && latestLocation && userNavigationUsable && (
+          <button
+            onClick={handleNavigate}
+            disabled={navigating}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-[10px] font-mono font-bold uppercase tracking-wider transition-all bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 disabled:opacity-50"
+            title="Get navigation route to device"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M3 11l19-9-9 19-2-8-8-2z"/>
+            </svg>
+            {navigating ? 'Loading...' : 'Navigate'}
+          </button>
+        )}
+
+        {/* Replay Trail */}
+        {locations.length > 2 && (
+          <button
+            onClick={() => {
+              if (showPathTracker) {
+                setShowPathTracker(false);
+                setPathPlaying(false);
+                // Restore follow if it was on before
+                if (followBeforeReplay.current !== null) {
+                  setFollowDevice(followBeforeReplay.current);
+                  followBeforeReplay.current = null;
+                }
+              } else {
+                followBeforeReplay.current = followDevice;
+                setFollowDevice(false);
+                setShowPathTracker(true);
+                setPathIndex(0);
+              }
+            }}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-[10px] font-mono font-bold uppercase tracking-wider transition-all ${
+              showPathTracker
+                ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30'
+                : 'bg-white text-gray-700 border border-gray-200 shadow-sm hover:bg-gray-50'
+            }`}
+            title={showPathTracker ? 'Close replay' : 'Replay location trail'}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polygon points="5 3 19 12 5 21 5 3"/>
+            </svg>
+            {showPathTracker ? 'Close' : 'Replay'}
+          </button>
+        )}
+      </div>
+
+      {/* Path replay timeline — bottom center */}
+      {showPathTracker && trailLocations.length > 1 && (
+        <div className="absolute bottom-16 left-1/2 -translate-x-1/2 z-[1000] md:bottom-4 bottom-28">
+          <div className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-xl shadow-xl px-4 py-3 flex items-center gap-3">
+            <button
+              onClick={() => setPathPlaying(!pathPlaying)}
+              className="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-900 text-white hover:bg-gray-800 transition-colors"
+            >
+              {pathPlaying ? (
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                  <rect x="6" y="4" width="4" height="16"/>
+                  <rect x="14" y="4" width="4" height="16"/>
+                </svg>
+              ) : (
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                  <polygon points="5 3 19 12 5 21 5 3"/>
+                </svg>
+              )}
+            </button>
+
+            <input
+              type="range"
+              min={0}
+              max={trailLocations.length - 1}
+              value={pathIndex}
+              onChange={(e) => {
+                setPathIndex(Number(e.target.value));
+                setPathPlaying(false);
+              }}
+              className="w-32 sm:w-48 h-1.5 bg-gray-200 rounded-full appearance-none cursor-pointer"
+            />
+
+            <span className="font-mono text-[10px] text-gray-700 font-bold tabular-nums min-w-[40px]">
+              {pathIndex + 1}/{trailLocations.length}
             </span>
-            <div className="flex items-center gap-1.5">
-              <button
-                onClick={() => setPathPlaying(!pathPlaying)}
-                className={cn(
-                  'flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[9px] font-mono font-bold border transition-all',
-                  pathPlaying
-                    ? 'border-gray-900 text-white '
-                    : 'border-gray-600 text-gray-200 hover:bg-white/10 hover:border-white/40'
-                )}
-              >
-                {pathPlaying ? (
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
-                ) : (
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                )}
-                {pathPlaying ? 'PAUSE' : 'PLAY'}
-              </button>
-              <select
-                value={pathSpeed}
-                onChange={(e) => setPathSpeed(Number(e.target.value))}
-                className="bg-gray-50/40 border border-gray-600/40 rounded-lg px-1.5 py-1 text-[9px] font-mono font-bold text-gray-200 focus:outline-none focus:border-gray-900"
-              >
-                <option value={1}>1x</option>
-                <option value={2}>2x</option>
-                <option value={4}>4x</option>
-                <option value={8}>8x</option>
-              </select>
-            </div>
-          </div>
 
-          <input
-            type="range"
-            min={0}
-            max={trailLocations.length - 1}
-            step={1}
-            value={pathIndex}
-            onChange={(e) => { setPathPlaying(false); setPathIndex(Number(e.target.value)); }}
-            aria-label="Trail replay timeline"
-            className="w-full accent-[#FFFFFF] cursor-pointer"
-          />
+            <select
+              value={pathSpeed}
+              onChange={(e) => setPathSpeed(Number(e.target.value))}
+              className="font-mono text-[10px] font-bold text-gray-700 bg-gray-100 border border-gray-200 rounded-md px-2 py-1"
+            >
+              <option value={1}>1×</option>
+              <option value={2}>2×</option>
+              <option value={4}>4×</option>
+              <option value={8}>8×</option>
+            </select>
 
-          <div className="flex items-center justify-between mt-1 text-[8px] font-mono text-gray-200 font-bold">
-            <span>{formatTimestamp(locationTimestamp(trailLocations[0]))}</span>
-            <span className="text-white">{formatTimestamp(locationTimestamp(trailLocations[pathIndex]))}</span>
-            <span>{formatTimestamp(locationTimestamp(trailLocations[trailLocations.length - 1]))}</span>
+            {pathIndex > 0 && trailLocations[pathIndex] && (
+              <span className="font-mono text-[10px] text-gray-500 font-bold hidden sm:inline">
+                {formatTimestamp(locationTimestamp(trailLocations[pathIndex]))}
+              </span>
+            )}
           </div>
         </div>
       )}
-
-      {/* ── Bottom Controls ──────────────────────────────────────────────── */}
-      <div className="absolute bottom-4 left-4 right-4 z-[1000] flex items-end gap-3 pointer-events-none">
-        {/* Left: Position / Follow / Trail controls */}
-        <div className="pointer-events-auto space-y-2">
-          {latestLocation && (
-            <div className="bg-gray-900/90 border border-gray-700 px-3 py-2 flex items-center gap-2">
-              <button
-                onClick={() => { setPinning(!pinning); }}
-                className={cn(
-                  'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-mono font-bold uppercase tracking-wider border transition-all',
-                  pinning
-                    ? 'border-amber-400/60 text-amber-600  '
-                    : userPinned
-                      ? 'border-gray-900 text-gray-200 '
-                      : 'border-gray-600 text-gray-200 hover:bg-white/10 hover:border-white/40'
-                )}
-                title={
-                  pinning
-                    ? 'Tap the map to place your position'
-                    : userPinned
-                      ? 'Your position is pinned on the map'
-                      : 'Tap the map to mark where you are (use this when the browser has no GPS)'
-                }
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                {pinning ? 'TAP THE MAP…' : userPinned ? 'PINNED' : 'PIN POSITION'}
-              </button>
-              {userPinned && (
-                <button
-                  onClick={() => { setUserPinned(null); savePinnedPosition(null); }}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-mono font-bold uppercase tracking-wider border border-gray-600 text-gray-200 hover:bg-red-500/20 hover:text-red-400 hover:border-red-400 transition-all"
-                  title="Clear the pin and fall back to the browser position"
-                >
-                  USE GPS
-                </button>
-              )}
-              <button
-                onClick={() => {
-                  // Turning follow ON also flies straight to the device — the
-                  // operator shouldn't have to wait for the next poll tick to
-                  // be pulled back.
-                  const next = !followDevice;
-                  setFollowDevice(next);
-                  if (next && latestLocation && mapRef.current) {
-                    mapRef.current.flyTo(
-                      [latestLocation.lat, latestLocation.lng],
-                      Math.max(mapRef.current.getZoom(), 16),
-                      { animate: true, duration: 0.8 }
-                    );
-                  }
-                }}
-                className={cn(
-                  'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-mono font-bold uppercase tracking-wider border transition-all',
-                  followDevice
-                    ? 'border-gray-900 text-white  shadow-sm'
-                    : 'border-gray-600 text-gray-200 hover:bg-white/10 hover:border-white/40'
-                )}
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v4m0 12v4M2 12h4m12 0h4"/></svg>
-                {followDevice ? 'FOLLOWING' : 'FOLLOW'}
-              </button>
-              <button
-                onClick={() => setShowTrail(!showTrail)}
-                className={cn(
-                  'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-mono font-bold uppercase tracking-wider border transition-all',
-                  showTrail
-                    ? 'border-gray-900 text-gray-200 '
-                    : 'border-gray-600 text-gray-200 hover:bg-white/10 hover:border-white/40'
-                )}
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 3v18h18"/><path d="M7 16l4-8 4 4 4-8"/></svg>
-                TRAIL
-              </button>
-              {/* Satellite view toggle */}
-              <button
-                onClick={() => setShowSatellite(!showSatellite)}
-                className={cn(
-                  'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-mono font-bold uppercase tracking-wider border transition-all',
-                  showSatellite
-                    ? 'border-gray-900 text-white '
-                    : 'border-gray-600 text-gray-200 hover:bg-white/10 hover:border-white/40'
-                )}
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15 15 0 0 1 4 10 15 15 0 0 1-4 10 15 15 0 0 1-4-10 15 15 0 0 1 4-10z"/></svg>
-                {showSatellite ? 'MAP' : 'SAT'}
-              </button>
-            </div>
-          )}
-
-          {/* Path Animation toggle */}
-          {latestLocation && locations.length > 2 && (
-            <div className="bg-gray-900/90 border border-gray-700 px-3 py-2">
-              <button
-                onClick={() => {
-                  if (showPathTracker) {
-                    // Closing replay — restore the follow state it paused.
-                    if (followBeforeReplay.current != null) {
-                      setFollowDevice(followBeforeReplay.current);
-                      followBeforeReplay.current = null;
-                    }
-                  } else {
-                    // Opening replay — pause follow so the live re-centre
-                    // can't fight the scrubber; remember it to restore.
-                    followBeforeReplay.current = followDevice;
-                    setFollowDevice(false);
-                  }
-                  setShowPathTracker(!showPathTracker);
-                  setPathPlaying(false);
-                  setPathIndex(0);
-                }}
-                className={cn(
-                  'flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-mono font-bold uppercase tracking-wider border transition-all w-full',
-                  showPathTracker
-                    ? 'border-gray-900 text-white  shadow-sm'
-                    : 'border-gray-600 text-gray-200 hover:bg-white/10 hover:border-white/40'
-                )}
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                REPLAY TRAIL
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Right: Navigation Panel */}
-        <div className="ml-auto pointer-events-auto max-w-sm">
-          {latestLocation && (
-            <div className="bg-gray-900/90 border border-gray-700 px-4 py-3 space-y-2 animate-fade-in">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-mono text-gray-200 uppercase tracking-wider font-bold">
-                  {navigationRoute ? 'ROUTE ACTIVE' : 'NAVIGATE'}
-                </span>
-                {navigationRoute && (
-                  <button
-                    onClick={() => { setNavigationRoute(null); }}
-                    className="text-gray-200 hover:text-red-600 transition-colors"
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                  </button>
-                )}
-              </div>
-
-              {navigationRoute ? (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2  border border-gray-400/20 rounded-lg px-3 py-1.5">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-200"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                      <span className="font-mono text-xs text-gray-200 font-bold">{formatDistance(navigationRoute.distance)}</span>
-                    </div>
-                    <div className="flex items-center gap-2  border border-gray-900/20 rounded-lg px-3 py-1.5">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                      <span className="font-mono text-xs text-white font-bold">{formatDuration(navigationRoute.duration)}</span>
-                    </div>
-                  </div>
-
-                  {navigationRoute.steps.length > 0 && (
-                    <div className="max-h-28 overflow-y-auto space-y-1 bg-white/40 rounded-lg p-2">
-                      {navigationRoute.steps.slice(0, 5).map((step, idx) => (
-                        <div key={idx} className="flex items-start gap-2 py-1">
-                          <span className="text-sm shrink-0 mt-0.5">{step.maneuverIcon}</span>
-                          <div className="min-w-0">
-                            <div className="text-[10px] font-mono text-white leading-tight font-bold">{step.instruction}</div>
-                            <div className="text-[9px] font-mono text-gray-200 font-bold">{formatDistance(step.distance)}</div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="flex gap-2 pt-1">
-                    <button
-                      onClick={() => openGoogleMapsDirections(latestLocation.lat, latestLocation.lng)}
-                      className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-gray-600 text-[10px] font-mono font-bold text-gray-200 hover:text-white hover:bg-white/10 hover:border-white/40 transition-all"
-                    >
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
-                      Google Maps
-                    </button>
-                    <button
-                      onClick={() => window.open(`https://waze.com/ul?ll=${latestLocation.lat},${latestLocation.lng}&navigate=yes`, '_blank')}
-                      className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-gray-600 text-[10px] font-mono font-bold text-gray-200 hover:text-white hover:bg-white/10 hover:border-white/40 transition-all"
-                    >
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-                      Waze
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleNavigate}
-                    disabled={!userPosition || !userNavigationUsable || navigating}
-                    title={!userNavigationUsable ? 'No usable position to route from — tap PIN POSITION and tap the map where you are.' : undefined}
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-mono font-bold border border-gray-900 text-white  hover: transition-all disabled:opacity-40"
-                  >
-                    {navigating ? (
-                      <span className="flex items-center gap-2">
-                        <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
-                        CALCULATING...
-                      </span>
-                    ) : (
-                      <>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-                        {userNavigationUsable ? 'GET ROUTE' : 'PIN YOUR POSITION'}
-                      </>
-                    )}
-                  </button>
-                  <button
-                    onClick={() => openGoogleMapsDirections(latestLocation.lat, latestLocation.lng)}
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg text-[10px] font-mono font-bold border border-gray-600 text-gray-200 hover:text-white hover:bg-white/10 hover:border-white/40 transition-all"
-                  >
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/></svg>
-                    EXT MAPS
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-
-
     </div>
   );
 }

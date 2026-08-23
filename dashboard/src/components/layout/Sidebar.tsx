@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import Link from 'next/link';
 import { useStore } from '@/store/useStore';
 import { getAPI } from '@/lib/api';
 import { cn, relativeTime, isOnline, getSignalLevel, deviceDisplayName } from '@/lib/utils';
 import { StatusIndicator } from '@/components/ui/StatusIndicator';
 import { ClaimDeviceModal } from '@/components/devices/ClaimDeviceModal';
 import { stepUpPasswordHint } from '@/lib/utils';
-import { ChevronLeft, ChevronRight, Smartphone, BarChart3, Copy, Battery, MapPin, Link2, Trash2, X, AlertTriangle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Smartphone, BarChart3, Copy, Battery, MapPin, Link2, Trash2, X, AlertTriangle, Shield, ShieldCheck, ExternalLink } from 'lucide-react';
 import { SidebarSkeleton } from '@/components/ui/Skeleton';
 
 function sentinelLevel(score: number): string {
@@ -146,6 +147,47 @@ export function Sidebar() {
               <div className="text-[8px] font-mono text-gray-700 tracking-[0.2em] font-bold">COMMAND CENTER</div>
             </div>
             <div className="ml-auto w-1 h-1 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.4)]" />
+          </div>
+
+          {/* ─── Quick Nav Links ──────────────────────────────────────────── */}
+          <div className="px-3 py-2 border-b border-gray-200 shrink-0">
+            <div className="flex gap-1">
+              <Link
+                href="/dashboard"
+                className={cn(
+                  "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[9px] font-mono font-bold uppercase tracking-wider transition-all",
+                  "hover:bg-gray-100 text-gray-600 hover:text-gray-900"
+                )}
+                title="Command Center"
+              >
+                <Smartphone size={10} />
+                <span>Dashboard</span>
+              </Link>
+              <Link
+                href="/admin"
+                className={cn(
+                  "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[9px] font-mono font-bold uppercase tracking-wider transition-all",
+                  "hover:bg-amber-50 text-amber-600 hover:text-amber-700 border border-amber-200 hover:border-amber-300"
+                )}
+                title="Admin Panel (company internal)"
+              >
+                <Shield size={10} />
+                <span>Admin</span>
+              </Link>
+              <Link
+                href="/trust"
+                target="_blank"
+                className={cn(
+                  "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[9px] font-mono font-bold uppercase tracking-wider transition-all",
+                  "hover:bg-emerald-50 text-emerald-600 hover:text-emerald-700 border border-emerald-200 hover:border-emerald-300"
+                )}
+                title="Trust Score — check any IMEI"
+              >
+                <ShieldCheck size={10} />
+                <span>Trust</span>
+                <ExternalLink size={7} className="opacity-50" />
+              </Link>
+            </div>
           </div>
 
           {/* ─── Stats Overview ────────────────────────────────────────────── */}
@@ -327,56 +369,24 @@ export function Sidebar() {
                         />
                       </div>
                     </div>
-
-                    {/* Last-known coordinates + battery + copy (works offline) */}
-                    {(device.lat != null && device.lng != null) && (
-                      <div className="flex items-center gap-1.5 mt-1">
-                        <MapPin size={8} className="text-gray-700 shrink-0" />
-                        <span className="font-mono text-[8px] text-gray-700 font-bold truncate">
-                          {device.lat.toFixed(4)}, {device.lng.toFixed(4)}
-                        </span>
-                        <span
-                          role="button"
-                          tabIndex={-1}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigator.clipboard?.writeText(`${device.lat},${device.lng}`);
-                          }}
-                          title="Copy coordinates"
-                          className="text-gray-700 hover:text-emerald-600 cursor-pointer transition-colors shrink-0"
-                        >
-                          <Copy size={9} />
-                        </span>
-                        {device.battery_percent != null && (
-                          <span className="ml-auto flex items-center gap-1 text-[8px] font-mono text-gray-700 font-bold tabular-nums">
-                            <Battery size={9} className={cn(device.battery_percent <= 20 ? 'text-red-500' : 'text-emerald-500')} />
-                            {device.battery_percent}%
-                          </span>
-                        )}
-                      </div>
-                    )}
                   </button>
                 );
               })
             )}
           </div>
 
-          {/* ─── Footer ────────────────────────────────────────────────────── */}
-          <div className="px-4 py-3 border-t border-gray-200 bg-gray-50 shrink-0">
-            {/* Online/Offline counts */}
-            <div className="flex items-center justify-between text-[10px] font-mono font-bold mb-2.5">
-              <span className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.3)]" />
-                <span className="text-emerald-600 tabular-nums">{onlineCount}</span>
-                <span className="text-gray-700">online</span>
+          {/* ─── Sidebar Footer — Online/Offline count ──────────────────────── */}
+          <div className="px-4 py-2 border-t border-gray-200 flex items-center justify-between shrink-0">
+            <div className="flex items-center gap-2">
+              <span className="flex items-center gap-1 text-[9px] font-mono font-bold text-emerald-600">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                {onlineCount} online
               </span>
-              <span className="flex items-center gap-1.5">
+              <span className="flex items-center gap-1 text-[9px] font-mono font-bold text-gray-700">
                 <span className="w-1.5 h-1.5 rounded-full bg-gray-300" />
-                <span className="text-gray-700 tabular-nums">{offlineCount}</span>
-                <span className="text-gray-700">offline</span>
+                {offlineCount} offline
               </span>
             </div>
-
           </div>
         </>
       )}
