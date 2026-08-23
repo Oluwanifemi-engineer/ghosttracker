@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useStore } from '@/store/useStore';
-import { Header } from '@/components/layout/Header';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { useDevices } from '@/hooks/useDevices';
 import { useWebSocket } from '@/hooks/useWebSocket';
@@ -11,7 +10,6 @@ import { ThemeProvider } from '@/components/ui/DarkMode';
 import { KeyboardShortcutsHelp } from '@/components/ui/KeyboardShortcuts';
 import { PwaInstallPrompt } from '@/components/ui/PwaInstallPrompt';
 import { OnboardingFlow, useOnboarding } from '@/components/onboarding/OnboardingFlow';
-import { useRouter } from 'next/navigation';
 
 function PremiumLoadingScreen() {
   const [progress, setProgress] = useState(0);
@@ -39,9 +37,9 @@ function PremiumLoadingScreen() {
   }, []);
 
   return (
-    <div className="h-screen flex items-center justify-center bg-white relative overflow-hidden">
+    <div className="h-screen flex items-center justify-center bg-[#0a0a0f] relative overflow-hidden">
       {/* Subtle grid background */}
-      <div className="absolute inset-0 mag-grid-bg opacity-40" />
+      <div className="absolute inset-0 mag-grid-bg opacity-[0.03]" />
 
       {/* Center content */}
       <div className="text-center relative z-10 flex flex-col items-center justify-center">
@@ -49,29 +47,29 @@ function PremiumLoadingScreen() {
         <img
           src="/magneetar-mhalf.svg"
           alt="Magneetar"
-          className="w-32 h-32 rounded-3xl mb-6"
+          className="w-28 h-28 rounded-3xl mb-6"
         />
 
         {/* Brand name */}
-        <div className="text-3xl font-display font-bold tracking-[0.3em] mb-2 text-gray-900">
+        <div className="text-2xl font-display font-bold tracking-[0.3em] mb-2 text-white/90">
           MAGNEETAR
         </div>
-        <div className="text-[11px] font-mono text-gray-400 tracking-[0.25em] mb-10">
+        <div className="text-[10px] font-mono text-white/30 tracking-[0.25em] mb-10">
           COMMAND CENTER
         </div>
 
         {/* Progress bar */}
         <div className="w-64 mx-auto mb-4">
-          <div className="h-1 bg-gray-200 rounded-full overflow-hidden">
+          <div className="h-1 bg-white/[0.06] rounded-full overflow-hidden">
             <div
-              className="h-full bg-gray-900 rounded-full transition-all duration-500 ease-out"
+              className="h-full bg-emerald-500 rounded-full transition-all duration-500 ease-out"
               style={{ width: `${progress}%` }}
             />
           </div>
         </div>
 
         {/* Status text */}
-        <div className="flex items-center justify-center gap-2 text-gray-500 text-[11px] font-mono font-bold">
+        <div className="flex items-center justify-center gap-2 text-white/40 text-[10px] font-mono font-bold">
           <svg className="animate-spin" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
           </svg>
@@ -79,9 +77,9 @@ function PremiumLoadingScreen() {
         </div>
 
         {/* Security badge */}
-        <div className="mt-8 inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-200 bg-gray-50">
+        <div className="mt-8 inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/[0.06] bg-white/[0.03]">
           <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="text-[9px] font-mono font-bold text-gray-400 tracking-wider">SECURE CHANNEL</span>
+          <span className="text-[9px] font-mono font-bold text-white/30 tracking-wider">SECURE CHANNEL</span>
         </div>
       </div>
     </div>
@@ -96,13 +94,8 @@ export default function DashboardLayout({
   const { isAuthenticated } = useStore();
   const [mounted, setMounted] = useState(false);
   const { showOnboarding, completeOnboarding, skipOnboarding } = useOnboarding();
-  const router = useRouter();
 
-  // Mount the data layer ONCE for the whole dashboard: device list polling,
-  // locations/commands/media refresh, and the real-time WebSocket stream.
-  // Without these, the store stays empty — the sidebar shows "No devices",
-  // the map has no markers, and the command panel can't send anything
-  // (selectedDeviceId is never set).
+  // Mount the data layer ONCE for the whole dashboard
   useDevices();
   useWebSocket();
 
@@ -134,11 +127,10 @@ export default function DashboardLayout({
   return (
     <ThemeProvider>
     <ToastProvider>
-    <div className="h-screen flex flex-col overflow-hidden dark:bg-gray-950">
+    <div className="h-screen flex flex-col overflow-hidden bg-[#0a0a0f]">
       {/* Subtle background grid — military feel */}
-      <div className="fixed inset-0 mag-grid-bg opacity-[0.03] pointer-events-none z-0" />
+      <div className="fixed inset-0 mag-grid-bg opacity-[0.02] pointer-events-none z-0" />
 
-      <Header />
       <div className="flex flex-1 overflow-hidden relative z-10">
         <Sidebar />
         <main className="flex-1 overflow-hidden">

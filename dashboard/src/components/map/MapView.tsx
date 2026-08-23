@@ -287,15 +287,12 @@ function DistanceOverlay({ userPos, userAccuracy, userPinned, deviceLat, deviceL
   if (offline) {
     return (
       <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000]">
-        <div className="bg-gray-900/90 border border-gray-700 px-4 py-2.5 flex items-center gap-2.5 animate-fade-in">
+        <div className="bg-[#111118]/95 backdrop-blur-xl border border-white/[0.08] px-4 py-2.5 flex items-center gap-2.5 animate-fade-in">
           <div className="w-2 h-2 rounded-full bg-amber-500" />
-          <span className="font-mono text-[10px] text-amber-500 font-bold uppercase tracking-wider">OFFLINE</span>
-          <div className="h-4 w-px bg-gray-700" />
-          <span className="font-mono text-[11px] text-gray-200 font-bold">
+          <span className="font-mono text-[10px] text-amber-400 font-bold uppercase tracking-wider">OFFLINE</span>
+          <div className="h-4 w-px bg-white/[0.08]" />
+          <span className="font-mono text-[10px] text-white/60 font-bold">
             Last seen {relativeTime(lastSeen)}
-          </span>
-          <span className="font-mono text-[10px] text-gray-200 font-bold hidden sm:inline">
-            · {deviceLat.toFixed(5)}, {deviceLng.toFixed(5)}
           </span>
         </div>
       </div>
@@ -305,14 +302,13 @@ function DistanceOverlay({ userPos, userAccuracy, userPinned, deviceLat, deviceL
   if (!userPos) {
     return (
       <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000]">
-        <div className="bg-gray-900/90 border border-gray-700 px-4 py-2.5 flex items-center gap-2.5 animate-fade-in">
+        <div className="bg-[#111118]/95 backdrop-blur-xl border border-white/[0.08] px-4 py-2.5 flex items-center gap-2.5 animate-fade-in">
           <div className="w-2 h-2 rounded-full bg-amber-500" />
-          <span className="font-mono text-[10px] text-amber-500 font-bold uppercase tracking-wider">
-            SET YOUR POSITION
+          <span className="font-mono text-[10px] text-amber-400 font-bold uppercase tracking-wider">
+            SET POSITION
           </span>
-          <div className="h-4 w-px bg-gray-700" />
-          <span className="font-mono text-[10px] text-gray-200 font-bold">
-            tap PIN POSITION, then tap the map where you are
+          <span className="font-mono text-[10px] text-white/40 font-bold">
+            tap pin, then tap map
           </span>
         </div>
       </div>
@@ -323,26 +319,33 @@ function DistanceOverlay({ userPos, userAccuracy, userPinned, deviceLat, deviceL
 
   if (!userPinned && userAccuracy != null && userAccuracy > USER_ACCURACY_IP_FALLBACK) {
     return (
-      <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] max-w-lg">
-        <div className="bg-gray-900/90 border border-gray-700 px-4 py-3 animate-fade-in">
-          <div className="flex items-center gap-2 mb-1.5">
-            <div className="w-2 h-2 rounded-full bg-white" />
-            <span className="font-mono text-[10px] text-white font-bold uppercase tracking-wider">DEVICE TRACKED</span>
-            <div className="h-3 w-px bg-gray-700" />
-            <span className="font-mono text-[10px] text-white font-bold">{formatDistance(distance)} away (approx)</span>
+      <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] max-w-md">
+        <div className="bg-[#111118]/95 backdrop-blur-xl border border-white/[0.08] px-4 py-3 animate-fade-in">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-cyan-500" />
+              <span className="font-mono text-[10px] text-white/70 font-bold uppercase tracking-wider">YOU</span>
+            </div>
+            <svg width="14" height="14" viewBox="0 0 16 16" className="text-white/20">
+              <path d="M1 8h14M8 1l7 7-7 7" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-emerald-500" />
+              <span className="font-mono text-[10px] text-white/70 font-bold uppercase tracking-wider">DEVICE</span>
+            </div>
+            <div className="h-3 w-px bg-white/[0.08]" />
+            <span className="font-mono text-sm font-bold text-white tabular-nums">{formatDistance(distance)}</span>
+            <span className="font-mono text-[10px] text-white/40 font-bold">away</span>
           </div>
-          <div className="flex items-start gap-2">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-amber-500 shrink-0 mt-0.5">
+          <div className="flex items-center gap-1.5 mt-2">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-amber-500 shrink-0">
               <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
               <line x1="12" y1="9" x2="12" y2="13"/>
               <line x1="12" y1="17" x2="12.01" y2="17"/>
             </svg>
-            <div className="text-[10px] font-mono text-gray-200 leading-relaxed">
-              <span className="text-amber-500 font-bold">Your browser position is IP-derived (±{formatAccuracyMeters(userAccuracy!)})</span>
-              — desktop browsers have no GPS. The distance above is approximate.
-              <span className="text-white font-bold"> Tap PIN POSITION below, then tap the map where you actually are</span>
-              for an accurate distance and turn-by-turn route to your device.
-            </div>
+            <span className="font-mono text-[9px] text-amber-400/80 font-bold">
+              IP-derived (±{formatAccuracyMeters(userAccuracy!)}). Pin your spot for accuracy.
+            </span>
           </div>
         </div>
       </div>
@@ -351,35 +354,35 @@ function DistanceOverlay({ userPos, userAccuracy, userPinned, deviceLat, deviceL
 
   return (
     <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000]">
-      <div className="bg-gray-900/90 border border-gray-700 px-4 py-2.5 flex items-center gap-4 animate-fade-in">
+      <div className="bg-[#111118]/95 backdrop-blur-xl border border-white/[0.08] px-4 py-2.5 flex items-center gap-3 animate-fade-in">
         <button
           onClick={flyToYou}
           disabled={!userPos}
-          title={userPos ? 'Fly to your location (stops device follow)' : 'No position yet'}
+          title={userPos ? 'Fly to your location' : 'No position yet'}
           className="flex items-center gap-2 group/y disabled:opacity-50"
         >
-          <div className="w-2 h-2 rounded-full bg-gray-900 group-hover/y:scale-125 transition-transform" />
-          <span className="font-mono text-[11px] text-gray-200 font-bold group-hover/y:text-white group-hover/y:underline underline-offset-2 transition-colors">YOU</span>
+          <div className="w-2 h-2 rounded-full bg-cyan-500 group-hover/y:scale-125 transition-transform" />
+          <span className="font-mono text-[10px] text-white/70 font-bold group-hover/y:text-white transition-colors">YOU</span>
         </button>
-        <svg width="16" height="16" viewBox="0 0 16 16" className="text-gray-200">
+        <svg width="14" height="14" viewBox="0 0 16 16" className="text-white/20">
           <path d="M1 8h14M8 1l7 7-7 7" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
         <button
           onClick={flyToDevice}
-          title="Fly to the device (resumes follow)"
+          title="Fly to device"
           className="flex items-center gap-2 group/d"
         >
-          <div className="w-2 h-2 rounded-full bg-gray-900 bg-white group-hover/d:scale-125 transition-transform" />
-          <span className="font-mono text-[11px] text-gray-200 font-bold group-hover/d:text-white group-hover/d:underline underline-offset-2 transition-colors">DEVICE</span>
+          <div className="w-2 h-2 rounded-full bg-emerald-500 group-hover/d:scale-125 transition-transform" />
+          <span className="font-mono text-[10px] text-white/70 font-bold group-hover/d:text-white transition-colors">DEVICE</span>
         </button>
-        <div className="h-4 w-px bg-gray-700" />
+        <div className="h-3 w-px bg-white/[0.08]" />
         <span className="font-mono text-sm font-bold text-white tabular-nums">
           {formatDistance(distance)}
         </span>
-        <span className="font-mono text-[10px] text-gray-200 font-bold">away</span>
+        <span className="font-mono text-[10px] text-white/40 font-bold">away</span>
         {!userPinned && userAccuracy != null && userAccuracy > USER_ACCURACY_DISTANCE_MAX && (
-          <span className="font-mono text-[9px] text-amber-500 font-bold">
-            ±{formatAccuracyMeters(userAccuracy)} IP fix — pin your spot
+          <span className="font-mono text-[9px] text-amber-400/70 font-bold">
+            ±{formatAccuracyMeters(userAccuracy)}
           </span>
         )}
       </div>
@@ -486,6 +489,7 @@ export function MapView() {
   const [userPinned, setUserPinned] = useState<[number, number] | null>(loadPinnedPosition);
   const [pinning, setPinning] = useState(false);
   const [snappedDevicePos, setSnappedDevicePos] = useState<[number, number] | null>(null);
+  const [showMapControls, setShowMapControls] = useState(false);
 
   const effectiveUserPos = userPinned ?? userPosition;
   const deviceMarkerPos: [number, number] | null = snappedDevicePos ?? (latestLocation ? [latestLocation.lat, latestLocation.lng] : null);
@@ -610,113 +614,141 @@ export function MapView() {
   const handleNavigate = useCallback(async () => {
     if (!latestLocation || !effectiveUserPos || !userNavigationUsable) return;
     setNavigating(true);
+    setNavigationRoute(null);
     try {
       const route = await getOSRMRoute(
         effectiveUserPos[0], effectiveUserPos[1],
         latestLocation.lat, latestLocation.lng
       );
-      setNavigationRoute(route);
-    } catch (e) {
-      console.warn('Navigation failed:', e);
+      if (route) {
+        setNavigationRoute(route);
+        setFollowDevice(false);
+      } else {
+        openGoogleMapsDirections(effectiveUserPos[0], effectiveUserPos[1], latestLocation.lat, latestLocation.lng);
+      }
+    } catch {
+      openGoogleMapsDirections(effectiveUserPos[0], effectiveUserPos[1], latestLocation.lat, latestLocation.lng);
     } finally {
       setNavigating(false);
     }
-  }, [latestLocation, effectiveUserPos, userNavigationUsable]);
+  }, [latestLocation, effectiveUserPos, userNavigationUsable, setFollowDevice]);
 
-  useEffect(() => {
-    if (navigationRoute && latestLocation) {
-      const lastCoord = navigationRoute.geometry[navigationRoute.geometry.length - 1];
-      if (lastCoord) {
-        const dist = Math.abs(latestLocation.lat - lastCoord[0]) + Math.abs(latestLocation.lng - lastCoord[1]);
-        if (dist > 0.001) setNavigationRoute(null);
-      }
-    }
-  }, [latestLocation, navigationRoute]);
+  const trailPoints = useMemo(() => {
+    return trailLocations.map(l => ({ lat: l.lat, lng: l.lng, ts: l.timestamp }));
+  }, [trailLocations]);
 
-  const trailPoints = useMemo(
-    () => locations.slice().reverse().map((l) => [l.lat, l.lng] as [number, number]),
-    [locations]
-  );
+  if (!mapReady) return <div className="w-full h-full bg-[#0a0a0f]" />;
 
   return (
-    <div className="relative flex-1 h-full bg-gray-900">
-      {/* Map loading skeleton */}
-      {!mapReady && (
-        <div className="absolute inset-0 bg-gray-900 flex items-center justify-center">
-          <div className="text-center">
-            <div className="w-12 h-12 border-2 border-gray-700 border-t-emerald-500 rounded-full animate-spin mx-auto mb-3" />
-            <div className="text-[11px] font-mono text-gray-500 font-bold uppercase tracking-wider">Loading map...</div>
-          </div>
-        </div>
-      )}
-
-      {mapReady && (
+    <div className="w-full h-full relative bg-[#0a0a0f]">
+      {mapReady && iconsReady && (
         <MapContainer
           ref={mapRef}
-          center={mapCenter}
-          zoom={mapZoom}
+          center={mapCenter || (latestLocation ? [latestLocation.lat, latestLocation.lng] : [6.5244, 3.3792])}
+          zoom={mapZoom || 17}
           className="w-full h-full"
-          zoomControl={true}
-          attributionControl={true}
-          zoomSnap={0.5}
-          zoomDelta={0.5}
-          wheelPxPerZoomLevel={60}
+          zoomControl={false}
+          attributionControl={false}
         >
-          {showSatellite ? (
-            <>
-              <TileLayer
-                url={SATELLITE_TILE_URL}
-                maxZoom={18}
-                attribution={SATELLITE_ATTRIBUTION}
-              />
-              <TileLayer
-                url={MAP_TILE_URL_RESOLVED}
-                maxZoom={19}
-                opacity={0.3}
-              />
-            </>
-          ) : (
-            <TileLayer
-              url={MAP_TILE_URL_RESOLVED}
-              maxZoom={19}
-              attribution={MAP_TILE_ATTRIBUTION}
-            />
-          )}
-
           <MapController pinning={pinning} onPin={handlePin} replayActive={showPathTracker} />
-          <CommunityHeatmap visible={showHeatmap} onToggle={() => setShowHeatmap(!showHeatmap)} />
 
-          {latestLocation && (effectiveUserPos || !deviceOnline) && (
-            <DistanceOverlay
-              userPos={effectiveUserPos}
-              userAccuracy={userAccuracy}
-              userPinned={!!userPinned}
-              deviceLat={latestLocation.lat}
-              deviceLng={latestLocation.lng}
-              offline={!deviceOnline}
-              lastSeen={device?.last_seen ?? null}
+          <TileLayer
+            key={showSatellite ? 'satellite' : 'street'}
+            url={showSatellite ? SATELLITE_TILE_URL : MAP_TILE_URL_RESOLVED}
+            attribution={showSatellite ? SATELLITE_ATTRIBUTION : MAP_TILE_ATTRIBUTION}
+            maxZoom={19}
+          />
+
+          {/* User marker */}
+          {effectiveUserPos && userIcon && (
+            <Marker position={effectiveUserPos} icon={userIcon}>
+              <Popup>
+                <div className="text-center">
+                  <div className="font-bold">Your Position</div>
+                  {userPinned && <div className="text-xs text-gray-500">Pinned manually</div>}
+                  {!userPinned && userAccuracy != null && (
+                    <div className="text-xs text-gray-500">Accuracy: ±{formatAccuracyMeters(userAccuracy)}</div>
+                  )}
+                </div>
+              </Popup>
+            </Marker>
+          )}
+
+          {/* User accuracy circle */}
+          {effectiveUserPos && userAccuracy && !userPinned && userAccuracy < 1000 && (
+            <Circle
+              center={effectiveUserPos}
+              radius={userAccuracy}
+              pathOptions={{
+                color: '#06B6D4',
+                fillColor: '#06B6D4',
+                fillOpacity: 0.08,
+                weight: 1,
+              }}
             />
           )}
 
-          {userGeoDenied && (
-            <div className="absolute top-3 right-3 z-[1000] max-w-xs">
-              <div className="bg-gray-900/90 border border-gray-700 px-3 py-2 flex items-start gap-2 animate-fade-in">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-amber-500 shrink-0 mt-0.5">
-                  <path d="M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20z"/>
-                  <path d="M2 12h20"/>
-                </svg>
-                <div className="text-[10px] font-mono text-gray-200 font-bold leading-tight">
-                  <span className="text-amber-500">LOCATION PERMISSION DENIED</span>
-                  <span className="block mt-0.5 text-gray-200">
-                    Distance and routing need browser location. Allow it in your
-                    browser settings.
-                  </span>
+          {/* Device marker */}
+          {deviceMarkerPos && deviceIcon && (
+            <Marker position={deviceMarkerPos} icon={deviceIcon}>
+              <Popup>
+                <div className="text-center">
+                  <div className="font-bold">{device?.id || 'Device'}</div>
+                  {deviceAddress && <div className="text-xs text-gray-500">{deviceAddress}</div>}
+                  {latestLocation && (
+                    <div className="text-xs text-gray-500 mt-1">
+                      Accuracy: ±{latestLocation.accuracy ? formatAccuracyMeters(latestLocation.accuracy) : 'Unknown'}
+                    </div>
+                  )}
                 </div>
-              </div>
-            </div>
+              </Popup>
+            </Marker>
           )}
 
-          {showPathTracker && (
+          {/* Device accuracy circle */}
+          {deviceMarkerPos && latestLocation?.accuracy && latestLocation.accuracy < 50 && (
+            <Circle
+              center={deviceMarkerPos}
+              radius={latestLocation.accuracy}
+              pathOptions={{
+                color: '#10B981',
+                fillColor: '#10B981',
+                fillOpacity: 0.08,
+                weight: 1,
+              }}
+            />
+          )}
+
+          {/* Navigation route */}
+          {navigationRoute && (
+            <Polyline
+              positions={navigationRoute.geometry.map((p: [number, number]) => [p[0], p[1]])}
+              pathOptions={{
+                color: '#3B82F6',
+                weight: 4,
+                opacity: 0.8,
+                lineCap: 'round',
+                lineJoin: 'round',
+              }}
+            />
+          )}
+
+          {/* Trail */}
+          {showTrail && trailPoints.length > 1 && !navigationRoute && !showPathTracker && (
+            <Polyline
+              positions={trailPoints.map(p => [p.lat, p.lng])}
+              pathOptions={{
+                color: '#FFFFFF',
+                weight: 3,
+                opacity: 0.6,
+                lineCap: 'round',
+                lineJoin: 'round',
+              }}
+            />
+          )}
+
+          {/* Path replay */}
+          {showPathTracker && trailLocations.length > 1 && (
             <PathAnimationTracker
               trailLocations={trailLocations}
               isPlaying={pathPlaying}
@@ -726,217 +758,70 @@ export function MapView() {
             />
           )}
 
-          {navigationRoute && navigationRoute.geometry.length > 1 && (
-            <>
-              <Polyline
-                positions={navigationRoute.geometry}
-                pathOptions={{
-                  color: '#06B6D4',
-                  weight: 5,
-                  opacity: 0.85,
-                }}
-              />
-              <Polyline
-                positions={navigationRoute.geometry}
-                pathOptions={{
-                  color: '#0891B2',
-                  weight: 3,
-                  opacity: 0.5,
-                  dashArray: '1, 8',
-                }}
-              />
-            </>
-          )}
+          {/* Community Heatmap */}
+          <CommunityHeatmap visible={showHeatmap} onToggle={() => setShowHeatmap(!showHeatmap)} />
 
-          {showTrail && trailPoints.length > 1 && !navigationRoute && !showPathTracker && (
-            <Polyline
-              positions={trailPoints}
-              pathOptions={{
-                color: '#FFFFFF',
-                weight: 2.5,
-                opacity: 0.4,
-                dashArray: '8, 10',
-              }}
-            />
-          )}
-
-          {latestLocation && latestLocation.speed && latestLocation.speed > 0.5 && (() => {
-            const distM = latestLocation.speed * 60;
-            const bearingRad = ((latestLocation.bearing || 0) * Math.PI) / 180;
-            const R = 6371000;
-            const dLat = distM * Math.cos(bearingRad) / R;
-            const dLng = distM * Math.sin(bearingRad) / (R * Math.cos((latestLocation.lat * Math.PI) / 180));
-            const predLat = latestLocation.lat + (dLat * 180) / Math.PI;
-            const predLng = latestLocation.lng + (dLng * 180) / Math.PI;
-            return (
-              <Polyline
-                positions={[[latestLocation.lat, latestLocation.lng], [predLat, predLng]]}
-                pathOptions={{
-                  color: '#F59E0B',
-                  weight: 2,
-                  opacity: 0.5,
-                  dashArray: '6, 8',
-                }}
-              />
-            );
-          })()}
-
-          {latestLocation && latestLocation.accuracy && (
-            <Circle
-              center={[latestLocation.lat, latestLocation.lng]}
-              radius={latestLocation.accuracy}
-              pathOptions={{
-                color: '#FFFFFF',
-                fillColor: '#FFFFFF',
-                fillOpacity: 0.06,
-                weight: 1,
-                opacity: 0.25,
-              }}
-            />
-          )}
-
-          {latestLocation && deviceMarkerPos && iconsReady && deviceIcon && (
-            <Marker
-              position={deviceMarkerPos}
-              icon={deviceIcon}
-              eventHandlers={{
-                click: () => {
-                  if (!mapRef.current) return;
-                  setFollowDevice(true);
-                  mapRef.current.flyTo(
-                    deviceMarkerPos,
-                    Math.max(mapRef.current.getZoom(), 16),
-                    { animate: true, duration: 0.8 }
-                  );
-                },
-              }}
-            >
-              <Popup>
-                <div className="font-sans text-sm min-w-[220px]">
-                  <div className="font-bold text-white mb-2 flex items-center gap-1.5">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20z"/><path d="M2 12h20"/></svg>
-                    DEVICE LOCATION
+          {/* Waypoints */}
+          {navigationRoute && navigationRoute.steps.map((step: any, i: number) => (
+            waypointIcon && step.maneuver && (
+              <Marker key={`wp-${i}`} position={[step.maneuver.location[1], step.maneuver.location[0]]} icon={waypointIcon}>
+                <Popup>
+                  <div className="text-center">
+                    <div className="font-bold">{i === 0 ? 'Start' : i === navigationRoute.steps.length - 1 ? 'End' : `Step ${i}`}</div>
+                    <div className="text-xs text-gray-500">{step.name || 'Continue'}</div>
                   </div>
-                  {deviceAddress && (
-                    <div className="text-white text-xs font-bold mb-2 leading-tight">
-                      📍 {deviceAddress}
-                    </div>
-                  )}
-                  {isDeviceSnapped && (
-                    <div className="text-[10px] font-mono text-amber-500 font-bold mb-2 leading-tight">
-                      ⚠ Marker snapped to nearest road — fix accuracy ±{latestLocation.accuracy?.toFixed(0) || '?'}m. The circle shows the true uncertainty.
-                    </div>
-                  )}
-                  <div className="space-y-1 text-gray-200">
-                    <div className="flex justify-between">
-                      <span className="font-mono text-[11px] font-bold">Latitude</span>
-                      <span className="font-mono text-[11px] text-white font-bold">{latestLocation.lat.toFixed(6)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="font-mono text-[11px] font-bold">Longitude</span>
-                      <span className="font-mono text-[11px] text-white font-bold">{latestLocation.lng.toFixed(6)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="font-mono text-[11px] font-bold">Accuracy</span>
-                      <span className="font-mono text-[11px] text-white font-bold">±{latestLocation.accuracy?.toFixed(1) || '?'}m</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="font-mono text-[11px] font-bold">Provider</span>
-                      <span className="font-mono text-[11px] text-white font-bold">{latestLocation.provider}</span>
-                    </div>
-                    {latestLocation.speed != null && (
-                      <div className="flex justify-between">
-                        <span className="font-mono text-[11px] font-bold">Speed</span>
-                        <span className="font-mono text-[11px] text-white font-bold">{(latestLocation.speed * 3.6).toFixed(1)} km/h</span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="mt-2 pt-2 border-t border-gray-600/50 text-gray-200 font-mono text-[10px] font-bold">
-                    {formatTimestamp(locationTimestamp(latestLocation))}
-                  </div>
-                </div>
-              </Popup>
-            </Marker>
-          )}
-
-          {!userPinned && userPosition && userAccuracy != null && (
-            <Circle
-              center={userPosition}
-              radius={userAccuracy}
-              pathOptions={{
-                color: '#06B6D4',
-                fillColor: '#06B6D4',
-                fillOpacity: 0.05,
-                weight: 1,
-                opacity: 0.25,
-              }}
-            />
-          )}
-
-          {effectiveUserPos && iconsReady && userIcon && (
-            <Marker
-              position={effectiveUserPos}
-              icon={userIcon}
-              eventHandlers={{
-                click: () => {
-                  if (!mapRef.current) return;
-                  setFollowDevice(false);
-                  mapRef.current.flyTo(
-                    effectiveUserPos,
-                    Math.max(mapRef.current.getZoom(), 16),
-                    { animate: true, duration: 0.8 }
-                  );
-                },
-              }}
-            >
-              <Popup>
-                <div className="font-sans text-sm">
-                  <div className="font-bold text-white mb-1">YOUR POSITION</div>
-                  <div className="text-white text-xs">
-                    {effectiveUserPos[0].toFixed(5)}, {effectiveUserPos[1].toFixed(5)}
-                    {userPinned && <span className="text-emerald-400 ml-1">(pinned)</span>}
-                  </div>
-                </div>
-              </Popup>
-            </Marker>
-          )}
+                </Popup>
+              </Marker>
+            )
+          ))}
 
         </MapContainer>
       )}
 
-      {/* Map controls — bottom left */}
-      <div className="absolute bottom-4 left-3 z-[1000] flex flex-col gap-2 md:bottom-4 bottom-20">
+      {/* Distance Overlay — Premium Dark */}
+      {latestLocation && deviceOnline && (
+        <DistanceOverlay
+          userPos={effectiveUserPos}
+          userAccuracy={userAccuracy}
+          userPinned={!!userPinned}
+          deviceLat={latestLocation.lat}
+          deviceLng={latestLocation.lng}
+          offline={false}
+          lastSeen={null}
+        />
+      )}
+
+      {/* Map controls — bottom left, premium dark */}
+      <div className="absolute bottom-4 left-3 z-[1000] flex flex-col gap-1.5 md:bottom-4 bottom-20">
         <button
           onClick={() => setPinning(!pinning)}
           className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-[10px] font-mono font-bold uppercase tracking-wider transition-all ${
             pinning
-              ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30'
-              : 'bg-white text-gray-700 border border-gray-200 shadow-sm hover:bg-gray-50'
+              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-lg shadow-emerald-500/10'
+              : 'bg-[#111118]/90 text-white/60 border border-white/[0.08] hover:bg-[#1a1a24] hover:text-white/80'
           }`}
-          title="Pin your position on the map"
+          title="Pin your position"
         >
           <MapPin size={12} />
-          {pinning ? 'Tap the map...' : 'Pin Position'}
+          {pinning ? 'Tap map...' : 'Pin'}
         </button>
 
         <button
           onClick={() => setFollowDevice(!followDevice)}
           className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-[10px] font-mono font-bold uppercase tracking-wider transition-all ${
             followDevice
-              ? 'bg-white text-gray-700 border border-gray-200 shadow-sm'
-              : 'bg-white text-gray-700 border border-gray-200 shadow-sm hover:bg-gray-50'
+              ? 'bg-[#111118]/90 text-white/80 border border-white/[0.08]'
+              : 'bg-[#111118]/90 text-white/50 border border-white/[0.08] hover:bg-[#1a1a24] hover:text-white/70'
           }`}
-          title={followDevice ? 'Stop following device' : 'Follow device'}
+          title={followDevice ? 'Stop following' : 'Follow device'}
         >
           {followDevice ? (
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="10"/>
-              <circle cx="12" cy="12" r="3"/>
+              <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/>
             </svg>
           ) : (
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="10"/>
-              <circle cx="12" cy="12" r="1"/>
+              <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="1"/>
             </svg>
           )}
           {followDevice ? 'Following' : 'Follow'}
@@ -946,8 +831,8 @@ export function MapView() {
           onClick={() => setShowTrail(!showTrail)}
           className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-[10px] font-mono font-bold uppercase tracking-wider transition-all ${
             showTrail
-              ? 'bg-white text-gray-700 border border-gray-200 shadow-sm'
-              : 'bg-white text-gray-700 border border-gray-200 shadow-sm hover:bg-gray-50'
+              ? 'bg-[#111118]/90 text-white/80 border border-white/[0.08]'
+              : 'bg-[#111118]/90 text-white/50 border border-white/[0.08] hover:bg-[#1a1a24] hover:text-white/70'
           }`}
           title={showTrail ? 'Hide trail' : 'Show trail'}
         >
@@ -959,35 +844,32 @@ export function MapView() {
 
         <button
           onClick={() => setShowSatellite(!showSatellite)}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-[10px] font-mono font-bold uppercase tracking-wider transition-all bg-white text-gray-700 border border-gray-200 shadow-sm hover:bg-gray-50"
-          title={showSatellite ? 'Switch to map view' : 'Switch to satellite view'}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-[10px] font-mono font-bold uppercase tracking-wider transition-all bg-[#111118]/90 text-white/50 border border-white/[0.08] hover:bg-[#1a1a24] hover:text-white/70"
+          title={showSatellite ? 'Map view' : 'Satellite view'}
         >
           {showSatellite ? (
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-              <circle cx="12" cy="10" r="3"/>
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
             </svg>
           ) : (
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="10"/>
-              <path d="M2 12h20"/>
-              <path d="M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20z"/>
+              <circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20z"/>
             </svg>
           )}
           {showSatellite ? 'Map' : 'Sat'}
         </button>
       </div>
 
-      {/* Map controls — bottom right */}
-      <div className="absolute bottom-4 right-3 z-[1000] flex flex-col gap-2 md:bottom-4 bottom-20">
+      {/* Map controls — bottom right, premium dark */}
+      <div className="absolute bottom-4 right-3 z-[1000] flex flex-col gap-1.5 md:bottom-4 bottom-20">
         <button
           onClick={() => setShowHeatmap(!showHeatmap)}
           className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-[10px] font-mono font-bold uppercase tracking-wider transition-all ${
             showHeatmap
-              ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/30'
-              : 'bg-white text-gray-700 border border-gray-200 shadow-sm hover:bg-gray-50'
+              ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30 shadow-lg shadow-amber-500/10'
+              : 'bg-[#111118]/90 text-white/50 border border-white/[0.08] hover:bg-[#1a1a24] hover:text-white/70'
           }`}
-          title={showHeatmap ? 'Hide theft heatmap' : 'Show theft heatmap'}
+          title={showHeatmap ? 'Hide heatmap' : 'Show heatmap'}
         >
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M12 2C8 6 4 10 4 14a8 8 0 0 0 16 0c0-4-4-8-8-12z"/>
@@ -999,13 +881,13 @@ export function MapView() {
           <button
             onClick={handleNavigate}
             disabled={navigating}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-[10px] font-mono font-bold uppercase tracking-wider transition-all bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 disabled:opacity-50"
-            title="Get navigation route to device"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-[10px] font-mono font-bold uppercase tracking-wider transition-all bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30 disabled:opacity-50"
+            title="Navigate to device"
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M3 11l19-9-9 19-2-8-8-2z"/>
             </svg>
-            {navigating ? 'Loading...' : 'Navigate'}
+            {navigating ? '...' : 'Nav'}
           </button>
         )}
 
@@ -1028,10 +910,10 @@ export function MapView() {
             }}
             className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-[10px] font-mono font-bold uppercase tracking-wider transition-all ${
               showPathTracker
-                ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30'
-                : 'bg-white text-gray-700 border border-gray-200 shadow-sm hover:bg-gray-50'
+                ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30 shadow-lg shadow-blue-500/10'
+                : 'bg-[#111118]/90 text-white/50 border border-white/[0.08] hover:bg-[#1a1a24] hover:text-white/70'
             }`}
-            title={showPathTracker ? 'Close replay' : 'Replay location trail'}
+            title={showPathTracker ? 'Close replay' : 'Replay trail'}
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <polygon points="5 3 19 12 5 21 5 3"/>
@@ -1041,18 +923,17 @@ export function MapView() {
         )}
       </div>
 
-      {/* Path replay timeline */}
+      {/* Path replay timeline — premium dark */}
       {showPathTracker && trailLocations.length > 1 && (
         <div className="absolute bottom-16 left-1/2 -translate-x-1/2 z-[1000] md:bottom-4 bottom-28">
-          <div className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-xl shadow-xl px-4 py-3 flex items-center gap-3">
+          <div className="bg-[#111118]/95 backdrop-blur-xl border border-white/[0.08] rounded-xl shadow-xl px-4 py-3 flex items-center gap-3">
             <button
               onClick={() => setPathPlaying(!pathPlaying)}
-              className="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-900 text-white hover:bg-gray-800 transition-colors"
+              className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/[0.06] text-white/70 hover:bg-white/[0.1] hover:text-white transition-colors"
             >
               {pathPlaying ? (
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-                  <rect x="6" y="4" width="4" height="16"/>
-                  <rect x="14" y="4" width="4" height="16"/>
+                  <rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>
                 </svg>
               ) : (
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
@@ -1066,21 +947,18 @@ export function MapView() {
               min={0}
               max={trailLocations.length - 1}
               value={pathIndex}
-              onChange={(e) => {
-                setPathIndex(Number(e.target.value));
-                setPathPlaying(false);
-              }}
-              className="w-32 sm:w-48 h-1.5 bg-gray-200 rounded-full appearance-none cursor-pointer"
+              onChange={(e) => { setPathIndex(Number(e.target.value)); setPathPlaying(false); }}
+              className="w-32 sm:w-48 h-1.5 bg-white/10 rounded-full appearance-none cursor-pointer"
             />
 
-            <span className="font-mono text-[10px] text-gray-700 font-bold tabular-nums min-w-[40px]">
+            <span className="font-mono text-[10px] text-white/50 font-bold tabular-nums min-w-[40px]">
               {pathIndex + 1}/{trailLocations.length}
             </span>
 
             <select
               value={pathSpeed}
               onChange={(e) => setPathSpeed(Number(e.target.value))}
-              className="font-mono text-[10px] font-bold text-gray-700 bg-gray-100 border border-gray-200 rounded-md px-2 py-1"
+              className="font-mono text-[10px] font-bold text-white/60 bg-white/[0.06] border border-white/[0.08] rounded-md px-2 py-1"
             >
               <option value={1}>1×</option>
               <option value={2}>2×</option>
@@ -1089,7 +967,7 @@ export function MapView() {
             </select>
 
             {pathIndex > 0 && trailLocations[pathIndex] && (
-              <span className="font-mono text-[10px] text-gray-500 font-bold hidden sm:inline">
+              <span className="font-mono text-[10px] text-white/35 font-bold hidden sm:inline">
                 {formatTimestamp(locationTimestamp(trailLocations[pathIndex]))}
               </span>
             )}
