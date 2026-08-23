@@ -46,11 +46,18 @@ updates:
     # The dashboard pins exact Next.js/React versions — treat major bumps of
     # the framework as manual, human-reviewed upgrades.
     ignore:
+      # Major bumps require manual review — they often have breaking changes
       - dependency-name: "next"
         update-types: ["version-update:semver-major"]
       - dependency-name: "react"
         update-types: ["version-update:semver-major"]
       - dependency-name: "react-dom"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-leaflet"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "zustand"
         update-types: ["version-update:semver-major"]
 
   # ── GitHub Actions ───────────────────────────────────────────────────────
