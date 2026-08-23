@@ -490,10 +490,7 @@ from routes.bounties import router as bounties_router  # noqa: E402
 
 app.include_router(bounties_router)
 
-# Push Notification routes
-from routes.notifications import router as notifications_router  # noqa: E402
-
-app.include_router(notifications_router)
+# Push Notification utilities (Slack/Discord webhooks — imported where needed)
 
 # Support Ticket routes
 from routes.support import router as support_router  # noqa: E402

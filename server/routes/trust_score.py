@@ -151,8 +151,8 @@ async def check_imei(req: IMEICheckRequest):
 
         # Check if device is registered with any user
         device_record = db.execute(
-            "SELECT id, owner_id, name FROM devices WHERE imei = ?",
-            (imei,),
+            "SELECT id, owner_id, alias FROM devices WHERE imei_hash = ?",
+            (imei_hash,),
         ).fetchone()
 
         if record:

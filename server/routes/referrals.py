@@ -336,20 +336,23 @@ async def get_leaderboard(
     limit: int = 20,
 ):
     """Get top referrers leaderboard — social proof drives more referrals."""
-    with get_db_context() as db:
-        leaders = db.execute(
-            """
-            SELECT r.referrer_id, u.name, COUNT(*) as referral_count,
-                   MAX(r.completed_at) as last_referral
-            FROM referrals r
-            JOIN users u ON r.referrer_id = u.id
-            WHERE r.status = 'completed'
-            GROUP BY r.referrer_id
-            ORDER BY referral_count DESC
-            LIMIT ?
-        """,
-            (limit,),
-        ).fetchall()
+    try:
+        with get_db_context() as db:
+            leaders = db.execute(
+                """
+                SELECT r.referrer_id, u.name, COUNT(*) as referral_count,
+                       MAX(r.completed_at) as last_referral
+                FROM referrals r
+                JOIN users u ON r.referrer_id = u.id
+                WHERE r.status = 'completed'
+                GROUP BY r.referrer_id
+                ORDER BY referral_count DESC
+                LIMIT ?
+            """,
+                (limit,),
+            ).fetchall()
+    except Exception:
+        leaders = []
 
     return {
         "leaders": [
