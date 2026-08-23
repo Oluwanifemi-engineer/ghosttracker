@@ -43,12 +43,11 @@ function useIsMobile() {
 }
 
 // Loading skeleton shown while Zustand persist hydrates from localStorage
-// (prevents the blank dashboard flash on first load after login).
 function DashboardSkeleton() {
   return (
     <div className="flex h-full bg-gray-50">
       {/* Left sidebar skeleton */}
-      <div className="w-72 border-r border-gray-200 bg-white p-4 space-y-4 shrink-0">
+      <div className="w-72 border-r border-gray-200 bg-white p-4 space-y-4 shrink-0 hidden md:block">
         <div className="h-8 bg-gray-100 rounded-lg animate-pulse" />
         <div className="h-4 bg-gray-100 rounded w-1/2 animate-pulse" />
         <div className="grid grid-cols-3 gap-2">
@@ -65,7 +64,7 @@ function DashboardSkeleton() {
       {/* Map skeleton */}
       <div className="flex-1 bg-gray-200 animate-pulse" />
       {/* Right panel skeleton */}
-      <div className="w-80 border-l border-gray-200 bg-white p-4 space-y-4 shrink-0">
+      <div className="w-80 border-l border-gray-200 bg-white p-4 space-y-4 shrink-0 hidden md:block">
         <div className="flex gap-2">
           {[1, 2, 3].map(i => (
             <div key={i} className="h-8 w-20 bg-gray-100 rounded-lg animate-pulse" />
@@ -86,63 +85,50 @@ export default function DashboardPage() {
   const [rightPanelOpen, setRightPanelOpen] = useState(true);
   const isMobile = useIsMobile();
 
-  // Milestone 2 P1 RBAC: a device_only share (status glance, no location)
-  // must not see tabs whose endpoints would 403 — the server strips
-  // coordinates anyway, so hiding them is honest UX, not the security
-  // boundary (that is _assert_device_access min_role on every endpoint).
   const selectedDevice = devices.find(d => d.id === selectedDeviceId);
   const accessRole: 'owner' | 'admin' | 'viewer' | 'device_only' = selectedDevice?.access_role ?? 'owner';
   const visibleTabs = accessRole === 'device_only'
     ? PANEL_TABS.filter(t => !['location', 'zones', 'media', 'evidence'].includes(t.id))
     : PANEL_TABS;
-  // If the active tab is hidden by the role (e.g. the user was on Location
-  // and the selected device became a device_only share), fall back to a
-  // visible tab so the panel area never renders blank.
   const effectiveTab = visibleTabs.some(t => t.id === activeTab) ? activeTab : 'sentinel';
 
-  // Show skeleton while Zustand hydrates from localStorage — prevents the
-  // blank dashboard flash on first load after login.
   if (!_hasHydrated) {
     return <DashboardSkeleton />;
   }
 
   return (
-    <div className="flex h-full relative">
+    <div className="flex h-full relative bg-gray-50">
       {/* Map (Main Area) */}
       <div className="flex-1 h-full pb-14 md:pb-0">
         <MapView />
       </div>
 
-      {/* ─── Right Panel Toggle Button — ALWAYS visible, OUTSIDE the panel ── */}
-      {/* This button is positioned at the right edge of the map, between
-          the map and the right panel. It works whether the panel is open
-          or closed because it's never hidden inside the panel. */}
+      {/* ─── Right Panel Toggle Button — ALWAYS visible ── */}
       <button
         onClick={() => setRightPanelOpen(!rightPanelOpen)}
-        className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 z-50 w-6 h-16 items-center justify-center bg-white border border-gray-200 border-r-0 rounded-l-lg shadow-sm hover:bg-gray-50 transition-colors group"
+        className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 z-50 w-6 h-16 items-center justify-center bg-white border border-gray-200 border-r-0 rounded-l-lg shadow-md hover:bg-gray-50 transition-colors group"
         style={{ right: rightPanelOpen ? '320px' : '0px', transition: 'right 0.3s ease-out' }}
         aria-label={rightPanelOpen ? 'Close panel' : 'Open panel'}
       >
         {rightPanelOpen ? (
-          <ChevronRight size={14} className="text-gray-400 group-hover:text-gray-600" />
+          <ChevronRight size={14} className="text-gray-400 group-hover:text-gray-700" />
         ) : (
-          <ChevronLeft size={14} className="text-gray-400 group-hover:text-gray-600" />
+          <ChevronLeft size={14} className="text-gray-400 group-hover:text-gray-700" />
         )}
       </button>
 
       {/* ─── Desktop Right Panel ────────────────────────────────────────── */}
-      <div className={`hidden md:flex bg-white border-l border-gray-200 flex-col transition-all duration-300 ease-out ${rightPanelOpen ? 'w-80' : 'w-0'}`}>
+      <div className={`hidden md:flex bg-white border-l border-gray-200 flex-col shadow-xl transition-all duration-300 ease-out ${rightPanelOpen ? 'w-80' : 'w-0'}`}>
         {rightPanelOpen && (
           <>
-            {/* Tabs — Military Style */}
+            {/* Tabs — Premium Style */}
             <Tabs
               tabs={visibleTabs}
               activeTab={effectiveTab}
               onTabChange={setActiveTab}
             />
 
-            {/* Tab Content — each panel wrapped in ErrorBoundary so a
-                render crash in one panel doesn't take down the whole dashboard */}
+            {/* Tab Content */}
             <div className="flex-1 overflow-y-auto">
               {effectiveTab === 'sentinel' && <ErrorBoundary><SentinelPanel /></ErrorBoundary>}
               {effectiveTab === 'commands' && <ErrorBoundary><CommandPanel /></ErrorBoundary>}
@@ -161,13 +147,13 @@ export default function DashboardPage() {
               {effectiveTab === 'errors' && <ErrorBoundary><ErrorPanel /></ErrorBoundary>}
             </div>
 
-            {/* Panel footer — Military Status */}
-            <div className="px-4 py-2 border-t border-gray-200 flex items-center justify-between relative">
+            {/* Panel footer — Premium Status */}
+            <div className="px-4 py-2 border-t border-gray-200 flex items-center justify-between bg-gray-50/50">
               <div className="flex items-center gap-1.5">
-                <span className="w-1 h-1 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.4)] animate-pulse-slow" />
-                <span className="text-[8px] font-mono text-emerald-600 font-bold uppercase tracking-wider">Live</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.4)] animate-pulse-slow" />
+                <span className="text-[10px] font-mono text-emerald-600 font-bold uppercase tracking-wider">Live</span>
               </div>
-              <span className="text-[8px] font-mono text-gray-400 font-bold uppercase tracking-wider">Magneetar OS</span>
+              <span className="text-[9px] font-mono text-gray-400 font-bold uppercase tracking-wider">Magneetar OS</span>
             </div>
           </>
         )}
@@ -178,42 +164,42 @@ export default function DashboardPage() {
         <>
           {/* Backdrop */}
           <div
-            className="fixed inset-0 z-40 bg-black/30 md:hidden"
+            className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm md:hidden"
             onClick={() => setRightPanelOpen(false)}
           />
           {/* Drawer */}
           <div className="fixed top-0 right-0 bottom-14 w-[85vw] max-w-sm z-50 bg-white shadow-2xl flex flex-col animate-slide-in-right md:hidden">
             {/* Close button + tab indicator */}
-            <div className="flex items-center justify-between px-3 py-2 border-b border-gray-200">
+            <div className="flex items-center justify-between px-3 py-2.5 border-b border-gray-200 bg-gray-50/50">
               <div className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                <span className="text-[10px] font-mono font-bold text-gray-700 uppercase tracking-wider">
+                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                <span className="text-[12px] font-mono font-bold text-gray-700 uppercase tracking-wider">
                   {effectiveTab}
                 </span>
               </div>
               <button
                 onClick={() => setRightPanelOpen(false)}
-                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors"
+                className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors"
               >
-                <X size={16} className="text-gray-500" />
+                <X size={18} className="text-gray-500" />
               </button>
             </div>
 
             {/* Tab Pills */}
-            <div className="flex gap-1 px-3 py-2 border-b border-gray-100 overflow-x-auto">
+            <div className="flex gap-1.5 px-3 py-2.5 border-b border-gray-100 overflow-x-auto">
               {visibleTabs.map((tab) => {
                 const Icon = tab.icon;
                 return (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-bold whitespace-nowrap transition-all ${
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-bold whitespace-nowrap transition-all ${
                       effectiveTab === tab.id
-                        ? 'bg-gray-900 text-white'
+                        ? 'bg-gray-900 text-white shadow-md'
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
                   >
-                    <Icon size={12} />
+                    <Icon size={13} />
                     {tab.label}
                   </button>
                 );

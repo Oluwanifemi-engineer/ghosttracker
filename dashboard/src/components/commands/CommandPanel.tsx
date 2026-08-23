@@ -32,11 +32,12 @@ const COMMAND_GROUPS: {
   label: string;
   icon: typeof Radio;
   commands: string[];
+  color: string;
 }[] = [
-  { id: 'locate', label: 'Locate', icon: LocateFixed, commands: ['ping', 'location_burst'] },
-  { id: 'evidence', label: 'Evidence', icon: Camera, commands: ['capture_photo_front', 'capture_photo', 'capture_audio'] },
-  { id: 'control', label: 'Control', icon: Siren, commands: ['lock', 'alarm', 'lost_mode'] },
-  { id: 'danger', label: 'Danger', icon: AlertTriangle, commands: ['wipe'] },
+  { id: 'locate', label: 'Locate', icon: LocateFixed, commands: ['ping', 'location_burst'], color: 'blue' },
+  { id: 'evidence', label: 'Evidence', icon: Camera, commands: ['capture_photo_front', 'capture_photo', 'capture_audio'], color: 'purple' },
+  { id: 'control', label: 'Control', icon: Siren, commands: ['lock', 'alarm', 'lost_mode'], color: 'amber' },
+  { id: 'danger', label: 'Danger', icon: AlertTriangle, commands: ['wipe'], color: 'red' },
 ];
 
 const commandById = (c: string) => COMMANDS.find(x => x.command === c)!;
@@ -159,15 +160,14 @@ export function CommandPanel() {
   };
 
   return (
-    <div className="p-4 space-y-4">
+    <div className="p-3 space-y-3">
       {/* Offline SMS relay notice */}
       {smsRelayActive && (
-        <div className="flex items-start gap-2 px-3 py-2 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 animate-fade-in">
-          <MessageSquareText size={13} className="shrink-0 mt-0.5" />
-          <div className="text-[10px] font-mono leading-relaxed">
-            <span className="font-bold">Device offline — commands will be delivered via SMS</span>
-            <span className="opacity-80"> to {selectedDevice?.sms_phone}. The phone executes them locally even
-            without internet, and the ack returns when it next connects.</span>
+        <div className="flex items-start gap-2 px-3 py-2.5 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 animate-fade-in">
+          <MessageSquareText size={14} className="shrink-0 mt-0.5" />
+          <div className="text-[11px] font-mono leading-relaxed">
+            <span className="font-bold">Offline — SMS mode</span>
+            <span className="opacity-80"> Commands delivered via SMS to {selectedDevice?.sms_phone}</span>
           </div>
         </div>
       )}
@@ -175,41 +175,56 @@ export function CommandPanel() {
       {/* Quick Actions — owner/admin only */}
       {canCommand && (
       <div>
-        <div className="text-[11px] font-mono text-gray-500 uppercase tracking-wider font-bold mb-2.5 px-1">
+        <div className="text-[12px] font-mono text-gray-600 uppercase tracking-wider font-bold mb-2 px-1">
           Quick Actions
         </div>
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           {COMMAND_GROUPS.map(group => {
             const open = openGroups.has(group.id);
             const GroupIcon = group.icon;
+            const colorClasses = {
+              blue: 'bg-blue-50 border-blue-200 hover:border-blue-300',
+              purple: 'bg-purple-50 border-purple-200 hover:border-purple-300',
+              amber: 'bg-amber-50 border-amber-200 hover:border-amber-300',
+              red: 'bg-red-50 border-red-200 hover:border-red-300',
+            }[group.color];
+            const iconColorClasses = {
+              blue: 'text-blue-600',
+              purple: 'text-purple-600',
+              amber: 'text-amber-600',
+              red: 'text-red-600',
+            }[group.color];
             return (
               <div
                 key={group.id}
-                className="rounded-xl border border-gray-200 bg-white overflow-hidden"
+                className={cn(
+                  "rounded-xl border overflow-hidden transition-all duration-200",
+                  open ? colorClasses : 'bg-gray-50 border-gray-200 hover:border-gray-300'
+                )}
               >
                 <button
                   onClick={() => toggleGroup(group.id)}
                   aria-expanded={open}
                   aria-label={`${group.label} commands`}
-                  className="w-full flex items-center justify-between gap-2 px-3 py-2.5 hover:bg-gray-50 transition-colors"
+                  className="w-full flex items-center justify-between gap-2 px-3 py-2.5 hover:bg-white/50 transition-colors"
                 >
                   <span className="flex items-center gap-2">
-                    <span className="w-6 h-6 rounded-lg bg-gray-100 flex items-center justify-center">
-                      <GroupIcon size={12} className="text-gray-500" />
+                    <span className={cn("w-7 h-7 rounded-lg flex items-center justify-center", open ? 'bg-white' : 'bg-gray-100')}>
+                      <GroupIcon size={14} className={iconColorClasses} />
                     </span>
-                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-gray-600">
+                    <span className="text-[12px] font-mono font-bold uppercase tracking-wider text-gray-700">
                       {group.label}
                     </span>
                   </span>
                   <svg
-                    width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
-                    className={`text-gray-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+                    width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+                    className={cn("text-gray-400 transition-transform duration-200", open && 'rotate-180')}
                   >
                     <polyline points="6 9 12 15 18 9" />
                   </svg>
                 </button>
                 {open && (
-                  <div className="grid grid-cols-3 gap-1.5 p-2 border-t border-gray-100 animate-fade-in">
+                  <div className="grid grid-cols-2 gap-2 p-2.5 border-t border-gray-100 bg-white animate-fade-in">
                     {group.commands.map(c => {
                       const { command, label, icon, tone, title } = commandById(c);
                       return (
@@ -234,14 +249,14 @@ export function CommandPanel() {
 
         {/* Feedback strip */}
         {commandError && (
-          <div className="mt-2.5 flex items-center gap-2 px-3 py-2 rounded-lg bg-red-50 border border-red-200 text-red-600 text-[10px] font-mono font-bold animate-fade-in">
-            <AlertTriangle size={11} className="shrink-0" />
+          <div className="mt-3 flex items-center gap-2 px-3 py-2.5 rounded-lg bg-red-50 border border-red-200 text-red-600 text-[11px] font-mono font-bold animate-fade-in">
+            <AlertTriangle size={13} className="shrink-0" />
             {commandError}
           </div>
         )}
         {!commandError && lastSent && (
-          <div className="mt-2.5 flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-mono font-bold animate-fade-in">
-            <CheckCircle2 size={11} className="shrink-0" />
+          <div className="mt-3 flex items-center gap-2 px-3 py-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] font-mono font-bold animate-fade-in">
+            <CheckCircle2 size={13} className="shrink-0" />
             {getCommandLabel(lastSent)} command sent —{' '}
             {smsRelayActive
               ? 'the phone will execute it from the SMS (no internet needed).'
@@ -251,16 +266,15 @@ export function CommandPanel() {
 
         {/* Wipe confirmation */}
         {confirmWipe && (
-          <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3.5 space-y-2.5 animate-fade-in">
+          <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-4 space-y-3 animate-fade-in">
             <div className="flex items-start gap-2">
-              <AlertTriangle size={14} className="text-red-500 shrink-0 mt-0.5" />
+              <AlertTriangle size={16} className="text-red-500 shrink-0 mt-0.5" />
               <div>
-                <div className="text-[10px] font-mono text-red-600 font-bold uppercase tracking-wider">
+                <div className="text-[12px] font-mono text-red-600 font-bold uppercase tracking-wider">
                   Permanent wipe
                 </div>
-                <div className="text-[10px] font-mono text-gray-600 mt-1 leading-relaxed">
-                  This factory-resets the device, erasing ALL data on it. It requires
-                  device-admin permission on the phone and cannot be undone.
+                <div className="text-[11px] font-mono text-gray-600 mt-1 leading-relaxed">
+                  This factory-resets the device, erasing ALL data. Cannot be undone.
                 </div>
               </div>
             </div>
@@ -277,9 +291,9 @@ export function CommandPanel() {
                   handleSend('wipe', 'CONFIRMED_WIPE', wipePassword);
                 }
               }}
-              className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs font-mono text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-red-300 transition-colors"
+              className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2.5 text-[11px] font-mono text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-red-300 focus:ring-2 focus:ring-red-100 transition-all"
             />
-            {wipeError && <div className="text-[10px] font-mono text-red-500">{wipeError}</div>}
+            {wipeError && <div className="text-[11px] font-mono text-red-500">{wipeError}</div>}
             <div className="flex gap-2">
               <button
                 onClick={() => {
@@ -290,14 +304,14 @@ export function CommandPanel() {
                   handleSend('wipe', 'CONFIRMED_WIPE', wipePassword);
                 }}
                 disabled={sending === 'wipe'}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white text-[10px] font-mono font-bold uppercase tracking-wider transition-all"
+                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white text-[11px] font-mono font-bold uppercase tracking-wider transition-all shadow-sm"
               >
                 {sending === 'wipe' ? 'SENDING...' : 'Confirm wipe'}
               </button>
               <button
                 onClick={() => { setConfirmWipe(false); setWipePassword(''); setWipeError(''); }}
                 disabled={sending === 'wipe'}
-                className="px-3 py-2 rounded-lg border border-gray-200 text-gray-600 hover:text-gray-900 hover:bg-gray-50 text-[10px] font-mono font-bold transition-all"
+                className="px-4 py-2.5 rounded-lg border border-gray-200 text-gray-600 hover:text-gray-900 hover:bg-gray-50 text-[11px] font-mono font-bold transition-all"
               >
                 Cancel
               </button>
@@ -309,15 +323,15 @@ export function CommandPanel() {
 
       {/* Command History */}
       <div>
-        <div className="flex items-center justify-between mb-2.5 px-1">
-          <div className="text-[11px] font-mono text-gray-500 uppercase tracking-wider font-bold">
+        <div className="flex items-center justify-between mb-2 px-1">
+          <div className="text-[12px] font-mono text-gray-600 uppercase tracking-wider font-bold">
             Recent Commands
           </div>
           {canCommand && commands.filter(c => c.status !== 'pending').length > 0 && deleteTarget !== 'all-finished' && (
             <button
               onClick={() => { setDeleteTarget('all-finished'); setDeleteError(''); }}
               className="flex items-center gap-1 text-[10px] font-mono font-bold uppercase tracking-wider text-gray-400 hover:text-red-500 transition-colors"
-              title="Remove ALL executed, failed & expired entries (keeps pending commands)"
+              title="Remove ALL executed, failed & expired entries"
             >
               <Trash2 size={11} />
               Clear all finished
@@ -327,8 +341,8 @@ export function CommandPanel() {
 
         {/* Step-up confirm card */}
         {deleteTarget !== null && (
-          <div className="mb-2.5 rounded-xl border border-red-200 bg-red-50 p-3.5 space-y-2.5 animate-fade-in">
-            <div className="text-[10px] font-mono text-red-600 leading-relaxed">
+          <div className="mb-3 rounded-xl border border-red-200 bg-red-50 p-3.5 space-y-2.5 animate-fade-in">
+            <div className="text-[11px] font-mono text-red-600 leading-relaxed">
               {deleteTarget === 'all-finished'
                 ? 'Delete all executed, failed & expired commands for this device? Pending commands are kept. This cannot be undone.'
                 : `Delete this ${getCommandLabel(commands.find(c => c.id === deleteTarget)?.command || '')} command from history? This cannot be undone.`}
@@ -346,9 +360,9 @@ export function CommandPanel() {
                   confirmDelete();
                 }
               }}
-              className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs font-mono text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-red-300 transition-colors"
+              className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-[11px] font-mono text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-red-300 focus:ring-2 focus:ring-red-100 transition-all"
             />
-            {deleteError && <div className="text-[10px] font-mono text-red-500">{deleteError}</div>}
+            {deleteError && <div className="text-[11px] font-mono text-red-500">{deleteError}</div>}
             <div className="text-[10px] font-mono text-gray-500 leading-relaxed">
               This session verifies with <span className="font-bold text-gray-700">{stepUpPasswordHint()}</span>.
             </div>
@@ -356,7 +370,7 @@ export function CommandPanel() {
               <button
                 onClick={confirmDelete}
                 disabled={deleting}
-                className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white text-[11px] font-bold transition-all"
+                className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white text-[11px] font-bold transition-all shadow-sm"
               >
                 <Trash2 size={12} />
                 {deleting ? 'Deleting...' : 'Yes, Delete'}
@@ -373,14 +387,14 @@ export function CommandPanel() {
           </div>
         )}
 
-        <div className="space-y-1.5 max-h-48 overflow-y-auto">
+        <div className="space-y-2 max-h-56 overflow-y-auto">
           {commands.length === 0 ? (
             <div className="text-center py-8">
               <div className="w-12 h-12 rounded-2xl bg-gray-100 border border-gray-200 flex items-center justify-center mx-auto mb-3">
                 <Zap size={18} className="text-gray-400" />
               </div>
-              <div className="text-gray-500 text-xs font-bold mb-1">No commands sent yet</div>
-              <div className="text-gray-400 text-[10px] font-mono leading-relaxed max-w-[200px] mx-auto">
+              <div className="text-gray-600 text-[12px] font-bold mb-1">No commands sent yet</div>
+              <div className="text-gray-400 text-[11px] font-mono leading-relaxed max-w-[220px] mx-auto">
                 Use the buttons above to ping, capture, lock, or alarm your device. Commands are delivered the next time the device checks in.
               </div>
             </div>
@@ -388,17 +402,17 @@ export function CommandPanel() {
             commands.slice(0, 10).map((cmd) => (
               <div
                 key={cmd.id}
-                className="flex items-center gap-3 py-2 px-2 rounded-lg bg-gray-50 border border-gray-100"
+                className="flex items-center gap-3 py-2.5 px-3 rounded-lg bg-gray-50 border border-gray-200 hover:border-gray-300 transition-colors"
               >
                 <div className={cn(
-                  'w-2 h-2 rounded-full',
+                  'w-2.5 h-2.5 rounded-full shrink-0',
                   cmd.status === 'expired' ? 'bg-gray-300' :
-                  cmd.status === 'executed' ? 'bg-emerald-400' :
-                  cmd.status === 'failed' ? 'bg-red-400' :
-                  'bg-amber-400'
+                  cmd.status === 'executed' ? 'bg-emerald-500' :
+                  cmd.status === 'failed' ? 'bg-red-500' :
+                  'bg-amber-500'
                 )} />
                 <div className="flex-1 min-w-0">
-                  <div className="font-mono text-[11px] text-gray-900 font-bold">
+                  <div className="font-mono text-[12px] text-gray-900 font-bold">
                     {getCommandLabel(cmd.command)}
                   </div>
                   <div className="font-mono text-[10px] text-gray-500">
@@ -406,8 +420,8 @@ export function CommandPanel() {
                   </div>
                   {cmd.status === 'failed' && (
                     <div
-                      className="mt-1 font-mono text-[9px] text-red-500 leading-snug"
-                      title="Why this command failed — fix the cause and retry."
+                      className="mt-1 font-mono text-[10px] text-red-500 leading-snug"
+                      title="Why this command failed"
                     >
                       {cmd.failure_reason || (
                         cmd.command === 'lock' ? 'Device Admin may not be active — enable in phone Settings > Security'
@@ -421,7 +435,7 @@ export function CommandPanel() {
                   )}
                 </div>
                 <span className={cn(
-                  'text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded-md',
+                  'text-[10px] font-mono font-bold uppercase px-2 py-1 rounded-md shrink-0',
                   cmd.status === 'expired' ? 'text-gray-400 bg-gray-100 line-through' :
                   cmd.status === 'executed' ? 'text-emerald-700 bg-emerald-50' :
                   cmd.status === 'failed' ? 'text-red-600 bg-red-50' :
@@ -433,8 +447,8 @@ export function CommandPanel() {
                 {canCommand && (
                   <button
                     onClick={() => { setDeleteTarget(cmd.id); setDeleteError(''); }}
-                    className="text-gray-300 hover:text-red-500 transition-colors p-0.5"
-                    title="Delete this command from history"
+                    className="text-gray-300 hover:text-red-500 transition-colors p-1"
+                    title="Delete from history"
                     aria-label={`Delete ${getCommandLabel(cmd.command)} command`}
                   >
                     <Trash2 size={12} />

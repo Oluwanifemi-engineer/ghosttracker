@@ -18,11 +18,8 @@ interface TabsProps {
 }
 
 export function Tabs({ tabs, activeTab, onTabChange }: TabsProps) {
-  // Two-row wrap grid: 8 tabs at 4-per-row always fit the narrow right panel
-  // (w-80) without clipping — a horizontal scrollbar hid the trailing tabs
-  // (Guardian, Errors) with no visible affordance, so they were unreachable.
   return (
-    <div className="grid grid-cols-4 border-b border-gray-200">
+    <div className="grid grid-cols-3 border-b border-gray-200 bg-gray-50/50">
       {tabs.map((tab) => {
         const Icon = tab.icon;
         const isActive = activeTab === tab.id;
@@ -32,20 +29,20 @@ export function Tabs({ tabs, activeTab, onTabChange }: TabsProps) {
             onClick={() => onTabChange(tab.id)}
             title={tab.label}
             className={cn(
-              'flex items-center justify-center gap-1.5 px-3 py-3',
-              'text-[10px] font-bold tracking-wide font-mono uppercase',
+              'flex items-center justify-center gap-1.5 px-2 py-2.5',
+              'text-[11px] font-bold tracking-wide font-mono uppercase',
               'cursor-pointer transition-all duration-200',
               'border-b-2 border-transparent',
               isActive
-                ? 'text-gray-900 border-gray-900 bg-gray-50'
-                : 'text-gray-400 hover:text-gray-600',
+                ? 'text-gray-900 border-gray-900 bg-white shadow-sm'
+                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100',
               'relative shrink-0 min-w-0 flex-col gap-1'
             )}
           >
-            {Icon && <Icon size={13} className={cn(isActive ? 'text-gray-900' : 'text-gray-400')} />}
-            <span className="font-bold whitespace-nowrap text-[9px]">{tab.label}</span>
+            {Icon && <Icon size={14} className={cn(isActive ? 'text-gray-900' : 'text-gray-400')} />}
+            <span className="font-bold whitespace-nowrap text-[10px]">{tab.label}</span>
             {tab.badge !== undefined && tab.badge > 0 && (
-              <span className="ml-1 px-1.5 py-0.5 text-[9px] font-bold bg-red-50 text-red-600 border border-red-200 rounded-full">
+              <span className="absolute -top-0.5 right-1 px-1.5 py-0.5 text-[8px] font-bold bg-red-500 text-white rounded-full">
                 {tab.badge}
               </span>
             )}
