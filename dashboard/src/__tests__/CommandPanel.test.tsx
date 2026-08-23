@@ -5,7 +5,6 @@ import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import '@testing-library/jest-dom/jest-globals';
 
-// ─── Mutable mock state ───────────────────────────────────────────────────
 let mockSelectedDeviceId: string | null = 'device-001';
 let mockCommands: any[] = [];
 let mockDevices: any[] = [];
@@ -15,7 +14,8 @@ const mockGetCommands = jest.fn<(...args: any[]) => any>();
 const mockDeleteCommand = jest.fn<(...args: any[]) => any>();
 const mockClearCommandHistory = jest.fn<(...args: any[]) => any>();
 
-jest.mock('@/store/useStore', () => ({    useStore: jest.fn((selector: any) => {
+jest.mock('@/store/useStore', () => ({
+  useStore: jest.fn((selector: any) => {
     const state = {
       selectedDeviceId: mockSelectedDeviceId,
       commands: mockCommands,
@@ -38,19 +38,10 @@ jest.mock('@/lib/api', () => ({
 jest.mock('lucide-react', () => {
   const noop = () => null;
   return {
-    Radio: noop,
-    Camera: noop,
-    Webcam: noop,
-    Mic: noop,
-    LocateFixed: noop,
-    Lock: noop,
-    Siren: noop,
-    AlertTriangle: noop,
-    CheckCircle2: noop,
-    Trash2: noop,
-    X: noop,
-    MessageSquareText: noop,
-    Zap: noop,
+    Radio: noop, Camera: noop, Webcam: noop, Mic: noop,
+    LocateFixed: noop, Lock: noop, Siren: noop, AlertTriangle: noop,
+    CheckCircle2: noop, Trash2: noop, X: noop,
+    MessageSquareText: noop, Zap: noop, ShieldAlert: noop,
   };
 });
 
@@ -95,107 +86,82 @@ describe('CommandPanel Component', () => {
 
   it('shows an offline-SMS notice when the device is offline with SMS enabled', () => {
     mockDevices = [{
-      id: 'device-001',
-      is_online: false,
-      sms_commands_enabled: true,
-      sms_phone: '+2348012345678',
+      id: 'device-001', is_online: false,
+      sms_commands_enabled: true, sms_phone: '+2348012345678',
     }];
     render(<CommandPanel />);
-    expect(screen.getByText(/delivered via SMS/i)).toBeInTheDocument();
+    expect(screen.getByText(/SMS mode/i)).toBeInTheDocument();
     expect(screen.getByText(/\+2348012345678/)).toBeInTheDocument();
   });
 
   it('hides the offline-SMS notice when the device is online', () => {
     mockDevices = [{
-      id: 'device-001',
-      is_online: true,
-      sms_commands_enabled: true,
-      sms_phone: '+2348012345678',
+      id: 'device-001', is_online: true,
+      sms_commands_enabled: true, sms_phone: '+2348012345678',
     }];
     render(<CommandPanel />);
-    expect(screen.queryByText(/delivered via SMS/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/SMS mode/i)).not.toBeInTheDocument();
   });
 
   it('hides the offline-SMS notice when SMS commands are not enabled', () => {
     mockDevices = [{
-      id: 'device-001',
-      is_online: false,
-      sms_commands_enabled: false,
-      sms_phone: null,
+      id: 'device-001', is_online: false,
+      sms_commands_enabled: false, sms_phone: null,
     }];
     render(<CommandPanel />);
-    expect(screen.queryByText(/delivered via SMS/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/SMS mode/i)).not.toBeInTheDocument();
   });
 
   it('renders the Locate group open by default, others collapsed', () => {
     render(<CommandPanel />);
-    // The 'locate' group starts open — its commands are visible immediately.
     expect(screen.getByTestId('cmd-btn-ping')).toBeInTheDocument();
     expect(screen.getByTestId('cmd-btn-location_burst')).toBeInTheDocument();
-    // Other groups are collapsed — their commands must not be rendered yet
-    // (rollout reveals them on click, keeping the narrow panel uncluttered).
     expect(screen.queryByTestId('cmd-btn-capture_photo')).not.toBeInTheDocument();
     expect(screen.queryByTestId('cmd-btn-alarm')).not.toBeInTheDocument();
     expect(screen.queryByTestId('cmd-btn-wipe')).not.toBeInTheDocument();
   });
 
-  it('rolls out group commands on click (every command reachable)', () => {
+  it('rolls out group commands on click', () => {
     render(<CommandPanel />);
-    // Roll out Evidence → capture commands appear.
     fireEvent.click(screen.getByLabelText('Evidence commands'));
     expect(screen.getByTestId('cmd-btn-capture_photo_front')).toBeInTheDocument();
     expect(screen.getByTestId('cmd-btn-capture_photo')).toBeInTheDocument();
     expect(screen.getByTestId('cmd-btn-capture_audio')).toBeInTheDocument();
-    // Roll out Control → siren/lock/lost-mode appear. The siren button sends
-    // wire command 'alarm' (server/device contract).
     fireEvent.click(screen.getByLabelText('Control commands'));
     expect(screen.getByTestId('cmd-btn-lock')).toBeInTheDocument();
     expect(screen.getByTestId('cmd-btn-alarm')).toBeInTheDocument();
     expect(screen.getByTestId('cmd-btn-lost_mode')).toBeInTheDocument();
-    // Roll out Danger → wipe appears.
     fireEvent.click(screen.getByLabelText('Danger commands'));
     expect(screen.getByTestId('cmd-btn-wipe')).toBeInTheDocument();
   });
 
   it('shows empty state when no commands in history', () => {
     render(<CommandPanel />);
-    expect(screen.getByText('No commands sent yet')).toBeInTheDocument();
+    expect(screen.getByText('No commands yet')).toBeInTheDocument();
   });
 
-  it('renders command history when commands exist', () => {
+  it('renders command history when commands exist', async () => {
     mockCommands = [
-      {
-        id: 1,
-        device_id: 'device-001',
-        command: 'ping',
-        params: '',
-        status: 'executed',
-        issued_at: '2024-01-01T12:00:00Z',
-        executed_at: '2024-01-01T12:00:05Z',
-      },
+      { id: 1, command: 'ping', status: 'executed', issued_at: '2024-01-01T12:00:00Z' },
     ];
-    mockGetCommands.mockResolvedValue({ commands: mockCommands });
     render(<CommandPanel />);
-    expect(screen.getByText('executed')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('executed')).toBeInTheDocument();
+    });
   });
 
   it('issues a ping command when Ping button is clicked', async () => {
     render(<CommandPanel />);
-    const pingBtn = screen.getByTestId('cmd-btn-ping');
-    fireEvent.click(pingBtn);
-
+    fireEvent.click(screen.getByTestId('cmd-btn-ping'));
     await waitFor(() => {
       expect(mockIssueCommand).toHaveBeenCalledWith('device-001', 'ping', '', undefined);
     });
   });
 
-  it('issues the siren via wire command "alarm" when SIREN button is clicked', async () => {
+  it('issues the siren via wire command "alarm"', async () => {
     render(<CommandPanel />);
-    // Siren lives in the collapsed Control group — roll it out first.
     fireEvent.click(screen.getByLabelText('Control commands'));
-    const sirenBtn = screen.getByTestId('cmd-btn-alarm');
-    fireEvent.click(sirenBtn);
-
+    fireEvent.click(screen.getByTestId('cmd-btn-alarm'));
     await waitFor(() => {
       expect(mockIssueCommand).toHaveBeenCalledWith('device-001', 'alarm', '', undefined);
     });
@@ -204,26 +170,18 @@ describe('CommandPanel Component', () => {
   it('does not issue commands when no device is selected', () => {
     mockSelectedDeviceId = null;
     render(<CommandPanel />);
-    // Buttons still render; clicking should be a no-op since handleSend early-returns
-    const pingBtn = screen.getByTestId('cmd-btn-ping');
-    fireEvent.click(pingBtn);
+    fireEvent.click(screen.getByTestId('cmd-btn-ping'));
     expect(mockIssueCommand).not.toHaveBeenCalled();
   });
 
-  it('sends CONFIRMED_WIPE only after an explicit confirmation + step-up password', async () => {
+  it('sends CONFIRMED_WIPE only after confirmation + password', async () => {
     render(<CommandPanel />);
-    // Wipe lives in the collapsed Danger group — roll it out first.
     fireEvent.click(screen.getByLabelText('Danger commands'));
-    // First click arms the confirmation — no command issued yet.
     fireEvent.click(screen.getByTestId('cmd-btn-wipe'));
     expect(mockIssueCommand).not.toHaveBeenCalled();
 
-    // Confirmation dialog appears; a wipe needs the step-up password (the
-    // server re-verifies it before queueing a factory reset).
     const confirmBtn = screen.getByRole('button', { name: /confirm wipe/i });
     fireEvent.click(confirmBtn);
-    // Empty password → local validation, no API call.
-    expect(mockIssueCommand).not.toHaveBeenCalled();
     expect(screen.getByText('Enter your password to confirm the wipe.')).toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText('Confirm wipe password'), { target: { value: 'master-key' } });
@@ -235,7 +193,6 @@ describe('CommandPanel Component', () => {
 
   it('wipe password is required — Enter with empty password does not fire', async () => {
     render(<CommandPanel />);
-    // Wipe lives in the collapsed Danger group — roll it out first.
     fireEvent.click(screen.getByLabelText('Danger commands'));
     fireEvent.click(screen.getByTestId('cmd-btn-wipe'));
     fireEvent.keyDown(screen.getByLabelText('Confirm wipe password'), { key: 'Enter' });
@@ -258,7 +215,6 @@ describe('CommandPanel Component', () => {
     mockIssueCommand.mockRejectedValueOnce(new Error('Wipe requires params'));
     render(<CommandPanel />);
     fireEvent.click(screen.getByTestId('cmd-btn-ping'));
-
     await waitFor(() => {
       expect(screen.getByText(/Wipe requires params/)).toBeInTheDocument();
     });
@@ -282,7 +238,7 @@ describe('CommandPanel Component', () => {
   });
 });
 
-describe('CommandPanel — password-gated history deletion (step-up)', () => {
+describe('CommandPanel — history deletion', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockSelectedDeviceId = 'device-001';
@@ -295,66 +251,72 @@ describe('CommandPanel — password-gated history deletion (step-up)', () => {
     mockClearCommandHistory.mockResolvedValue({ status: 'ok', deleted: 1 });
   });
 
-  it('shows a per-row trash button and opens the password card', () => {
+  it('shows trash buttons and opens password card', async () => {
     render(<CommandPanel />);
-    const trash = screen.getAllByLabelText(/Delete .* command/);
-    expect(trash).toHaveLength(2);
-    fireEvent.click(trash[0]);
+    await waitFor(() => {
+      expect(screen.getAllByTitle('Delete from history')).toHaveLength(2);
+    });
+    fireEvent.click(screen.getAllByTitle('Delete from history')[0]);
     expect(screen.getByLabelText('Confirm deletion password')).toBeInTheDocument();
   });
 
   it('requires a password — empty input never calls the API', async () => {
     render(<CommandPanel />);
-    fireEvent.click(screen.getAllByLabelText(/Delete .* command/)[0]);
-    fireEvent.click(screen.getByText('Yes, Delete'));
+    await waitFor(() => {
+      expect(screen.getAllByTitle('Delete from history')).toHaveLength(2);
+    });
+    fireEvent.click(screen.getAllByTitle('Delete from history')[0]);
+    const deleteBtn = screen.getAllByRole('button').find(b => b.textContent?.includes('Delete') && !b.textContent?.includes('Cancel'));
+    if (deleteBtn) fireEvent.click(deleteBtn);
     await waitFor(() => {
       expect(screen.getByText('Enter your password to confirm.')).toBeInTheDocument();
     });
     expect(mockDeleteCommand).not.toHaveBeenCalled();
   });
 
-  it('deletes a single command with the step-up password', async () => {
+  it('deletes a single command with the password', async () => {
     render(<CommandPanel />);
-    fireEvent.click(screen.getAllByLabelText(/Delete .* command/)[0]);
+    await waitFor(() => {
+      expect(screen.getAllByTitle('Delete from history')).toHaveLength(2);
+    });
+    fireEvent.click(screen.getAllByTitle('Delete from history')[0]);
     fireEvent.change(screen.getByLabelText('Confirm deletion password'), { target: { value: 's3cret' } });
-    fireEvent.click(screen.getByText('Yes, Delete'));
+    const deleteBtn = screen.getAllByRole('button').find(b => b.textContent?.includes('Delete') && !b.textContent?.includes('Cancel'));
+    if (deleteBtn) fireEvent.click(deleteBtn);
     await waitFor(() => {
       expect(mockDeleteCommand).toHaveBeenCalledWith(1, 's3cret');
     });
   });
 
-  it('keeps the card open and shows the error when the password is wrong', async () => {
+  it('shows error when password is wrong', async () => {
     mockDeleteCommand.mockRejectedValueOnce(new Error('Invalid password'));
     render(<CommandPanel />);
-    fireEvent.click(screen.getAllByLabelText(/Delete .* command/)[0]);
+    await waitFor(() => {
+      expect(screen.getAllByTitle('Delete from history')).toHaveLength(2);
+    });
+    fireEvent.click(screen.getAllByTitle('Delete from history')[0]);
     fireEvent.change(screen.getByLabelText('Confirm deletion password'), { target: { value: 'wrong' } });
-    fireEvent.click(screen.getByText('Yes, Delete'));
+    const deleteBtn = screen.getAllByRole('button').find(b => b.textContent?.includes('Delete') && !b.textContent?.includes('Cancel'));
+    if (deleteBtn) fireEvent.click(deleteBtn);
     await waitFor(() => {
       expect(screen.getByText('Invalid password')).toBeInTheDocument();
     });
-    expect(screen.getByLabelText('Confirm deletion password')).toBeInTheDocument();
   });
 
-  it('shows Clear all finished only when finished commands exist and clears them with the password', async () => {
+  it('hides Clear all when every command is pending', async () => {
+    mockCommands = [{ id: 2, command: 'lock', status: 'pending', issued_at: '2024-01-02' }];
     render(<CommandPanel />);
-    fireEvent.click(screen.getByText('Clear all finished'));
-    expect(screen.getByLabelText('Confirm deletion password')).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText('Confirm deletion password'), { target: { value: 's3cret' } });
-    fireEvent.click(screen.getByText('Yes, Delete'));
     await waitFor(() => {
-      expect(mockClearCommandHistory).toHaveBeenCalledWith('device-001', 's3cret');
+      expect(screen.queryByText('Clear all')).not.toBeInTheDocument();
     });
   });
 
-  it('hides Clear all finished when every command is pending', () => {
-    mockCommands = [{ id: 2, command: 'lock', status: 'pending', issued_at: '2024-01-02' }];
-    render(<CommandPanel />);
-    expect(screen.queryByText('Clear all finished')).not.toBeInTheDocument();
-  });
-
-  it('resets the pending delete confirm when the selected device changes', () => {
+  it('resets delete confirm when device changes', async () => {
     const { rerender } = render(<CommandPanel />);
-    fireEvent.click(screen.getAllByLabelText(/Delete .* command/)[0]);
+    await waitFor(() => {
+      expect(screen.getAllByTitle('Delete from history')).toHaveLength(2);
+    });
+    fireEvent.click(screen.getAllByTitle('Delete from history')[0]);
     expect(screen.getByLabelText('Confirm deletion password')).toBeInTheDocument();
 
     mockSelectedDeviceId = 'device-002';

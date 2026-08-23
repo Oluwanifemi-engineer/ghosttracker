@@ -16,7 +16,11 @@ import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
 import { Tabs } from '@/components/ui/Tabs';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { TabId } from '@/types';
-import { Shield, Terminal, MapPin, Fence, Camera, ClipboardList, Bug, ShieldCheck, Users, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import {
+  Shield, Terminal, MapPin, Fence, Camera,
+  ClipboardList, Bug, ShieldCheck, Users,
+  X, ChevronLeft, ChevronRight
+} from 'lucide-react';
 
 const PANEL_TABS = [
   { id: 'sentinel' as TabId, label: 'Sentinel', icon: Shield },
@@ -42,37 +46,48 @@ function useIsMobile() {
   return mobile;
 }
 
-// Loading skeleton shown while Zustand persist hydrates from localStorage
+// Premium loading skeleton — dark theme, matches the production feel
 function DashboardSkeleton() {
   return (
-    <div className="flex h-full bg-gray-50">
+    <div className="flex h-full bg-[#0a0a0f]">
       {/* Left sidebar skeleton */}
-      <div className="w-72 border-r border-gray-200 bg-white p-4 space-y-4 shrink-0 hidden md:block">
-        <div className="h-8 bg-gray-100 rounded-lg animate-pulse" />
-        <div className="h-4 bg-gray-100 rounded w-1/2 animate-pulse" />
+      <div className="w-64 border-r border-white/[0.06] bg-[#0a0a0f] p-4 space-y-4 shrink-0 hidden md:block">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-white/[0.06] animate-pulse" />
+          <div className="space-y-1.5">
+            <div className="h-3 bg-white/[0.06] rounded w-24 animate-pulse" />
+            <div className="h-2 bg-white/[0.04] rounded w-16 animate-pulse" />
+          </div>
+        </div>
+        <div className="h-px bg-white/[0.06]" />
         <div className="grid grid-cols-3 gap-2">
-          <div className="h-12 bg-gray-100 rounded-lg animate-pulse" />
-          <div className="h-12 bg-gray-100 rounded-lg animate-pulse" />
-          <div className="h-12 bg-gray-100 rounded-lg animate-pulse" />
+          <div className="h-14 bg-white/[0.04] rounded-xl animate-pulse" />
+          <div className="h-14 bg-white/[0.04] rounded-xl animate-pulse" />
+          <div className="h-14 bg-white/[0.04] rounded-xl animate-pulse" />
         </div>
         <div className="space-y-2">
           {[1, 2, 3].map(i => (
-            <div key={i} className="h-16 bg-gray-100 rounded-lg animate-pulse" />
+            <div key={i} className="h-20 bg-white/[0.03] rounded-xl animate-pulse" />
           ))}
         </div>
       </div>
       {/* Map skeleton */}
-      <div className="flex-1 bg-gray-200 animate-pulse" />
+      <div className="flex-1 bg-[#0a0a0f] relative">
+        <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/[0.03] via-transparent to-blue-500/[0.03] animate-pulse" />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="w-12 h-12 rounded-full border-2 border-emerald-500/20 border-t-emerald-500 animate-spin" />
+        </div>
+      </div>
       {/* Right panel skeleton */}
-      <div className="w-80 border-l border-gray-200 bg-white p-4 space-y-4 shrink-0 hidden md:block">
+      <div className="w-80 border-l border-white/[0.06] bg-[#0a0a0f] p-4 space-y-4 shrink-0 hidden md:block">
         <div className="flex gap-2">
           {[1, 2, 3].map(i => (
-            <div key={i} className="h-8 w-20 bg-gray-100 rounded-lg animate-pulse" />
+            <div key={i} className="h-10 flex-1 bg-white/[0.04] rounded-xl animate-pulse" />
           ))}
         </div>
         <div className="space-y-3">
           {[1, 2, 3, 4].map(i => (
-            <div key={i} className="h-12 bg-gray-100 rounded-lg animate-pulse" />
+            <div key={i} className="h-16 bg-white/[0.03] rounded-xl animate-pulse" />
           ))}
         </div>
       </div>
@@ -83,6 +98,7 @@ function DashboardSkeleton() {
 export default function DashboardPage() {
   const { activeTab, setActiveTab, devices, selectedDeviceId, _hasHydrated } = useStore();
   const [rightPanelOpen, setRightPanelOpen] = useState(true);
+  const [leftSidebarOpen, setLeftSidebarOpen] = useState(true);
   const isMobile = useIsMobile();
 
   const selectedDevice = devices.find(d => d.id === selectedDeviceId);
@@ -97,31 +113,48 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="flex h-full relative bg-gray-50">
-      {/* Map (Main Area) */}
-      <div className="flex-1 h-full pb-14 md:pb-0">
+    <div className="flex h-full relative bg-[#0a0a0f]">
+      {/* ═══ Map (Full Width — Premium Dark) ═══ */}
+      <div className="flex-1 h-full pb-16 md:pb-0">
         <MapView />
       </div>
 
-      {/* ─── Right Panel Toggle Button — ALWAYS visible ── */}
+      {/* ═══ Left Sidebar — Collapsible (Desktop) ═══ */}
+      <div
+        className={`hidden md:flex flex-col bg-[#0a0a0f] border-r border-white/[0.06] transition-all duration-300 ease-out ${
+          leftSidebarOpen ? 'w-64' : 'w-0 overflow-hidden'
+        }`}
+      >
+        {leftSidebarOpen && (
+          <div className="flex-1 overflow-y-auto">
+            {/* Sidebar content rendered by layout */}
+          </div>
+        )}
+      </div>
+
+      {/* ═══ Right Panel Toggle — Always Visible ═══ */}
       <button
         onClick={() => setRightPanelOpen(!rightPanelOpen)}
-        className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 z-50 w-6 h-16 items-center justify-center bg-white border border-gray-200 border-r-0 rounded-l-lg shadow-md hover:bg-gray-50 transition-colors group"
+        className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 z-50 w-5 h-14 items-center justify-center bg-[#111118] border border-white/[0.08] border-r-0 rounded-l-lg shadow-xl hover:bg-[#1a1a24] transition-all duration-200 group"
         style={{ right: rightPanelOpen ? '320px' : '0px', transition: 'right 0.3s ease-out' }}
         aria-label={rightPanelOpen ? 'Close panel' : 'Open panel'}
       >
         {rightPanelOpen ? (
-          <ChevronRight size={14} className="text-gray-400 group-hover:text-gray-700" />
+          <ChevronRight size={12} className="text-white/30 group-hover:text-white/70 transition-colors" />
         ) : (
-          <ChevronLeft size={14} className="text-gray-400 group-hover:text-gray-700" />
+          <ChevronLeft size={12} className="text-white/30 group-hover:text-white/70 transition-colors" />
         )}
       </button>
 
-      {/* ─── Desktop Right Panel ────────────────────────────────────────── */}
-      <div className={`hidden md:flex bg-white border-l border-gray-200 flex-col shadow-xl transition-all duration-300 ease-out ${rightPanelOpen ? 'w-80' : 'w-0'}`}>
+      {/* ═══ Desktop Right Panel — Premium Dark ═══ */}
+      <div
+        className={`hidden md:flex bg-[#0a0a0f] border-l border-white/[0.06] flex-col shadow-2xl transition-all duration-300 ease-out ${
+          rightPanelOpen ? 'w-80' : 'w-0'
+        }`}
+      >
         {rightPanelOpen && (
           <>
-            {/* Tabs — Premium Style */}
+            {/* Tabs — Premium Dark Style */}
             <Tabs
               tabs={visibleTabs}
               activeTab={effectiveTab}
@@ -147,59 +180,59 @@ export default function DashboardPage() {
               {effectiveTab === 'errors' && <ErrorBoundary><ErrorPanel /></ErrorBoundary>}
             </div>
 
-            {/* Panel footer — Premium Status */}
-            <div className="px-4 py-2 border-t border-gray-200 flex items-center justify-between bg-gray-50/50">
+            {/* Panel Footer — Premium Status Bar */}
+            <div className="px-4 py-2 border-t border-white/[0.06] flex items-center justify-between bg-[#0a0a0f]">
               <div className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.4)] animate-pulse-slow" />
-                <span className="text-[10px] font-mono text-emerald-600 font-bold uppercase tracking-wider">Live</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)] animate-pulse" />
+                <span className="text-[9px] font-mono text-emerald-400/80 font-bold uppercase tracking-wider">Live</span>
               </div>
-              <span className="text-[9px] font-mono text-gray-400 font-bold uppercase tracking-wider">Magneetar OS</span>
+              <span className="text-[8px] font-mono text-white/20 font-bold uppercase tracking-wider">Magneetar OS</span>
             </div>
           </>
         )}
       </div>
 
-      {/* ─── Mobile Right Panel (Slide-in Drawer) ───────────────────────── */}
+      {/* ═══ Mobile Right Panel (Slide-in Drawer) ═══ */}
       {isMobile && rightPanelOpen && (
         <>
-          {/* Backdrop */}
+          {/* Backdrop — blur effect */}
           <div
-            className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm md:hidden"
+            className="fixed inset-0 z-40 bg-black/70 backdrop-blur-md md:hidden"
             onClick={() => setRightPanelOpen(false)}
           />
-          {/* Drawer */}
-          <div className="fixed top-0 right-0 bottom-14 w-[85vw] max-w-sm z-50 bg-white shadow-2xl flex flex-col animate-slide-in-right md:hidden">
+          {/* Drawer — premium dark */}
+          <div className="fixed top-0 right-0 bottom-16 w-[85vw] max-w-sm z-50 bg-[#0a0a0f] border-l border-white/[0.06] shadow-2xl flex flex-col md:hidden">
             {/* Close button + tab indicator */}
-            <div className="flex items-center justify-between px-3 py-2.5 border-b border-gray-200 bg-gray-50/50">
+            <div className="flex items-center justify-between px-3 py-3 border-b border-white/[0.06]">
               <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                <span className="text-[12px] font-mono font-bold text-gray-700 uppercase tracking-wider">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
+                <span className="text-[11px] font-mono font-bold text-white/60 uppercase tracking-wider">
                   {effectiveTab}
                 </span>
               </div>
               <button
                 onClick={() => setRightPanelOpen(false)}
-                className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors"
+                className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-white/[0.06] transition-colors"
               >
-                <X size={18} className="text-gray-500" />
+                <X size={16} className="text-white/40" />
               </button>
             </div>
 
-            {/* Tab Pills */}
-            <div className="flex gap-1.5 px-3 py-2.5 border-b border-gray-100 overflow-x-auto">
+            {/* Tab Pills — scrollable */}
+            <div className="flex gap-1.5 px-3 py-2.5 border-b border-white/[0.06] overflow-x-auto scrollbar-hide">
               {visibleTabs.map((tab) => {
                 const Icon = tab.icon;
                 return (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-bold whitespace-nowrap transition-all ${
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[10px] font-bold whitespace-nowrap transition-all duration-200 ${
                       effectiveTab === tab.id
-                        ? 'bg-gray-900 text-white shadow-md'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        ? 'bg-white text-[#0a0a0f] shadow-lg'
+                        : 'bg-white/[0.06] text-white/40 hover:bg-white/[0.1] hover:text-white/70'
                     }`}
                   >
-                    <Icon size={13} />
+                    <Icon size={12} />
                     {tab.label}
                   </button>
                 );
@@ -228,16 +261,16 @@ export default function DashboardPage() {
         </>
       )}
 
-      {/* Mobile Bottom Tab Bar */}
+      {/* ═══ Mobile Bottom Tab Bar — Premium Dark ═══ */}
       {isMobile && (
         <>
-          {/* Floating panel toggle button on mobile (bottom right) */}
+          {/* Floating panel toggle button */}
           <button
             onClick={() => setRightPanelOpen(!rightPanelOpen)}
-            className="fixed bottom-16 right-3 z-30 w-12 h-12 rounded-full bg-gray-900 text-white shadow-xl flex items-center justify-center active:scale-95 transition-transform md:hidden"
+            className="fixed bottom-[4.5rem] right-3 z-30 w-11 h-11 rounded-full bg-white text-[#0a0a0f] shadow-2xl flex items-center justify-center active:scale-95 transition-transform md:hidden"
             aria-label={rightPanelOpen ? 'Close panel' : 'Open panel'}
           >
-            {rightPanelOpen ? <X size={20} /> : <Terminal size={20} />}
+            {rightPanelOpen ? <X size={18} /> : <Terminal size={18} />}
           </button>
           <MobileBottomNav />
         </>

@@ -16,12 +16,12 @@ interface CommandButtonProps {
   title?: string;
 }
 
-// Premium command button styling — solid colors, smooth transitions, no broken states
+// Premium dark theme — solid colors, smooth transitions, micro-interactions
 const TONE_STYLES: Record<CommandTone, string> = {
-  primary: 'border-gray-200 text-gray-700 hover:bg-gray-900 hover:text-white hover:border-gray-900 hover:shadow-lg',
-  accent: 'border-blue-200 text-blue-700 hover:bg-blue-600 hover:text-white hover:border-blue-600 hover:shadow-lg',
-  warning: 'border-amber-200 text-amber-700 hover:bg-amber-500 hover:text-white hover:border-amber-500 hover:shadow-lg',
-  danger: 'border-red-200 text-red-700 hover:bg-red-500 hover:text-white hover:border-red-500 hover:shadow-lg',
+  primary: 'border-white/[0.08] text-white/60 hover:bg-emerald-500/15 hover:text-emerald-300 hover:border-emerald-500/30 hover:shadow-lg hover:shadow-emerald-500/10',
+  accent: 'border-white/[0.08] text-white/60 hover:bg-blue-500/15 hover:text-blue-300 hover:border-blue-500/30 hover:shadow-lg hover:shadow-blue-500/10',
+  warning: 'border-white/[0.08] text-white/60 hover:bg-amber-500/15 hover:text-amber-300 hover:border-amber-500/30 hover:shadow-lg hover:shadow-amber-500/10',
+  danger: 'border-white/[0.08] text-white/60 hover:bg-red-500/15 hover:text-red-300 hover:border-red-500/30 hover:shadow-lg hover:shadow-red-500/10',
 };
 
 export function CommandButton({
@@ -42,19 +42,19 @@ export function CommandButton({
       aria-label={label}
       className={cn(
         'group relative flex flex-col items-center justify-center gap-2 py-4 px-2 rounded-xl border-2 transition-all duration-200',
-        'active:scale-[0.97]',
+        'active:scale-[0.95]',
         'disabled:opacity-40 disabled:cursor-not-allowed',
         TONE_STYLES[tone],
       )}
     >
       {loading ? (
-        <div className="w-8 h-8 rounded-full border-2 border-current border-t-transparent animate-spin" />
+        <div className="w-7 h-7 rounded-full border-2 border-current border-t-transparent animate-spin" />
       ) : (
-        <div className="w-9 h-9 rounded-xl bg-current/10 flex items-center justify-center transition-all duration-200 group-hover:bg-white/20 group-hover:scale-110">
-          <Icon size={16} strokeWidth={2.2} />
+        <div className="w-8 h-8 rounded-xl bg-white/[0.06] flex items-center justify-center transition-all duration-200 group-hover:bg-white/[0.1] group-hover:scale-110">
+          <Icon size={15} strokeWidth={2.2} />
         </div>
       )}
-      <span className="text-[10px] font-mono font-bold uppercase tracking-widest leading-none">
+      <span className="text-[9px] font-mono font-bold uppercase tracking-widest leading-none">
         {label}
       </span>
     </button>

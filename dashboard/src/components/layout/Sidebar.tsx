@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useStore } from '@/store/useStore';
 import { getAPI } from '@/lib/api';
@@ -8,7 +8,11 @@ import { cn, relativeTime, isOnline, getSignalLevel, deviceDisplayName } from '@
 import { StatusIndicator } from '@/components/ui/StatusIndicator';
 import { ClaimDeviceModal } from '@/components/devices/ClaimDeviceModal';
 import { stepUpPasswordHint } from '@/lib/utils';
-import { ChevronLeft, ChevronRight, Smartphone, BarChart3, Copy, Battery, MapPin, Link2, Trash2, X, AlertTriangle, Shield, ShieldCheck, ExternalLink } from 'lucide-react';
+import {
+  ChevronLeft, ChevronRight, Smartphone, BarChart3,
+  Link2, Trash2, X, AlertTriangle, Shield, ShieldCheck,
+  ExternalLink
+} from 'lucide-react';
 import { SidebarSkeleton } from '@/components/ui/Skeleton';
 
 function sentinelLevel(score: number): string {
@@ -39,9 +43,12 @@ function useIsMobile() {
 }
 
 export function Sidebar() {
-  const { devices, selectedDeviceId, selectDevice, sidebarOpen, setSidebarOpen, isConnected, setDevices, userProfile, setUserProfile } = useStore();
+  const {
+    devices, selectedDeviceId, selectDevice, sidebarOpen, setSidebarOpen,
+    isConnected, setDevices, userProfile, setUserProfile
+  } = useStore();
   const isMobile = useIsMobile();
-  const sidebarVisible = isMobile ? sidebarOpen : sidebarOpen;
+  const sidebarVisible = sidebarOpen;
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [showClaimModal, setShowClaimModal] = useState(false);
   const [confirmPurge, setConfirmPurge] = useState(false);
@@ -53,11 +60,8 @@ export function Sidebar() {
   const offlineCount = devices.filter(d => !isOnline(d.last_seen)).length;
   const archivedDevices = devices.filter(d => !!d.archived_at);
   const activeDevices = devices.filter(d => !d.archived_at);
-
-  // Check if user is admin (for showing Admin link)
   const isAdmin = userProfile?.tier === 'admin';
 
-  // Fetch user profile on mount to determine admin status
   const fetchUserProfile = useCallback(async () => {
     if (!isConnected || userProfile) return;
     try {
@@ -119,171 +123,131 @@ export function Sidebar() {
     {/* Mobile backdrop */}
     {isMobile && sidebarVisible && (
       <div
-        className="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm md:hidden"
+        className="fixed inset-0 z-30 bg-black/70 backdrop-blur-md md:hidden"
         onClick={() => setSidebarOpen(false)}
       />
     )}
     <aside className={cn(
-      'bg-white border-r border-gray-200 flex flex-col transition-all duration-300 ease-out relative overflow-hidden',
+      'bg-[#0a0a0f] border-r border-white/[0.06] flex flex-col transition-all duration-300 ease-out relative overflow-hidden',
       isMobile
         ? cn('fixed top-0 left-0 bottom-0 z-40', sidebarVisible ? 'w-72 translate-x-0' : 'w-72 -translate-x-full')
-        : cn(sidebarVisible ? 'w-72' : 'w-12')
+        : cn(sidebarVisible ? 'w-64' : 'w-12')
     )}>
-      {/* Subtle left accent rail */}
-      <div className="absolute left-0 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-gray-300 to-transparent pointer-events-none" />
-      {/* ─── Toggle ──────────────────────────────────────────────────────── */}
+      {/* Toggle */}
       <button
         onClick={() => setSidebarOpen(!sidebarOpen)}
-        className="h-10 flex items-center justify-center border-b border-gray-200 hover:bg-gray-50 transition-colors group shrink-0"
+        className="h-10 flex items-center justify-center border-b border-white/[0.06] hover:bg-white/[0.03] transition-colors group shrink-0"
         aria-label={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
       >
         {sidebarOpen ? (
-          <ChevronLeft size={13} className="text-gray-700 group-hover:text-gray-700 transition-colors" />
+          <ChevronLeft size={12} className="text-white/30 group-hover:text-white/70 transition-colors" />
         ) : (
-          <ChevronRight size={13} className="text-gray-700 group-hover:text-gray-700 transition-colors" />
+          <ChevronRight size={12} className="text-white/30 group-hover:text-white/70 transition-colors" />
         )}
       </button>
 
       {sidebarOpen && (
         <>
-          {/* ─── M Brand Bar ──────────────────────────────────────────────── */}
-          <div className="px-4 py-3 border-b border-gray-200 flex items-center gap-3 shrink-0 relative">
+          {/* Brand Bar */}
+          <div className="px-4 py-3 border-b border-white/[0.06] flex items-center gap-3 shrink-0">
             <img src="/magneetar-mhalf.svg" alt="Magneetar" className="w-7 h-7 rounded-lg shrink-0" />
             <div>
-              <div className="text-[11px] font-bold tracking-[0.2em] text-gray-900">MAGNEETAR</div>
-              <div className="text-[8px] font-mono text-gray-700 tracking-[0.2em] font-bold">COMMAND CENTER</div>
+              <div className="text-[10px] font-bold tracking-[0.25em] text-white/90">MAGNEETAR</div>
+              <div className="text-[7px] font-mono text-white/30 tracking-[0.2em] font-bold">COMMAND CENTER</div>
             </div>
-            <div className="ml-auto w-1 h-1 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.4)]" />
+            <div className="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
           </div>
 
-          {/* ─── Quick Nav Links ──────────────────────────────────────────── */}
-          <div className="px-3 py-2 border-b border-gray-200 shrink-0">
+          {/* Quick Nav Links */}
+          <div className="px-3 py-2 border-b border-white/[0.06] shrink-0">
             <div className="flex gap-1">
               <Link
                 href="/dashboard"
-                className={cn(
-                  "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[9px] font-mono font-bold uppercase tracking-wider transition-all",
-                  "hover:bg-gray-100 text-gray-600 hover:text-gray-900"
-                )}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[8px] font-mono font-bold uppercase tracking-wider transition-all hover:bg-white/[0.06] text-white/40 hover:text-white/80"
                 title="Command Center"
               >
-                <Smartphone size={10} />
+                <Smartphone size={9} />
                 <span>Dashboard</span>
               </Link>
-              {/* Admin link — only visible for admin users */}
               {isAdmin && (
                 <Link
                   href="/admin"
-                  className={cn(
-                    "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[9px] font-mono font-bold uppercase tracking-wider transition-all",
-                    "hover:bg-amber-50 text-amber-600 hover:text-amber-700 border border-amber-200 hover:border-amber-300"
-                  )}
-                  title="Admin Panel (company internal)"
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[8px] font-mono font-bold uppercase tracking-wider transition-all hover:bg-amber-500/10 text-amber-400/70 hover:text-amber-300 border border-amber-500/15 hover:border-amber-500/30"
+                  title="Admin Panel"
                 >
-                  <Shield size={10} />
+                  <Shield size={9} />
                   <span>Admin</span>
                 </Link>
               )}
               <Link
                 href="/trust"
                 target="_blank"
-                className={cn(
-                  "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[9px] font-mono font-bold uppercase tracking-wider transition-all",
-                  "hover:bg-emerald-50 text-emerald-600 hover:text-emerald-700 border border-emerald-200 hover:border-emerald-300"
-                )}
-                title="Trust Score — check any IMEI"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[8px] font-mono font-bold uppercase tracking-wider transition-all hover:bg-emerald-500/10 text-emerald-400/70 hover:text-emerald-300 border border-emerald-500/15 hover:border-emerald-500/30"
+                title="Trust Score"
               >
-                <ShieldCheck size={10} />
+                <ShieldCheck size={9} />
                 <span>Trust</span>
-                <ExternalLink size={7} className="opacity-50" />
+                <ExternalLink size={6} className="opacity-40" />
               </Link>
             </div>
           </div>
 
-          {/* ─── Stats Overview ────────────────────────────────────────────── */}
+          {/* Stats Overview */}
           {stats && (
-            <div className="px-4 py-3 border-b border-gray-200 shrink-0">
+            <div className="px-3 py-3 border-b border-white/[0.06] shrink-0">
               <div className="flex items-center gap-1.5 mb-2.5">
-                <BarChart3 size={11} className="text-gray-700" />
-                <span className="text-[9px] font-mono text-gray-700 uppercase tracking-[0.15em] font-bold">
-                  Overview
-                </span>
+                <BarChart3 size={10} className="text-white/25" />
+                <span className="text-[8px] font-mono text-white/30 uppercase tracking-[0.15em] font-bold">Overview</span>
               </div>
               <div className="grid grid-cols-3 gap-1.5">
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-2 text-center transition-all duration-200 hover:border-gray-300 hover:shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-                  <div className="font-mono text-sm font-bold text-gray-900 tabular-nums">{stats.total_devices}</div>
-                  <div className="text-[7px] font-mono text-gray-700 font-bold uppercase tracking-wider">Total</div>
+                <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-2 text-center transition-all duration-200 hover:border-white/[0.1] hover:bg-white/[0.05]">
+                  <div className="font-mono text-sm font-bold text-white/90 tabular-nums">{stats.total_devices}</div>
+                  <div className="text-[7px] font-mono text-white/30 font-bold uppercase tracking-wider">Total</div>
                 </div>
-                <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-2 text-center transition-all duration-200 hover:border-emerald-300 hover:shadow-[0_2px_8px_rgba(16,185,129,0.04)]">
-                  <div className="font-mono text-sm font-bold text-emerald-600 tabular-nums">{stats.active_devices}</div>
-                  <div className="text-[7px] font-mono text-gray-700 font-bold uppercase tracking-wider">Active</div>
+                <div className="bg-emerald-500/[0.06] border border-emerald-500/15 rounded-xl p-2 text-center transition-all duration-200 hover:border-emerald-500/30 hover:bg-emerald-500/[0.1]">
+                  <div className="font-mono text-sm font-bold text-emerald-400 tabular-nums">{stats.active_devices}</div>
+                  <div className="text-[7px] font-mono text-white/30 font-bold uppercase tracking-wider">Active</div>
                 </div>
-                <div className="bg-red-50 border border-red-200 rounded-lg p-2 text-center transition-all duration-200 hover:border-red-300 hover:shadow-[0_2px_8px_rgba(239,68,68,0.04)]">
-                  <div className="font-mono text-sm font-bold text-red-500 tabular-nums">{stats.stolen_devices}</div>
-                  <div className="text-[7px] font-mono text-gray-700 font-bold uppercase tracking-wider">Stolen</div>
+                <div className="bg-red-500/[0.06] border border-red-500/15 rounded-xl p-2 text-center transition-all duration-200 hover:border-red-500/30 hover:bg-red-500/[0.1]">
+                  <div className="font-mono text-sm font-bold text-red-400 tabular-nums">{stats.stolen_devices}</div>
+                  <div className="text-[7px] font-mono text-white/30 font-bold uppercase tracking-wider">Stolen</div>
                 </div>
               </div>
-              {stats.alerts_today > 0 && (
-                <div className="flex items-center gap-1.5 mt-2 px-2 py-1.5 bg-amber-50 border border-amber-200 rounded-lg">
-                  <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-amber-500 shrink-0">
-                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-                    <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
-                  </svg>
-                  <span className="text-[8px] font-mono text-amber-600 font-bold">{stats.alerts_today} alert{stats.alerts_today !== 1 ? 's' : ''} today</span>
-                </div>
-              )}
             </div>
           )}
 
-          {/* ─── Devices Section Header ────────────────────────────────────── */}
-          <div className="px-4 py-2.5 border-b border-gray-200 shrink-0">
+          {/* Devices Section Header */}
+          <div className="px-4 py-2.5 border-b border-white/[0.06] shrink-0">
             <div className="flex items-center gap-2">
-              <Smartphone size={12} className="text-gray-700" />
-              <span className="text-[10px] font-mono text-gray-700 uppercase tracking-[0.2em] font-bold">
-                Devices
-              </span>
-              <span className="ml-auto flex items-center gap-2 text-[10px] font-mono font-bold tabular-nums">
+              <Smartphone size={11} className="text-white/30" />
+              <span className="text-[9px] font-mono text-white/35 uppercase tracking-[0.2em] font-bold">Devices</span>
+              <span className="ml-auto flex items-center gap-2 text-[9px] font-mono font-bold tabular-nums">
                 {archivedDevices.length > 0 && (
-                  <span className="text-amber-500">{archivedDevices.length} archived</span>
+                  <span className="text-amber-400/70">{archivedDevices.length} archived</span>
                 )}
-                <span className="text-gray-700">{activeDevices.length}</span>
+                <span className="text-white/40">{activeDevices.length}</span>
               </span>
               <button
                 onClick={() => setShowClaimModal(true)}
-                title="Link a device (pairing code)"
+                title="Link a device"
                 aria-label="Link a device"
-                className="flex items-center gap-1 px-1.5 py-1 rounded-md text-[9px] font-mono font-bold uppercase tracking-wider text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 border border-emerald-200 transition-all"
+                className="flex items-center gap-1 px-1.5 py-1 rounded-lg text-[8px] font-mono font-bold uppercase tracking-wider text-emerald-400/70 hover:text-emerald-300 hover:bg-emerald-500/10 border border-emerald-500/15 hover:border-emerald-500/30 transition-all"
               >
-                <Link2 size={10} />
+                <Link2 size={9} />
                 Link
               </button>
             </div>
-            {archivedDevices.length > 0 && (
-              <button
-                onClick={() => { setConfirmPurge(true); setPurgeError(''); }}
-                title={`Delete all ${archivedDevices.length} archived device(s) permanently (requires password)`}
-                aria-label="Delete all archived devices"
-                className="mt-2 w-full flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md text-[9px] font-mono font-bold uppercase tracking-wider text-amber-600 hover:text-amber-700 hover:bg-amber-50 border border-amber-200 transition-all"
-              >
-                <Trash2 size={10} />
-                Delete {archivedDevices.length} archived
-              </button>
-            )}
           </div>
 
-          {/* ─── Device List ────────────────────────────────────────────────── */}
+          {/* Device List */}
           <div className="flex-1 overflow-y-auto overscroll-contain">
             {!isConnected ? (
               <SidebarSkeleton />
             ) : devices.length === 0 ? (
               <div className="p-6 text-center">
-                <Smartphone size={22} className="mx-auto text-gray-300 mb-3" />
-                <div className="text-gray-700 text-sm font-bold">
-                  No devices registered.
-                </div>
-                <div className="text-gray-700 text-[10px] font-mono mt-1">
-                  Connect to server first.
-                </div>
+                <Smartphone size={20} className="mx-auto text-white/15 mb-3" />
+                <div className="text-white/50 text-sm font-bold">No devices registered.</div>
+                <div className="text-white/25 text-[10px] font-mono mt-1">Connect to server first.</div>
               </div>
             ) : (
               [...activeDevices, ...archivedDevices].map((device, idx) => {
@@ -295,29 +259,28 @@ export function Sidebar() {
                   device.sentinel_score >= 40 ? 'bg-amber-500' :
                   'bg-emerald-500';
                 const scoreText =
-                  device.is_stolen ? 'text-red-600 bg-red-50 border border-red-200' :
-                  device.sentinel_score >= 70 ? 'text-red-600 bg-red-50 border border-red-200' :
-                  device.sentinel_score >= 40 ? 'text-amber-600 bg-amber-50 border border-amber-200' :
-                  'text-emerald-600 bg-emerald-50 border border-emerald-200';
+                  device.is_stolen ? 'text-red-400 bg-red-500/10 border border-red-500/20' :
+                  device.sentinel_score >= 70 ? 'text-red-400 bg-red-500/10 border border-red-500/20' :
+                  device.sentinel_score >= 40 ? 'text-amber-400 bg-amber-500/10 border border-amber-500/20' :
+                  'text-emerald-400 bg-emerald-500/10 border border-emerald-500/20';
 
                 return (
                   <button
                     key={device.id}
                     onClick={() => selectDevice(device.id)}
                     className={cn(
-                      'w-full text-left px-4 py-2.5 border-b border-gray-100 transition-all duration-150',
-                      'hover:bg-gray-50 group',
-                      selectedDeviceId === device.id && 'bg-gray-100 border-l-[2px] border-l-gray-900',
+                      'w-full text-left px-4 py-2.5 border-b border-white/[0.04] transition-all duration-150',
+                      'hover:bg-white/[0.04] group',
+                      selectedDeviceId === device.id && 'bg-white/[0.06] border-l-2 border-l-emerald-500',
                       archived && 'opacity-45 hover:opacity-70'
                     )}
-                    style={{ animationDelay: `${idx * 30}ms` }}
                   >
                     <div className="flex items-center justify-between mb-0.5">
-                      <span className="text-sm font-bold text-gray-900 truncate group-hover:text-gray-900 transition-colors max-w-[55%]">
+                      <span className="text-sm font-bold text-white/90 truncate group-hover:text-white transition-colors max-w-[55%]">
                         {deviceDisplayName(device)}
                       </span>
                       {archived && (
-                        <span className="text-[8px] font-mono font-bold uppercase tracking-wider px-1 py-0.5 rounded border border-amber-200 text-amber-600 bg-amber-50 shrink-0">
+                        <span className="text-[7px] font-mono font-bold uppercase tracking-wider px-1 py-0.5 rounded border border-amber-500/15 text-amber-400/70 bg-amber-500/[0.06] shrink-0">
                           Archived
                         </span>
                       )}
@@ -326,10 +289,10 @@ export function Sidebar() {
                           className={cn(
                             'text-[7px] font-mono font-bold uppercase tracking-wider px-1 py-0.5 rounded border shrink-0',
                             device.access_role === 'admin'
-                              ? 'border-emerald-300 text-emerald-600 bg-emerald-50'
+                              ? 'border-emerald-500/25 text-emerald-400/70 bg-emerald-500/[0.08]'
                               : device.access_role === 'viewer'
-                                ? 'border-blue-300 text-blue-600 bg-blue-50'
-                                : 'border-gray-300 text-gray-700 bg-gray-100'
+                                ? 'border-blue-500/25 text-blue-400/70 bg-blue-500/[0.08]'
+                                : 'border-white/[0.08] text-white/35 bg-white/[0.03]'
                           )}
                           title={`Shared access — ${device.access_role} role`}
                         >
@@ -343,31 +306,29 @@ export function Sidebar() {
                       />
                     </div>
 
-                    <div className="font-mono text-[9px] text-gray-700 truncate font-bold mb-0.5">
-                      {device.id}
-                    </div>
+                    <div className="font-mono text-[9px] text-white/25 truncate font-bold mb-0.5">{device.id}</div>
 
                     <div className="flex items-center gap-2">
                       <span className={cn(
                         'w-1.5 h-1.5 rounded-full',
-                        online ? 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.4)]' : 'bg-gray-300'
+                        online ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]' : 'bg-white/20'
                       )} />
-                      <span className="font-mono text-[9px] text-gray-700 font-bold">
+                      <span className="font-mono text-[9px] text-white/30 font-bold">
                         {relativeTime(device.last_seen)}
                       </span>
                     </div>
 
                     <div className="flex items-center gap-1.5 mt-1.5">
                       <span className={cn(
-                        'text-[8px] font-mono font-bold uppercase px-1.5 py-0.5 rounded',
+                        'text-[8px] font-mono font-bold uppercase px-1.5 py-0.5 rounded-lg',
                         scoreText
                       )}>
                         {device.is_stolen ? 'STOLEN' : sentinelLevel(device.sentinel_score)}
                       </span>
-                      <span className="text-[9px] font-mono font-bold text-gray-900 tabular-nums">
+                      <span className="text-[9px] font-mono font-bold text-white/70 tabular-nums">
                         {device.sentinel_score}
                       </span>
-                      <div className="flex-1 h-1 rounded-full bg-gray-200 overflow-hidden">
+                      <div className="flex-1 h-1 rounded-full bg-white/[0.06] overflow-hidden">
                         <div
                           className={cn('h-full rounded-full transition-all duration-500', scoreColor)}
                           style={{ width: `${Math.min(device.sentinel_score, 100)}%` }}
@@ -380,15 +341,15 @@ export function Sidebar() {
             )}
           </div>
 
-          {/* ─── Sidebar Footer — Online/Offline count ──────────────────────── */}
-          <div className="px-4 py-2 border-t border-gray-200 flex items-center justify-between shrink-0">
+          {/* Sidebar Footer */}
+          <div className="px-4 py-2 border-t border-white/[0.06] flex items-center justify-between shrink-0">
             <div className="flex items-center gap-2">
-              <span className="flex items-center gap-1 text-[9px] font-mono font-bold text-emerald-600">
+              <span className="flex items-center gap-1 text-[9px] font-mono font-bold text-emerald-400/70">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                 {onlineCount} online
               </span>
-              <span className="flex items-center gap-1 text-[9px] font-mono font-bold text-gray-700">
-                <span className="w-1.5 h-1.5 rounded-full bg-gray-300" />
+              <span className="flex items-center gap-1 text-[9px] font-mono font-bold text-white/25">
+                <span className="w-1.5 h-1.5 rounded-full bg-white/20" />
                 {offlineCount} offline
               </span>
             </div>
@@ -396,23 +357,21 @@ export function Sidebar() {
         </>
       )}
 
-      {/* Link-a-device modal (pairing code claim) */}
+      {/* Claim modal */}
       {showClaimModal && <ClaimDeviceModal onClose={() => setShowClaimModal(false)} />}
 
-      {/* Purge archived devices — step-up password confirm */}
+      {/* Purge confirm */}
       {confirmPurge && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/80 backdrop-blur-sm p-4">
-          <div className="w-full max-w-sm rounded-2xl border border-amber-200 bg-white shadow-2xl p-4 space-y-3 animate-fade-in">
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-[#0a0a0f]/80 backdrop-blur-sm p-4">
+          <div className="w-full max-w-sm rounded-2xl border border-white/[0.08] bg-[#111118] shadow-2xl p-4 space-y-3 animate-fade-in">
             <div className="flex items-start gap-2">
-              <AlertTriangle size={14} className="text-amber-500 shrink-0 mt-0.5" />
+              <AlertTriangle size={14} className="text-amber-400 shrink-0 mt-0.5" />
               <div>
-                <div className="text-[11px] font-mono text-amber-600 font-bold uppercase tracking-wider">
+                <div className="text-[11px] font-mono text-amber-400 font-bold uppercase tracking-wider">
                   Delete {archivedDevices.length} archived device{archivedDevices.length !== 1 ? 's' : ''}
                 </div>
-                <div className="text-[10px] font-mono text-gray-700 mt-1 leading-relaxed">
-                  These devices have been silent beyond the archive threshold. All their
-                  locations, media, evidence & alerts are erased permanently. This cannot
-                  be undone.
+                <div className="text-[10px] font-mono text-white/40 mt-1 leading-relaxed">
+                  All their data is erased permanently. Cannot be undone.
                 </div>
               </div>
             </div>
@@ -429,17 +388,14 @@ export function Sidebar() {
                   confirmPurgeArchived();
                 }
               }}
-              className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs font-mono text-gray-900 placeholder:text-gray-700 focus:outline-none focus:border-gray-400 transition-colors"
+              className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3 py-2 text-xs font-mono text-white placeholder:text-white/25 focus:outline-none focus:border-white/20 transition-colors"
             />
-            {purgeError && <div className="text-[10px] font-mono text-red-500">{purgeError}</div>}
-            <div className="text-[10px] font-mono text-gray-700 leading-relaxed">
-              This session verifies with <span className="font-bold text-gray-700">{stepUpPasswordHint()}</span>.
-            </div>
+            {purgeError && <div className="text-[10px] font-mono text-red-400">{purgeError}</div>}
             <div className="flex gap-2">
               <button
                 onClick={confirmPurgeArchived}
                 disabled={purging}
-                className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white text-[11px] font-bold transition-all"
+                className="flex-1 flex items-center justify-center gap-2 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white text-[11px] font-bold transition-all"
               >
                 <Trash2 size={12} />
                 {purging ? 'Deleting...' : 'Yes, Delete'}
@@ -447,7 +403,7 @@ export function Sidebar() {
               <button
                 onClick={() => { setConfirmPurge(false); setPurgePassword(''); setPurgeError(''); }}
                 disabled={purging}
-                className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg border border-gray-200 text-gray-700 hover:text-gray-900 hover:bg-gray-50 text-[11px] font-bold transition-all"
+                className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl border border-white/[0.08] text-white/40 hover:text-white/80 hover:bg-white/[0.06] text-[11px] font-bold transition-all"
               >
                 <X size={12} />
                 Cancel

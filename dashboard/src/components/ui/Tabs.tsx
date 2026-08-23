@@ -19,7 +19,7 @@ interface TabsProps {
 
 export function Tabs({ tabs, activeTab, onTabChange }: TabsProps) {
   return (
-    <div className="grid grid-cols-3 border-b border-gray-200 bg-gray-50/50">
+    <div className="grid grid-cols-3 border-b border-white/[0.06] bg-[#0a0a0f]">
       {tabs.map((tab) => {
         const Icon = tab.icon;
         const isActive = activeTab === tab.id;
@@ -30,19 +30,19 @@ export function Tabs({ tabs, activeTab, onTabChange }: TabsProps) {
             title={tab.label}
             className={cn(
               'flex items-center justify-center gap-1.5 px-2 py-2.5',
-              'text-[11px] font-bold tracking-wide font-mono uppercase',
+              'text-[10px] font-bold tracking-wide font-mono uppercase',
               'cursor-pointer transition-all duration-200',
               'border-b-2 border-transparent',
               isActive
-                ? 'text-gray-900 border-gray-900 bg-white shadow-sm'
-                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100',
+                ? 'text-white border-emerald-500 bg-white/[0.04]'
+                : 'text-white/35 hover:text-white/60 hover:bg-white/[0.03]',
               'relative shrink-0 min-w-0 flex-col gap-1'
             )}
           >
-            {Icon && <Icon size={14} className={cn(isActive ? 'text-gray-900' : 'text-gray-400')} />}
-            <span className="font-bold whitespace-nowrap text-[10px]">{tab.label}</span>
+            {Icon && <Icon size={13} className={cn(isActive ? 'text-emerald-400' : 'text-white/25')} />}
+            <span className="font-bold whitespace-nowrap text-[9px]">{tab.label}</span>
             {tab.badge !== undefined && tab.badge > 0 && (
-              <span className="absolute -top-0.5 right-1 px-1.5 py-0.5 text-[8px] font-bold bg-red-500 text-white rounded-full">
+              <span className="absolute -top-0.5 right-1 px-1.5 py-0.5 text-[7px] font-bold bg-red-500 text-white rounded-full">
                 {tab.badge}
               </span>
             )}

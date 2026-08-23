@@ -3,9 +3,9 @@
  * Provides offline support and caching for the dashboard.
  */
 
-const CACHE_NAME = 'magneetar-v2';
-const STATIC_CACHE = 'magneetar-static-v2';
-const DYNAMIC_CACHE = 'magneetar-dynamic-v2';
+const CACHE_NAME = 'magneetar-v3';
+const STATIC_CACHE = 'magneetar-static-v3';
+const DYNAMIC_CACHE = 'magneetar-dynamic-v3';
 
 // Assets to cache on install. NOTE: /download is deliberately EXCLUDED —
 // its APK ticket logic must always come from the latest bundle, and a stale
@@ -58,8 +58,13 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Skip non-GET requests
+  // Skip non-GET requests (POST, OPTIONS, etc.) — they must go to network
   if (request.method !== 'GET') {
+    return;
+  }
+
+  // Skip ALL cross-origin requests (trust page calls api.magneetar.me directly)
+  if (url.origin !== self.location.origin) {
     return;
   }
 
