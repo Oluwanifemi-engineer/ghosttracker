@@ -16,7 +16,7 @@ import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
 import { Tabs } from '@/components/ui/Tabs';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { TabId } from '@/types';
-import { Shield, Terminal, MapPin, Fence, Camera, ClipboardList, Bug, ShieldCheck, Users, X } from 'lucide-react';
+import { Shield, Terminal, MapPin, Fence, Camera, ClipboardList, Bug, ShieldCheck, Users, X, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const PANEL_TABS = [
   { id: 'sentinel' as TabId, label: 'Sentinel', icon: Shield },
@@ -42,8 +42,47 @@ function useIsMobile() {
   return mobile;
 }
 
+// Loading skeleton shown while Zustand persist hydrates from localStorage
+// (prevents the blank dashboard flash on first load after login).
+function DashboardSkeleton() {
+  return (
+    <div className="flex h-full bg-gray-50">
+      {/* Left sidebar skeleton */}
+      <div className="w-72 border-r border-gray-200 bg-white p-4 space-y-4 shrink-0">
+        <div className="h-8 bg-gray-100 rounded-lg animate-pulse" />
+        <div className="h-4 bg-gray-100 rounded w-1/2 animate-pulse" />
+        <div className="grid grid-cols-3 gap-2">
+          <div className="h-12 bg-gray-100 rounded-lg animate-pulse" />
+          <div className="h-12 bg-gray-100 rounded-lg animate-pulse" />
+          <div className="h-12 bg-gray-100 rounded-lg animate-pulse" />
+        </div>
+        <div className="space-y-2">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="h-16 bg-gray-100 rounded-lg animate-pulse" />
+          ))}
+        </div>
+      </div>
+      {/* Map skeleton */}
+      <div className="flex-1 bg-gray-200 animate-pulse" />
+      {/* Right panel skeleton */}
+      <div className="w-80 border-l border-gray-200 bg-white p-4 space-y-4 shrink-0">
+        <div className="flex gap-2">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="h-8 w-20 bg-gray-100 rounded-lg animate-pulse" />
+          ))}
+        </div>
+        <div className="space-y-3">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="h-12 bg-gray-100 rounded-lg animate-pulse" />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardPage() {
-  const { activeTab, setActiveTab, devices, selectedDeviceId } = useStore();
+  const { activeTab, setActiveTab, devices, selectedDeviceId, _hasHydrated } = useStore();
   const [rightPanelOpen, setRightPanelOpen] = useState(true);
   const isMobile = useIsMobile();
 
@@ -61,6 +100,12 @@ export default function DashboardPage() {
   // visible tab so the panel area never renders blank.
   const effectiveTab = visibleTabs.some(t => t.id === activeTab) ? activeTab : 'sentinel';
 
+  // Show skeleton while Zustand hydrates from localStorage — prevents the
+  // blank dashboard flash on first load after login.
+  if (!_hasHydrated) {
+    return <DashboardSkeleton />;
+  }
+
   return (
     <div className="flex h-full relative">
       {/* Map (Main Area) */}
@@ -68,25 +113,25 @@ export default function DashboardPage() {
         <MapView />
       </div>
 
+      {/* ─── Right Panel Toggle Button — ALWAYS visible, OUTSIDE the panel ── */}
+      {/* This button is positioned at the right edge of the map, between
+          the map and the right panel. It works whether the panel is open
+          or closed because it's never hidden inside the panel. */}
+      <button
+        onClick={() => setRightPanelOpen(!rightPanelOpen)}
+        className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 z-50 w-6 h-16 items-center justify-center bg-white border border-gray-200 border-r-0 rounded-l-lg shadow-sm hover:bg-gray-50 transition-colors group"
+        style={{ right: rightPanelOpen ? '320px' : '0px', transition: 'right 0.3s ease-out' }}
+        aria-label={rightPanelOpen ? 'Close panel' : 'Open panel'}
+      >
+        {rightPanelOpen ? (
+          <ChevronRight size={14} className="text-gray-400 group-hover:text-gray-600" />
+        ) : (
+          <ChevronLeft size={14} className="text-gray-400 group-hover:text-gray-600" />
+        )}
+      </button>
+
       {/* ─── Desktop Right Panel ────────────────────────────────────────── */}
-      <div className={`hidden md:flex bg-white border-l border-gray-200 flex-col transition-all duration-300 ease-out relative ${rightPanelOpen ? 'w-80' : 'w-0 overflow-hidden'}`}>
-        {/* Subtle left accent rail */}
-        <div className="absolute left-0 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-gray-300 to-transparent pointer-events-none" />
-
-        {/* Panel Toggle */}
-        <button
-          onClick={() => setRightPanelOpen(!rightPanelOpen)}
-          className="absolute right-0 top-1/2 -translate-y-1/2 z-50 w-5 h-10 flex items-center justify-center bg-white border border-gray-200 rounded-l-lg hover:bg-gray-50 transition-colors shadow-sm group"
-        >
-          <svg
-            width="10" height="10" viewBox="0 0 24 24"
-            fill="none" stroke="currentColor" strokeWidth="2"
-            className={`text-gray-400 group-hover:text-gray-600 transition-transform duration-200 ${rightPanelOpen ? 'rotate-180' : ''}`}
-          >
-            <polyline points="15 18 9 12 15 6" />
-          </svg>
-        </button>
-
+      <div className={`hidden md:flex bg-white border-l border-gray-200 flex-col transition-all duration-300 ease-out ${rightPanelOpen ? 'w-80' : 'w-0'}`}>
         {rightPanelOpen && (
           <>
             {/* Tabs — Military Style */}

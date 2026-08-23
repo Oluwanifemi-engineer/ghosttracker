@@ -9,12 +9,6 @@ import { Radio, Camera, Webcam, Mic, LocateFixed, Lock, Siren, ShieldAlert, Aler
 import { useToast } from '@/components/ui/Toast';
 import type { CommandType } from '@/types';
 
-// NOTE: buttons send the WIRE command name, which must match what the server
-// (models.CommandRequest.validate_command) and the Android app
-// (TrackingService.handleCommand) both accept. The siren button maps to
-// 'alarm' — the server/app have no 'siren' command, so sending 'siren'
-// would 422 on the server and never reach the device. Every command below is
-// implemented end-to-end (dashboard → API → device poll → handleCommand).
 const COMMANDS: {
   command: CommandType;
   label: string;
@@ -29,17 +23,10 @@ const COMMANDS: {
   { command: 'location_burst', label: 'BURST', icon: LocateFixed, tone: 'primary', title: 'Send 5 rapid location fixes' },
   { command: 'lock', label: 'LOCK', icon: Lock, tone: 'warning', title: 'Lock the device screen instantly' },
   { command: 'alarm', label: 'SIREN', icon: Siren, tone: 'warning', title: 'Play a max-volume alarm' },
-  // Lost Mode (v1.5): locks the phone to a full-screen recovery message
-  // ("This phone is lost — call +234...") that survives screen locks; the
-  // finder can call the owner from it directly. Reversible on the device.
   { command: 'lost_mode', label: 'LOST MODE', icon: ShieldAlert, tone: 'danger', title: 'Lock the device to a full-screen recovery message with a call button' },
   { command: 'wipe', label: 'WIPE', icon: AlertTriangle, tone: 'danger', title: 'Factory reset — requires confirmation' },
 ];
 
-// Vertical rollout groups: each group is a row that expands on click to
-// reveal its commands (the old 2×4 tile grid crammed 9 buttons into a narrow
-// column and pushed destructive + rare actions off-view). Grouped by intent
-// so an operator sees the surface first, then rolls out what they need.
 const COMMAND_GROUPS: {
   id: string;
   label: string;
@@ -58,14 +45,8 @@ export function CommandPanel() {
   const { commands, setCommands, selectedDeviceId, devices } = useStore();
   const { toast } = useToast();
   const selectedDevice = devices.find(d => d.id === selectedDeviceId);
-  // Milestone 2 P1 RBAC: only owner/admin may ISSUE commands or delete the
-  // audit trail (server-enforced; this hides the controls for viewer/shared).
   const accessRole: 'owner' | 'admin' | 'viewer' | 'device_only' = selectedDevice?.access_role ?? 'owner';
   const canCommand = accessRole === 'owner' || accessRole === 'admin';
-  // Offline Command Relay: when the device is offline (no data) but the owner
-  // enabled SMS commands, every issued command is ALSO texted to the phone and
-  // executed locally. Show an honest notice so the operator knows the delivery
-  // path before tapping a command.
   const smsRelayActive = !!selectedDevice &&
     !selectedDevice.is_online &&
     selectedDevice.sms_commands_enabled &&
@@ -74,9 +55,6 @@ export function CommandPanel() {
   const [confirmWipe, setConfirmWipe] = useState(false);
   const [commandError, setCommandError] = useState('');
   const [lastSent, setLastSent] = useState('');
-  // Vertical rollout groups — 'locate' starts open so the surface is never
-  // empty; the rest expand on click. Each group stays independent so the
-  // operator can keep Evidence open while firing a Control command.
   const [openGroups, setOpenGroups] = useState<Set<string>>(() => new Set(['locate']));
   const toggleGroup = (id: string) =>
     setOpenGroups(prev => {
@@ -84,15 +62,8 @@ export function CommandPanel() {
       if (next.has(id)) next.delete(id); else next.add(id);
       return next;
     });
-  // Wipe is a factory reset — the server requires the step-up password
-  // (account password for users, master API key for admin) before queuing,
-  // so this prompt collects it (the server re-verifies; this is not the
-  // security boundary).
   const [wipePassword, setWipePassword] = useState('');
   const [wipeError, setWipeError] = useState('');
-  // History cleanup (step-up password, mirroring the device/media delete
-  // contract): deleting one command or clearing finished history re-
-  // authenticates with the account password (users) or master API key (admin).
   const [deleteTarget, setDeleteTarget] = useState<number | 'all-finished' | null>(null);
   const [deletePassword, setDeletePassword] = useState('');
   const [deleteError, setDeleteError] = useState('');
@@ -125,7 +96,6 @@ export function CommandPanel() {
     }
   };
 
-  // Fetch commands
   const fetchCommands = useCallback(async () => {
     if (!selectedDeviceId) return;
     try {
@@ -143,11 +113,6 @@ export function CommandPanel() {
     return () => clearInterval(interval);
   }, [fetchCommands]);
 
-  // Device switch while the step-up card is open: a pending deleteTarget from
-  // the OLD device must never apply to the NEW device ('all-finished' would
-  // clear the wrong device's history; a command id could 404 or hit a same-id
-  // row on another owned device). Reset the confirm state whenever the
-  // selected device changes.
   useEffect(() => {
     setDeleteTarget(null);
     setDeletePassword('');
@@ -155,14 +120,8 @@ export function CommandPanel() {
     setDeleting(false);
   }, [selectedDeviceId]);
 
-  // Send command. `params` is the wire param — wipe MUST be 'CONFIRMED_WIPE'
-  // or the server rejects it with 400 (which is why the old WIPE button
-  // silently did nothing).
   const handleSend = async (command: string, params = '', password?: string) => {
     if (!selectedDeviceId) return;
-    // Wipe is a factory reset: the step-up password is mandatory. Validating
-    // here (not just in the button's onClick) means the Enter-key path can't
-    // bypass it either.
     if (command === 'wipe' && !(password || '').trim()) {
       setWipeError('Enter your password to confirm the wipe.');
       return;
@@ -192,8 +151,6 @@ export function CommandPanel() {
 
   const handleClick = (command: string) => {
     setCommandError('');
-    // Wipe is destructive and needs the CONFIRMED_WIPE wire param — require an
-    // explicit confirmation first.
     if (command === 'wipe') {
       setConfirmWipe(true);
       return;
@@ -201,13 +158,11 @@ export function CommandPanel() {
     handleSend(command);
   };
 
-
-
   return (
     <div className="p-4 space-y-4">
-      {/* Offline SMS relay notice — commands reach the phone even with no data */}
+      {/* Offline SMS relay notice */}
       {smsRelayActive && (
-        <div className="flex items-start gap-2 px-3 py-2 rounded-lg bg-gray-100/[0.06] border border-gray-900/25 text-gray-900 animate-fade-in">
+        <div className="flex items-start gap-2 px-3 py-2 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 animate-fade-in">
           <MessageSquareText size={13} className="shrink-0 mt-0.5" />
           <div className="text-[10px] font-mono leading-relaxed">
             <span className="font-bold">Device offline — commands will be delivered via SMS</span>
@@ -217,11 +172,10 @@ export function CommandPanel() {
         </div>
       )}
 
-      {/* Quick Actions — owner/admin only (viewer & device-only shares are
-          read-only; the server rejects commands from them too) */}
+      {/* Quick Actions — owner/admin only */}
       {canCommand && (
       <div>
-        <div className="text-[11px] font-mono text-gray-700/70 uppercase tracking-wider font-bold mb-2.5 px-1">
+        <div className="text-[11px] font-mono text-gray-500 uppercase tracking-wider font-bold mb-2.5 px-1">
           Quick Actions
         </div>
         <div className="space-y-1.5">
@@ -231,31 +185,31 @@ export function CommandPanel() {
             return (
               <div
                 key={group.id}
-                className="rounded-xl border border-gray-200/40 bg-gray-100 overflow-hidden"
+                className="rounded-xl border border-gray-200 bg-white overflow-hidden"
               >
                 <button
                   onClick={() => toggleGroup(group.id)}
                   aria-expanded={open}
                   aria-label={`${group.label} commands`}
-                  className="w-full flex items-center justify-between gap-2 px-3 py-2.5 hover:bg-gray-100 transition-colors group"
+                  className="w-full flex items-center justify-between gap-2 px-3 py-2.5 hover:bg-gray-50 transition-colors"
                 >
                   <span className="flex items-center gap-2">
-                    <span className="w-6 h-6 rounded-lg bg-current/10 border border-current/20 flex items-center justify-center">
-                      <GroupIcon size={12} className="text-gray-700/70 group-hover:text-gray-900 transition-colors" />
+                    <span className="w-6 h-6 rounded-lg bg-gray-100 flex items-center justify-center">
+                      <GroupIcon size={12} className="text-gray-500" />
                     </span>
-                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-gray-900/70 group-hover:text-gray-900 transition-colors">
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-gray-600">
                       {group.label}
                     </span>
                   </span>
                   <svg
                     width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
-                    className={`text-gray-700/40 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+                    className={`text-gray-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
                   >
                     <polyline points="6 9 12 15 18 9" />
                   </svg>
                 </button>
                 {open && (
-                  <div className="grid grid-cols-3 gap-1.5 p-2 border-t border-gray-200 animate-fade-in">
+                  <div className="grid grid-cols-3 gap-1.5 p-2 border-t border-gray-100 animate-fade-in">
                     {group.commands.map(c => {
                       const { command, label, icon, tone, title } = commandById(c);
                       return (
@@ -280,13 +234,13 @@ export function CommandPanel() {
 
         {/* Feedback strip */}
         {commandError && (
-          <div className="mt-2.5 flex items-center gap-2 px-3 py-2 rounded-lg bg-red-50/[0.06] border border-red-300/25 text-red-600 text-[10px] font-mono font-bold animate-fade-in">
+          <div className="mt-2.5 flex items-center gap-2 px-3 py-2 rounded-lg bg-red-50 border border-red-200 text-red-600 text-[10px] font-mono font-bold animate-fade-in">
             <AlertTriangle size={11} className="shrink-0" />
             {commandError}
           </div>
         )}
         {!commandError && lastSent && (
-          <div className="mt-2.5 flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100/[0.06] border border-gray-900/25 text-gray-900 text-[10px] font-mono font-bold animate-fade-in">
+          <div className="mt-2.5 flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-mono font-bold animate-fade-in">
             <CheckCircle2 size={11} className="shrink-0" />
             {getCommandLabel(lastSent)} command sent —{' '}
             {smsRelayActive
@@ -297,23 +251,19 @@ export function CommandPanel() {
 
         {/* Wipe confirmation */}
         {confirmWipe && (
-          <div className="mt-3 rounded-xl border border-red-300/35 bg-red-50/[0.05] p-3.5 space-y-2.5 animate-fade-in">
+          <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3.5 space-y-2.5 animate-fade-in">
             <div className="flex items-start gap-2">
-              <AlertTriangle size={14} className="text-red-600 shrink-0 mt-0.5" />
+              <AlertTriangle size={14} className="text-red-500 shrink-0 mt-0.5" />
               <div>
                 <div className="text-[10px] font-mono text-red-600 font-bold uppercase tracking-wider">
                   Permanent wipe
                 </div>
-                <div className="text-[10px] font-mono text-gray-700/70 mt-1 leading-relaxed">
+                <div className="text-[10px] font-mono text-gray-600 mt-1 leading-relaxed">
                   This factory-resets the device, erasing ALL data on it. It requires
                   device-admin permission on the phone and cannot be undone.
                 </div>
               </div>
             </div>
-            {/* Step-up password: the server re-verifies before queueing the
-                wipe (account password for users, master API key for admin) —
-                a stolen dashboard session alone can never factory-reset a
-                device. */}
             <input
               type="password"
               value={wipePassword}
@@ -327,9 +277,9 @@ export function CommandPanel() {
                   handleSend('wipe', 'CONFIRMED_WIPE', wipePassword);
                 }
               }}
-              className="w-full bg-white/60 border border-red-300/40 rounded-lg px-3 py-2 text-xs font-mono text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-red-300/70 transition-colors"
+              className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs font-mono text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-red-300 transition-colors"
             />
-            {wipeError && <div className="text-[10px] font-mono text-red-400">{wipeError}</div>}
+            {wipeError && <div className="text-[10px] font-mono text-red-500">{wipeError}</div>}
             <div className="flex gap-2">
               <button
                 onClick={() => {
@@ -340,14 +290,14 @@ export function CommandPanel() {
                   handleSend('wipe', 'CONFIRMED_WIPE', wipePassword);
                 }}
                 disabled={sending === 'wipe'}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-red-50/90 hover:bg-red-50 disabled:opacity-50 text-white text-[10px] font-mono font-bold uppercase tracking-wider transition-all"
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white text-[10px] font-mono font-bold uppercase tracking-wider transition-all"
               >
                 {sending === 'wipe' ? 'SENDING...' : 'Confirm wipe'}
               </button>
               <button
                 onClick={() => { setConfirmWipe(false); setWipePassword(''); setWipeError(''); }}
                 disabled={sending === 'wipe'}
-                className="px-3 py-2 rounded-lg border border-gray-200/40 text-gray-700/70 hover:text-gray-900 text-[10px] font-mono font-bold transition-all"
+                className="px-3 py-2 rounded-lg border border-gray-200 text-gray-600 hover:text-gray-900 hover:bg-gray-50 text-[10px] font-mono font-bold transition-all"
               >
                 Cancel
               </button>
@@ -360,13 +310,13 @@ export function CommandPanel() {
       {/* Command History */}
       <div>
         <div className="flex items-center justify-between mb-2.5 px-1">
-          <div className="text-[11px] font-mono text-gray-700/70 uppercase tracking-wider font-bold">
+          <div className="text-[11px] font-mono text-gray-500 uppercase tracking-wider font-bold">
             Recent Commands
           </div>
           {canCommand && commands.filter(c => c.status !== 'pending').length > 0 && deleteTarget !== 'all-finished' && (
             <button
               onClick={() => { setDeleteTarget('all-finished'); setDeleteError(''); }}
-              className="flex items-center gap-1 text-[10px] font-mono font-bold uppercase tracking-wider text-gray-700/60 hover:text-red-600/80 transition-colors"
+              className="flex items-center gap-1 text-[10px] font-mono font-bold uppercase tracking-wider text-gray-400 hover:text-red-500 transition-colors"
               title="Remove ALL executed, failed & expired entries (keeps pending commands)"
             >
               <Trash2 size={11} />
@@ -375,10 +325,10 @@ export function CommandPanel() {
           )}
         </div>
 
-        {/* Step-up confirm card (password required) */}
+        {/* Step-up confirm card */}
         {deleteTarget !== null && (
-          <div className="mb-2.5 rounded-xl border border-red-300/30 bg-red-50/[0.05] p-3.5 space-y-2.5 animate-fade-in">
-            <div className="text-[10px] font-mono text-red-600/90 leading-relaxed">
+          <div className="mb-2.5 rounded-xl border border-red-200 bg-red-50 p-3.5 space-y-2.5 animate-fade-in">
+            <div className="text-[10px] font-mono text-red-600 leading-relaxed">
               {deleteTarget === 'all-finished'
                 ? 'Delete all executed, failed & expired commands for this device? Pending commands are kept. This cannot be undone.'
                 : `Delete this ${getCommandLabel(commands.find(c => c.id === deleteTarget)?.command || '')} command from history? This cannot be undone.`}
@@ -396,17 +346,17 @@ export function CommandPanel() {
                   confirmDelete();
                 }
               }}
-              className="w-full bg-white/60 border border-gray-200/40 rounded-lg px-3 py-2 text-xs font-mono text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-red-300/60 transition-colors"
+              className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs font-mono text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-red-300 transition-colors"
             />
-            {deleteError && <div className="text-[10px] font-mono text-red-400">{deleteError}</div>}
+            {deleteError && <div className="text-[10px] font-mono text-red-500">{deleteError}</div>}
             <div className="text-[10px] font-mono text-gray-500 leading-relaxed">
-              This session verifies with <span className="font-bold text-gray-700/70">{stepUpPasswordHint()}</span>.
+              This session verifies with <span className="font-bold text-gray-700">{stepUpPasswordHint()}</span>.
             </div>
             <div className="flex gap-2">
               <button
                 onClick={confirmDelete}
                 disabled={deleting}
-                className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg bg-red-50/90 hover:bg-red-50 disabled:opacity-50 text-white text-[11px] font-bold transition-all"
+                className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white text-[11px] font-bold transition-all"
               >
                 <Trash2 size={12} />
                 {deleting ? 'Deleting...' : 'Yes, Delete'}
@@ -414,7 +364,7 @@ export function CommandPanel() {
               <button
                 onClick={() => { setDeleteTarget(null); setDeletePassword(''); setDeleteError(''); }}
                 disabled={deleting}
-                className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg border border-gray-200/40 text-gray-700/70 hover:text-gray-900 text-[11px] font-bold transition-all"
+                className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg border border-gray-200 text-gray-600 hover:text-gray-900 hover:bg-gray-50 text-[11px] font-bold transition-all"
               >
                 <X size={12} />
                 Cancel
@@ -438,14 +388,14 @@ export function CommandPanel() {
             commands.slice(0, 10).map((cmd) => (
               <div
                 key={cmd.id}
-                className="flex items-center gap-3 py-2 px-2 rounded-lg bg-gray-100 border border-gray-200"
+                className="flex items-center gap-3 py-2 px-2 rounded-lg bg-gray-50 border border-gray-100"
               >
                 <div className={cn(
                   'w-2 h-2 rounded-full',
-                  cmd.status === 'expired' ? 'bg-text-gray-400' :
-                  cmd.status === 'executed' ? 'bg-gray-100' :
-                  cmd.status === 'failed' ? 'bg-red-50' :
-                  'bg-amber-50 '
+                  cmd.status === 'expired' ? 'bg-gray-300' :
+                  cmd.status === 'executed' ? 'bg-emerald-400' :
+                  cmd.status === 'failed' ? 'bg-red-400' :
+                  'bg-amber-400'
                 )} />
                 <div className="flex-1 min-w-0">
                   <div className="font-mono text-[11px] text-gray-900 font-bold">
@@ -456,11 +406,10 @@ export function CommandPanel() {
                   </div>
                   {cmd.status === 'failed' && (
                     <div
-                      className="mt-1 font-mono text-[9px] text-red-600/90 leading-snug"
+                      className="mt-1 font-mono text-[9px] text-red-500 leading-snug"
                       title="Why this command failed — fix the cause and retry."
                     >
                       {cmd.failure_reason || (
-                        // Helpful fallback reasons based on command type
                         cmd.command === 'lock' ? 'Device Admin may not be active — enable in phone Settings > Security'
                         : cmd.command === 'alarm' ? 'Device may be in Silent mode'
                         : cmd.command === 'wipe' ? 'Device Admin required for factory reset'
@@ -473,10 +422,10 @@ export function CommandPanel() {
                 </div>
                 <span className={cn(
                   'text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded-md',
-                  cmd.status === 'expired' ? 'text-gray-700/45 bg-mag-text-dim/5 line-through decoration-text-gray-400' :
-                  cmd.status === 'executed' ? 'text-gray-900 bg-gray-100/10' :
-                  cmd.status === 'failed' ? 'text-red-600 bg-red-50/10' :
-                  'text-amber-600 bg-amber-50/10'
+                  cmd.status === 'expired' ? 'text-gray-400 bg-gray-100 line-through' :
+                  cmd.status === 'executed' ? 'text-emerald-700 bg-emerald-50' :
+                  cmd.status === 'failed' ? 'text-red-600 bg-red-50' :
+                  'text-amber-600 bg-amber-50'
                 )}>
                   {cmd.status}
                 </span>
@@ -484,7 +433,7 @@ export function CommandPanel() {
                 {canCommand && (
                   <button
                     onClick={() => { setDeleteTarget(cmd.id); setDeleteError(''); }}
-                    className="text-gray-700/35 hover:text-red-600/80 transition-colors p-0.5"
+                    className="text-gray-300 hover:text-red-500 transition-colors p-0.5"
                     title="Delete this command from history"
                     aria-label={`Delete ${getCommandLabel(cmd.command)} command`}
                   >
