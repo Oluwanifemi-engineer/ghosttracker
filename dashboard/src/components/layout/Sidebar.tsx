@@ -147,27 +147,38 @@ export function Sidebar() {
 
       {sidebarOpen && (
         <>
-          {/* Brand Bar with connection status */}
+          {/* Brand Bar with LIVE status + E2E trust + Admin badge */}
           <div className="px-4 py-3 border-b border-white/[0.06] flex items-center gap-3 shrink-0">
             <img src="/magneetar-mhalf.svg" alt="Magneetar" className="w-7 h-7 rounded-lg shrink-0" />
             <div className="flex-1 min-w-0">
-              <div className="text-[10px] font-bold tracking-[0.25em] text-white/90">MAGNEETAR</div>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <div className={cn(
-                  'w-1.5 h-1.5 rounded-full transition-all duration-300',
-                  isConnected ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)] animate-pulse' : 'bg-white/20'
-                )} />
-                <span className="text-[7px] font-mono text-white/25 tracking-[0.15em] font-bold uppercase">
-                  {isConnected ? 'CONNECTED' : 'OFFLINE'}
-                </span>
+              <div className="flex items-center gap-2">
+                <div className="text-[10px] font-bold tracking-[0.25em] text-white/90">MAGNEETAR</div>
+                <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-500/[0.08] border border-emerald-500/15">
+                  <div className={cn(
+                    'w-1.5 h-1.5 rounded-full transition-all duration-300',
+                    isConnected ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)] animate-pulse' : 'bg-white/20'
+                  )} />
+                  <span className="text-[7px] font-mono text-emerald-400/70 tracking-wider font-bold uppercase">
+                    {isConnected ? 'LIVE' : 'OFFLINE'}
+                  </span>
+                </div>
+                <div className="px-1.5 py-0.5 rounded bg-white/[0.03] border border-white/[0.06]">
+                  <span className="text-[6px] font-mono text-white/30 tracking-wider font-bold uppercase">E2E</span>
+                </div>
+                {isAdmin && (
+                  <div className="px-1.5 py-0.5 rounded bg-amber-500/[0.08] border border-amber-500/15">
+                    <span className="text-[6px] font-mono text-amber-400/70 tracking-wider font-bold uppercase">ADMIN</span>
+                  </div>
+                )}
               </div>
             </div>
             <button
               onClick={logout}
-              className="w-7 h-7 flex items-center justify-center rounded-lg text-white/20 hover:text-red-400 hover:bg-red-500/[0.06] transition-all"
+              className="flex items-center gap-1 px-2 py-1 rounded-lg text-[8px] font-mono font-bold text-white/25 hover:text-red-400 hover:bg-red-500/[0.06] transition-all active:scale-95 border border-transparent hover:border-red-500/15"
               title="Disconnect"
             >
-              <LogOut size={12} />
+              <LogOut size={10} />
+              <span className="hidden lg:inline">EXIT</span>
             </button>
           </div>
 
@@ -305,58 +316,66 @@ export function Sidebar() {
                     key={device.id}
                     onClick={() => selectDevice(device.id)}
                     className={cn(
-                      'w-full text-left px-4 py-2.5 border-b border-white/[0.04] transition-all duration-150',
-                      'hover:bg-white/[0.04] group',
-                      selectedDeviceId === device.id && 'bg-white/[0.06] border-l-2 border-l-emerald-500',
+                      'w-full text-left px-4 py-3 border-b border-white/[0.04] transition-all duration-200',
+                      'hover:bg-white/[0.04] group active:scale-[0.99]',
+                      selectedDeviceId === device.id
+                        ? 'bg-white/[0.06] border-l-2 border-l-emerald-500 shadow-lg shadow-emerald-500/5'
+                        : 'border-l-2 border-l-transparent',
                       archived && 'opacity-45 hover:opacity-70'
                     )}
                   >
-                    <div className="flex items-center justify-between mb-0.5">
-                      <span className="text-[13px] font-bold text-white/90 truncate group-hover:text-white transition-colors max-w-[55%]">
+                    {/* Top row: Name + Status */}
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[13px] font-bold text-white/90 truncate group-hover:text-white transition-colors max-w-[60%]">
                         {deviceDisplayName(device)}
                       </span>
-                      {archived && (
-                        <span className="text-[7px] font-mono font-bold uppercase tracking-wider px-1 py-0.5 rounded border border-amber-500/15 text-amber-400/70 bg-amber-500/[0.06] shrink-0">
-                          Archived
-                        </span>
-                      )}
-                      {!device.is_owner && device.access_role && (
-                        <span
-                          className={cn(
-                            'text-[7px] font-mono font-bold uppercase tracking-wider px-1 py-0.5 rounded border shrink-0',
-                            device.access_role === 'admin'
-                              ? 'border-emerald-500/25 text-emerald-400/70 bg-emerald-500/[0.08]'
-                              : device.access_role === 'viewer'
-                                ? 'border-blue-500/25 text-blue-400/70 bg-blue-500/[0.08]'
-                                : 'border-white/[0.08] text-white/35 bg-white/[0.03]'
-                          )}
-                          title={`Shared access — ${device.access_role} role`}
-                        >
-                          {device.access_role === 'admin' ? 'ADMIN' : device.access_role === 'viewer' ? 'VIEW' : 'STATUS'}
-                        </span>
-                      )}
-                      <StatusIndicator
-                        isOnline={online}
-                        signal={signal}
-                        className="scale-[0.7] origin-right -mr-1"
-                      />
+                      <div className="flex items-center gap-1.5">
+                        {archived && (
+                          <span className="text-[7px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border border-amber-500/15 text-amber-400/70 bg-amber-500/[0.06] shrink-0">
+                            Archived
+                          </span>
+                        )}
+                        {!device.is_owner && device.access_role && (
+                          <span
+                            className={cn(
+                              'text-[7px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border shrink-0',
+                              device.access_role === 'admin'
+                                ? 'border-emerald-500/25 text-emerald-400/70 bg-emerald-500/[0.08]'
+                                : device.access_role === 'viewer'
+                                  ? 'border-blue-500/25 text-blue-400/70 bg-blue-500/[0.08]'
+                                  : 'border-white/[0.08] text-white/35 bg-white/[0.03]'
+                            )}
+                            title={`Shared access — ${device.access_role} role`}
+                          >
+                            {device.access_role === 'admin' ? 'ADMIN' : device.access_role === 'viewer' ? 'VIEW' : 'STATUS'}
+                          </span>
+                        )}
+                        <StatusIndicator
+                          isOnline={online}
+                          signal={signal}
+                          className="scale-[0.7] origin-right -mr-1"
+                        />
+                      </div>
                     </div>
 
-                    <div className="font-mono text-[9px] text-white/25 truncate font-bold mb-0.5">{device.id}</div>
-
-                    <div className="flex items-center gap-2">
-                      <span className={cn(
-                        'w-1.5 h-1.5 rounded-full',
-                        online ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]' : 'bg-white/20'
-                      )} />
-                      <span className="font-mono text-[9px] text-white/30 font-bold">
-                        {relativeTime(device.last_seen)}
+                    {/* Middle row: Device ID + Online status */}
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className="font-mono text-[9px] text-white/25 truncate font-bold">{device.id}</span>
+                      <span className="flex items-center gap-1">
+                        <span className={cn(
+                          'w-1.5 h-1.5 rounded-full',
+                          online ? 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)]' : 'bg-white/20'
+                        )} />
+                        <span className="font-mono text-[8px] text-white/30 font-bold">
+                          {relativeTime(device.last_seen)}
+                        </span>
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-1.5 mt-1.5">
+                    {/* Bottom row: Sentinel score + Progress bar */}
+                    <div className="flex items-center gap-2">
                       <span className={cn(
-                        'text-[8px] font-mono font-bold uppercase px-1.5 py-0.5 rounded-lg',
+                        'text-[8px] font-mono font-bold uppercase px-2 py-0.5 rounded-lg',
                         scoreText
                       )}>
                         {device.is_stolen ? 'STOLEN' : sentinelLevel(device.sentinel_score)}

@@ -19,7 +19,7 @@ interface TabsProps {
 
 export function Tabs({ tabs, activeTab, onTabChange }: TabsProps) {
   return (
-    <div className="grid grid-cols-3 border-b border-white/[0.06] bg-[#0a0a0f]">
+    <div className="flex gap-1 p-2 border-b border-white/[0.06] bg-[#0a0a0f] overflow-x-auto scrollbar-hide">
       {tabs.map((tab) => {
         const Icon = tab.icon;
         const isActive = activeTab === tab.id;
@@ -29,29 +29,19 @@ export function Tabs({ tabs, activeTab, onTabChange }: TabsProps) {
             onClick={() => onTabChange(tab.id)}
             title={tab.label}
             className={cn(
-              'flex flex-col items-center justify-center gap-1.5 px-1 py-3.5',
-              'text-[11px] font-bold tracking-wide font-mono uppercase',
+              'flex items-center gap-1.5 px-3 py-2 rounded-xl whitespace-nowrap',
+              'text-[10px] font-bold font-mono uppercase tracking-wider',
               'cursor-pointer transition-all duration-200',
-              'border-b-2 border-transparent',
-              'active:scale-[0.97]',
+              'active:scale-[0.97] shrink-0',
               isActive
-                ? 'text-white border-emerald-500 bg-emerald-500/[0.06]'
-                : 'text-white/30 hover:text-white/60 hover:bg-white/[0.04]',
-              'relative shrink-0 min-w-0'
+                ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20'
+                : 'text-white/40 hover:text-white/70 hover:bg-white/[0.06] bg-white/[0.03]',
             )}
           >
-            {Icon && (
-              <Icon
-                size={16}
-                className={cn(
-                  'transition-colors duration-200',
-                  isActive ? 'text-emerald-400' : 'text-white/20'
-                )}
-              />
-            )}
-            <span className="font-bold whitespace-nowrap">{tab.label}</span>
+            {Icon && <Icon size={12} strokeWidth={2.5} />}
+            <span>{tab.label}</span>
             {tab.badge !== undefined && tab.badge > 0 && (
-              <span className="absolute -top-0.5 right-1 px-1.5 py-0.5 text-[7px] font-bold bg-red-500 text-white rounded-full">
+              <span className="px-1.5 py-0.5 text-[7px] font-bold bg-red-500 text-white rounded-full">
                 {tab.badge}
               </span>
             )}

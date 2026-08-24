@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useStore } from '@/store/useStore';
-import { Header } from '@/components/layout/Header';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { useDevices } from '@/hooks/useDevices';
 import { useWebSocket } from '@/hooks/useWebSocket';
@@ -105,15 +104,12 @@ export default function DashboardLayout({
   return (
     <ThemeProvider>
     <ToastProvider>
-    <div className="h-screen flex flex-col overflow-hidden bg-[#0a0a0f]">
+    <div className="h-screen flex overflow-hidden bg-[#0a0a0f]">
       <div className="fixed inset-0 mag-grid-bg opacity-[0.02] pointer-events-none z-0" />
-      <Header />
-      <div className="flex flex-1 overflow-hidden relative z-10">
-        <Sidebar />
-        <main className="flex-1 overflow-hidden">
-          {children}
-        </main>
-      </div>
+      <Sidebar />
+      <main className="flex-1 overflow-hidden relative z-10">
+        {children}
+      </main>
       <KeyboardShortcutsHelp />
       <PwaInstallPrompt />
       {showOnboarding && (

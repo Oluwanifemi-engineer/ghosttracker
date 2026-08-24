@@ -194,27 +194,39 @@ export function CommandPanel() {
               amber: 'text-amber-400/70',
               red: 'text-red-400/70',
             };
+            const borderColors: Record<string, string> = {
+              emerald: 'border-l-emerald-500/40',
+              blue: 'border-l-blue-500/40',
+              amber: 'border-l-amber-500/40',
+              red: 'border-l-red-500/40',
+            };
             return (
               <div
                 key={group.id}
                 className={cn(
-                  "rounded-xl border overflow-hidden transition-all duration-200",
-                  open ? `bg-white/[0.03] ${colorMap[group.color]}` : 'bg-white/[0.02] border-white/[0.06] hover:border-white/[0.1]'
+                  "rounded-xl border-l-2 overflow-hidden transition-all duration-200",
+                  borderColors[group.color],
+                  open ? 'bg-white/[0.03] border border-white/[0.06]' : 'bg-white/[0.02] border border-white/[0.06] border-l-2 hover:bg-white/[0.04]'
                 )}
               >
                 <button
                   onClick={() => toggleGroup(group.id)}
                   aria-expanded={open}
                   aria-label={`${group.label} commands`}
-                  className="w-full flex items-center justify-between gap-2 px-3 py-2.5 hover:bg-white/[0.03] transition-colors"
+                  className="w-full flex items-center justify-between gap-2 px-3 py-3 hover:bg-white/[0.03] transition-colors"
                 >
-                  <span className="flex items-center gap-2">
-                    <span className={cn("w-7 h-7 rounded-lg bg-white/[0.06] flex items-center justify-center", open && 'bg-white/[0.08]')}>
-                      <GroupIcon size={13} className={iconColor[group.color]} />
+                  <span className="flex items-center gap-2.5">
+                    <span className={cn("w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200", open ? `bg-${group.color}-500/15` : 'bg-white/[0.06]')}>
+                      <GroupIcon size={14} className={iconColor[group.color]} />
                     </span>
-                    <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-white/50">
-                      {group.label}
-                    </span>
+                    <div className="text-left">
+                      <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-white/70 block">
+                        {group.label}
+                      </span>
+                      <span className="text-[8px] font-mono text-white/25 block mt-0.5">
+                        {group.commands.length} command{group.commands.length !== 1 ? 's' : ''}
+                      </span>
+                    </div>
                   </span>
                   <svg
                     width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
