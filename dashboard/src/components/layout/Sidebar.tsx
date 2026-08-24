@@ -297,7 +297,14 @@ export function Sidebar() {
                 <div className="text-white/25 text-[10px] font-mono mt-1">Connect to server first.</div>
               </div>
             ) : (
-              [...activeDevices, ...archivedDevices].map((device) => {
+              [...activeDevices, ...archivedDevices]
+                .sort((a, b) => {
+                  // Exception-first: stolen > high risk > elevated > safe
+                  const scoreA = a.is_stolen ? 1000 : a.sentinel_score;
+                  const scoreB = b.is_stolen ? 1000 : b.sentinel_score;
+                  return scoreB - scoreA;
+                })
+                .map((device) => {
                 const archived = !!device.archived_at;
                 const online = isOnline(device.last_seen);
                 const signal = getSignalLevel(device.last_seen);

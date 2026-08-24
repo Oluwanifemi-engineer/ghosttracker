@@ -23,6 +23,7 @@ jest.mock('@/store/useStore', () => ({    useStore: jest.fn((selector: any) => {
 
 jest.mock('lucide-react', () => ({
   Shield: () => null,
+  ShieldCheck: () => null,
   AlertTriangle: () => null,
   Battery: () => null,
   Wifi: () => null,
@@ -73,7 +74,7 @@ describe('SentinelPanel Component', () => {
     };
 
     render(<SentinelPanel />);
-    expect(screen.getByText('Threat Assessment')).toBeInTheDocument();
+    expect(screen.getByText('Sentinel Score')).toBeInTheDocument();
     expect(screen.getByText('SECURE')).toBeInTheDocument();
   });
 
@@ -105,7 +106,7 @@ describe('SentinelPanel Component', () => {
     mockSelectedDeviceId = 'device-001';
 
     render(<SentinelPanel />);
-    expect(screen.getByText(/DEVICE MARKED AS STOLEN/i)).toBeInTheDocument();
+    expect(screen.getByText(/Device Stolen/i)).toBeInTheDocument();
     expect(screen.getByText(/All tracking data is being logged for evidence\./i)).toBeInTheDocument();
   });
 

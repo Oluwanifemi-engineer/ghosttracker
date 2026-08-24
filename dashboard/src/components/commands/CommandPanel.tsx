@@ -202,8 +202,8 @@ export function CommandPanel() {
                   'rounded-xl border-l-[3px] overflow-hidden transition-all duration-200',
                   borderColor[group.color],
                   open
-                    ? 'bg-white/[0.03] border border-white/[0.06] border-l-[3px]'
-                    : 'bg-white/[0.02] border border-white/[0.04] border-l-[3px] hover:bg-white/[0.04]'
+                    ? 'bg-white/[0.04] border border-white/[0.06] border-l-[3px]'
+                    : 'bg-white/[0.02] border border-transparent border-l-[3px] hover:bg-white/[0.03]'
                 )}
               >
                 <button
@@ -394,59 +394,89 @@ export function CommandPanel() {
           </div>
         )}
 
-        <div className="space-y-1.5 max-h-56 overflow-y-auto">
+        {/* Table-first command history — Stripe/Linear pattern */}
+        <div className="max-h-64 overflow-y-auto">
           {commands.length === 0 ? (
-            <div className="text-center py-8">
-              <div className="w-11 h-11 rounded-2xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center mx-auto mb-3">
-                <Zap size={16} className="text-white/25" />
+            <div className="text-center py-10">
+              <div className="w-12 h-12 rounded-2xl bg-white/[0.04] flex items-center justify-center mx-auto mb-3">
+                <Zap size={18} className="text-white/15" />
               </div>
               <div className="text-white/40 text-[11px] font-bold mb-1">No commands yet</div>
-              <div className="text-white/25 text-[10px] font-mono leading-relaxed max-w-[200px] mx-auto">
-                Use the buttons above to ping, capture, lock, or alarm your device.
+              <div className="text-white/20 text-[9px] font-mono leading-relaxed max-w-[180px] mx-auto">
+                Use the buttons above to send your first command.
               </div>
             </div>
           ) : (
-            commands.slice(0, 10).map((cmd) => (
-              <div
-                key={cmd.id}
-                className="flex items-center gap-3 py-2.5 px-3 rounded-xl bg-white/[0.02] border border-white/[0.04] hover:border-white/[0.08] hover:bg-white/[0.04] transition-all duration-200 group"
-              >
-                <div className={cn(
-                  'w-2 h-2 rounded-full shrink-0 transition-all duration-300',
-                  cmd.status === 'expired' ? 'bg-white/20' :
-                  cmd.status === 'executed' ? 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)]' :
-                  cmd.status === 'failed' ? 'bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.5)]' :
-                  'bg-amber-500 animate-pulse shadow-[0_0_6px_rgba(245,158,11,0.5)]'
-                )} />
-                <div className="flex-1 min-w-0">
-                  <div className="font-mono text-[11px] text-white/70 font-bold">
-                    {getCommandLabel(cmd.command)}
-                  </div>
-                  <div className="font-mono text-[9px] text-white/25">
-                    {formatTimestamp(cmd.issued_at)}
-                  </div>
-                </div>
-                <span className={cn(
-                  'text-[8px] font-mono font-bold uppercase px-2 py-1 rounded-lg shrink-0',
-                  cmd.status === 'expired' ? 'text-white/30 bg-white/[0.04] line-through' :
-                  cmd.status === 'executed' ? 'text-emerald-400/70 bg-emerald-500/[0.08]' :
-                  cmd.status === 'failed' ? 'text-red-400/70 bg-red-500/[0.08]' :
-                  'text-amber-400/70 bg-amber-500/[0.08]'
-                )}>
-                  {cmd.status}
-                </span>
-
-                {canCommand && (
-                  <button
-                    onClick={() => { setDeleteTarget(cmd.id); setDeleteError(''); }}
-                    className="text-white/10 hover:text-red-400/70 transition-colors p-1 opacity-0 group-hover:opacity-100"
-                    title="Delete from history"
-                  >
-                    <Trash2 size={11} />
-                  </button>
-                )}
+            <>
+              {/* Table header */}
+              <div className="flex items-center gap-3 px-3 py-2 border-b border-white/[0.04]">
+                <div className="w-2 shrink-0" />
+                <span className="flex-1 text-[8px] font-mono text-white/20 uppercase tracking-wider font-bold">Command</span>
+                <span className="w-20 text-right text-[8px] font-mono text-white/20 uppercase tracking-wider font-bold">Time</span>
+                <span className="w-16 text-right text-[8px] font-mono text-white/20 uppercase tracking-wider font-bold">Status</span>
+                {canCommand && <div className="w-6" />}
               </div>
-            ))
+
+              {/* Exception-first: failed > pending > executed > expired */}
+              {[...commands]
+                .sort((a, b) => {
+                  const order: Record<string, number> = { failed: 0, pending: 1, executed: 2, expired: 3 };
+                  return (order[a.status] ?? 4) - (order[b.status] ?? 4);
+                })
+                .slice(0, 12)
+                .map((cmd) => (
+                <div
+                  key={cmd.id}
+                  className={cn(
+                    'flex items-center gap-3 px-3 py-2.5 border-b border-white/[0.03] transition-colors group',
+                    'hover:bg-white/[0.03]',
+                    cmd.status === 'failed' && 'bg-red-500/[0.04]',
+                    cmd.status === 'pending' && 'bg-amber-500/[0.03]',
+                  )}
+                >
+                  {/* Status dot — color = state only */}
+                  <div className={cn(
+                    'w-1.5 h-1.5 rounded-full shrink-0',
+                    cmd.status === 'executed' ? 'bg-emerald-500' :
+                    cmd.status === 'failed' ? 'bg-red-500' :
+                    cmd.status === 'pending' ? 'bg-amber-500 animate-pulse' :
+                    'bg-white/15'
+                  )} />
+
+                  {/* Command name — tabular numeral */}
+                  <span className="flex-1 font-mono text-[11px] text-white/60 font-bold truncate">
+                    {getCommandLabel(cmd.command)}
+                  </span>
+
+                  {/* Timestamp — right-aligned tabular */}
+                  <span className="w-20 text-right font-mono text-[9px] text-white/25 tabular-nums shrink-0">
+                    {formatTimestamp(cmd.issued_at).split(' ')[1] || formatTimestamp(cmd.issued_at)}
+                  </span>
+
+                  {/* Status chip — color = state only */}
+                  <span className={cn(
+                    'w-16 text-right text-[8px] font-mono font-bold uppercase shrink-0',
+                    cmd.status === 'executed' ? 'text-emerald-400/60' :
+                    cmd.status === 'failed' ? 'text-red-400/70' :
+                    cmd.status === 'pending' ? 'text-amber-400/60' :
+                    'text-white/20 line-through'
+                  )}>
+                    {cmd.status}
+                  </span>
+
+                  {/* Delete — on hover only */}
+                  {canCommand && (
+                    <button
+                      onClick={() => { setDeleteTarget(cmd.id); setDeleteError(''); }}
+                      className="w-6 text-right opacity-0 group-hover:opacity-100 transition-opacity"
+                      title="Delete"
+                    >
+                      <Trash2 size={10} className="text-white/15 hover:text-red-400/60 transition-colors" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </>
           )}
         </div>
       </div>

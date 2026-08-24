@@ -254,18 +254,18 @@ describe('CommandPanel — history deletion', () => {
   it('shows trash buttons and opens password card', async () => {
     render(<CommandPanel />);
     await waitFor(() => {
-      expect(screen.getAllByTitle('Delete from history')).toHaveLength(2);
+      expect(screen.getAllByTitle('Delete')).toHaveLength(2);
     });
-    fireEvent.click(screen.getAllByTitle('Delete from history')[0]);
+    fireEvent.click(screen.getAllByTitle('Delete')[0]);
     expect(screen.getByLabelText('Confirm deletion password')).toBeInTheDocument();
   });
 
   it('requires a password — empty input never calls the API', async () => {
     render(<CommandPanel />);
     await waitFor(() => {
-      expect(screen.getAllByTitle('Delete from history')).toHaveLength(2);
+      expect(screen.getAllByTitle('Delete')).toHaveLength(2);
     });
-    fireEvent.click(screen.getAllByTitle('Delete from history')[0]);
+    fireEvent.click(screen.getAllByTitle('Delete')[0]);
     const deleteBtn = screen.getAllByRole('button').find(b => b.textContent?.includes('Delete') && !b.textContent?.includes('Cancel'));
     if (deleteBtn) fireEvent.click(deleteBtn);
     await waitFor(() => {
@@ -277,14 +277,14 @@ describe('CommandPanel — history deletion', () => {
   it('deletes a single command with the password', async () => {
     render(<CommandPanel />);
     await waitFor(() => {
-      expect(screen.getAllByTitle('Delete from history')).toHaveLength(2);
+      expect(screen.getAllByTitle('Delete')).toHaveLength(2);
     });
-    fireEvent.click(screen.getAllByTitle('Delete from history')[0]);
+    fireEvent.click(screen.getAllByTitle('Delete')[0]);
     fireEvent.change(screen.getByLabelText('Confirm deletion password'), { target: { value: 's3cret' } });
     const deleteBtn = screen.getAllByRole('button').find(b => b.textContent?.includes('Delete') && !b.textContent?.includes('Cancel'));
     if (deleteBtn) fireEvent.click(deleteBtn);
     await waitFor(() => {
-      expect(mockDeleteCommand).toHaveBeenCalledWith(1, 's3cret');
+      expect(mockDeleteCommand).toHaveBeenCalledWith(2, 's3cret');
     });
   });
 
@@ -292,9 +292,9 @@ describe('CommandPanel — history deletion', () => {
     mockDeleteCommand.mockRejectedValueOnce(new Error('Invalid password'));
     render(<CommandPanel />);
     await waitFor(() => {
-      expect(screen.getAllByTitle('Delete from history')).toHaveLength(2);
+      expect(screen.getAllByTitle('Delete')).toHaveLength(2);
     });
-    fireEvent.click(screen.getAllByTitle('Delete from history')[0]);
+    fireEvent.click(screen.getAllByTitle('Delete')[0]);
     fireEvent.change(screen.getByLabelText('Confirm deletion password'), { target: { value: 'wrong' } });
     const deleteBtn = screen.getAllByRole('button').find(b => b.textContent?.includes('Delete') && !b.textContent?.includes('Cancel'));
     if (deleteBtn) fireEvent.click(deleteBtn);
@@ -314,9 +314,9 @@ describe('CommandPanel — history deletion', () => {
   it('resets delete confirm when device changes', async () => {
     const { rerender } = render(<CommandPanel />);
     await waitFor(() => {
-      expect(screen.getAllByTitle('Delete from history')).toHaveLength(2);
+      expect(screen.getAllByTitle('Delete')).toHaveLength(2);
     });
-    fireEvent.click(screen.getAllByTitle('Delete from history')[0]);
+    fireEvent.click(screen.getAllByTitle('Delete')[0]);
     expect(screen.getByLabelText('Confirm deletion password')).toBeInTheDocument();
 
     mockSelectedDeviceId = 'device-002';
