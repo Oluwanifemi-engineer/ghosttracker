@@ -106,7 +106,7 @@ export default function DashboardLayout({
     <ToastProvider>
     <div className="h-screen flex overflow-hidden bg-[#0a0a0f]">
       <div className="fixed inset-0 mag-grid-bg opacity-[0.02] pointer-events-none z-0" />
-      <Sidebar />
+      <div className="hidden md:block"><Sidebar /></div>
       <main className="flex-1 overflow-hidden relative z-10">
         {children}
       </main>
