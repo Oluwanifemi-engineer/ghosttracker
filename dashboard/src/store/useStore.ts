@@ -187,9 +187,9 @@ export const useStore = create<MagneetarState>()(
       setFollowDevice: (follow) => set({ followDevice: follow }),
       setShowTrail: (show) => set({ showTrail: show }),
 
-      // UI
-      sidebarOpen: true,
-      activeTab: 'commands',
+      // UI — map-first: everything hidden by default
+      sidebarOpen: false,
+      activeTab: 'sentinel',
 
       setSidebarOpen: (open) => set({ sidebarOpen: open }),
       setActiveTab: (tab) => set({ activeTab: tab }),

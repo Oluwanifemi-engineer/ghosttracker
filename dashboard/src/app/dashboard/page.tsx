@@ -23,7 +23,7 @@ import { cn, isOnline, deviceDisplayName, relativeTime } from '@/lib/utils';
 import {
   Shield, Terminal, MapPin, Fence, Camera,
   ClipboardList, Bug, ShieldCheck, Users,
-  ChevronLeft, ChevronRight, Menu, Radio
+  ChevronLeft, ChevronRight, Menu, Radio, X
 } from 'lucide-react';
 
 const PANEL_TABS = [
@@ -168,8 +168,10 @@ function MobilePeekContent() {
 
 export default function DashboardPage() {
   const { activeTab, setActiveTab, devices, selectedDeviceId, _hasHydrated, setSidebarOpen } = useStore();
-  const [rightPanelOpen, setRightPanelOpen] = useState(true);
-  const [mobileSheetState, setMobileSheetState] = useState<'peek' | 'half' | 'full' | 'hidden'>('peek');
+  const [rightPanelOpen, setRightPanelOpen] = useState(false);
+  const [mobileSheetState, setMobileSheetState] = useState<'peek' | 'half' | 'full' | 'hidden'>('hidden');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [desktopMenuOpen, setDesktopMenuOpen] = useState(false);
   const isMobile = useIsMobile();
 
   const selectedDevice = devices.find(d => d.id === selectedDeviceId);
@@ -190,7 +192,7 @@ export default function DashboardPage() {
   if (isMobile) {
     return (
       <div className="relative w-full h-full bg-[#0a0a0f] overflow-hidden">
-        {/* Full-screen map */}
+        {/* Full-screen map — the entire interface */}
         <div className="absolute inset-0 z-0">
           <MapView />
         </div>
@@ -198,32 +200,72 @@ export default function DashboardPage() {
         {/* Device list drawer (slides from left) */}
         <DeviceDrawer />
 
-        {/* Floating quick actions on map */}
-        <FloatingActions />
+        {/* Floating quick actions on map — only when device selected */}
+        {selectedDeviceId && <FloatingActions />}
 
+        {/* ═══ Floating controls — minimal, on the map ═══ */}
         {/* Device list toggle — top-left */}
         <button
           onClick={() => setSidebarOpen(true)}
-          className="fixed top-3 left-3 z-[1500] w-10 h-10 rounded-xl bg-[#111118]/90 backdrop-blur-xl border border-white/[0.10] flex items-center justify-center shadow-2xl active:scale-95 transition-transform"
+          className="fixed top-3 left-3 z-[1500] w-10 h-10 rounded-xl bg-[#111118]/80 backdrop-blur-xl border border-white/[0.08] flex items-center justify-center shadow-lg active:scale-95 transition-all"
           aria-label="Open device list"
         >
-          <Menu size={16} className="text-white/60" />
+          <Menu size={15} className="text-white/50" />
         </button>
 
-        {/* Bottom Sheet — Apple Find My pattern */}
+        {/* Main menu — top-right, opens feature grid */}
+        <button
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          className="fixed top-3 right-3 z-[1500] w-10 h-10 rounded-xl bg-[#111118]/80 backdrop-blur-xl border border-white/[0.08] flex items-center justify-center shadow-lg active:scale-95 transition-all"
+          aria-label="Open menu"
+        >
+          {mobileMenuOpen ? (
+            <X size={15} className="text-white/50" />
+          ) : (
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/>
+            </svg>
+          )}
+        </button>
+
+        {/* ═══ Floating feature grid — appears on menu tap ═══ */}
+        {mobileMenuOpen && (
+          <div className="fixed top-16 right-3 z-[1600] w-48 bg-[#111118]/95 backdrop-blur-xl border border-white/[0.08] rounded-2xl shadow-2xl p-3 animate-fade-in">
+            <div className="text-[8px] font-mono text-white/25 uppercase tracking-widest mb-2 px-1">Features</div>
+            <div className="grid grid-cols-2 gap-1.5">
+              {PANEL_TABS.map(tab => {
+                const Icon = tab.icon;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => {
+                      setActiveTab(tab.id);
+                      setMobileMenuOpen(false);
+                      setMobileSheetState('half');
+                    }}
+                    className="flex items-center gap-2 px-2.5 py-2 rounded-xl hover:bg-white/[0.06] transition-colors text-left"
+                  >
+                    <Icon size={12} className="text-white/40" />
+                    <span className="text-[10px] font-mono font-bold text-white/50">{tab.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ═══ Bottom Sheet — Apple Find My pattern ═══ */}
+        {/* Only shows when user interacts (device tap, menu selection) */}
         <BottomSheet
-          initial="peek"
+          initial="hidden"
           onStateChange={setMobileSheetState}
           peekContent={<MobilePeekContent />}
         >
-          {/* Tab bar for switching panels */}
           <MobileTabBar
             tabs={visibleTabs}
             activeTab={effectiveTab}
             onTabChange={setActiveTab}
           />
-
-          {/* Tab content */}
           <div className="mt-3 pb-20">
             <TabContent tab={effectiveTab} />
           </div>
@@ -237,43 +279,91 @@ export default function DashboardPage() {
   // ═══════════════════════════════════════════════════════════════════
   return (
     <div className="flex h-full relative bg-[#0a0a0f]">
-      {/* Map (fills remaining space) */}
+      {/* ═══ Full-screen map — the entire interface ═══ */}
       <div className="flex-1 h-full">
         <MapView />
       </div>
 
-      {/* Right Panel Toggle */}
+      {/* ═══ Floating menu — top-left ═══ */}
       <button
-        onClick={() => setRightPanelOpen(!rightPanelOpen)}
-        className="hidden md:flex absolute top-1/2 -translate-y-1/2 z-50 w-6 h-16 items-center justify-center bg-[#111118]/90 backdrop-blur-xl border border-white/[0.10] rounded-l-xl shadow-2xl hover:bg-[#1a1a24] hover:border-white/[0.15] transition-all duration-200 group"
-        style={{ right: rightPanelOpen ? '320px' : '0px', transition: 'right 0.3s cubic-bezier(0.16,1,0.3,1)' }}
-        aria-label={rightPanelOpen ? 'Close panel' : 'Open panel'}
+        onClick={() => setDesktopMenuOpen(!desktopMenuOpen)}
+        className="hidden md:flex fixed top-4 left-4 z-[1500] h-10 px-3 items-center gap-2 rounded-xl bg-[#111118]/80 backdrop-blur-xl border border-white/[0.08] shadow-lg hover:bg-[#1a1a24] hover:border-white/[0.12] transition-all group"
+        aria-label="Open menu"
       >
-        {rightPanelOpen ? (
-          <ChevronRight size={13} className="text-white/40 group-hover:text-white/80 transition-colors" />
+        {desktopMenuOpen ? (
+          <X size={14} className="text-white/50" />
         ) : (
-          <ChevronLeft size={13} className="text-white/40 group-hover:text-white/80 transition-colors" />
+          <>
+            <Menu size={14} className="text-white/50" />
+            <span className="text-[10px] font-mono font-bold text-white/40">Menu</span>
+          </>
         )}
       </button>
 
-      {/* Desktop Right Panel */}
+      {/* ═══ Desktop feature dropdown ═══ */}
+      {desktopMenuOpen && (
+        <div className="hidden md:block fixed top-16 left-4 z-[1600] w-56 bg-[#111118]/95 backdrop-blur-xl border border-white/[0.08] rounded-2xl shadow-2xl p-3 animate-fade-in">
+          <div className="text-[8px] font-mono text-white/25 uppercase tracking-widest mb-2 px-1">Command Center</div>
+          <div className="space-y-1">
+            {PANEL_TABS.map(tab => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => {
+                    setActiveTab(tab.id);
+                    setDesktopMenuOpen(false);
+                    setRightPanelOpen(true);
+                  }}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/[0.06] transition-colors text-left"
+                >
+                  <Icon size={14} className="text-white/35" />
+                  <span className="text-[11px] font-mono font-bold text-white/55">{tab.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ═══ Right Panel Toggle — only visible when panel is closed ═══ */}
+      {!rightPanelOpen && (
+        <button
+          onClick={() => setRightPanelOpen(true)}
+          className="hidden md:flex fixed top-4 right-4 z-[1500] h-10 px-3 items-center gap-2 rounded-xl bg-[#111118]/80 backdrop-blur-xl border border-white/[0.08] shadow-lg hover:bg-[#1a1a24] hover:border-white/[0.12] transition-all group"
+          aria-label="Open panel"
+        >
+          <Terminal size={14} className="text-white/50" />
+          <span className="text-[10px] font-mono font-bold text-white/40">Commands</span>
+        </button>
+      )}
+
+      {/* ═══ Right Panel ═══ */}
       <div
-        className={`hidden md:flex bg-[#0a0a0f] border-l border-white/[0.06] flex-col shadow-2xl transition-all duration-300 ease-out ${
+        className={`hidden md:flex bg-[#0a0a0f]/95 backdrop-blur-xl border-l border-white/[0.06] flex-col shadow-2xl transition-all duration-300 ease-out ${
           rightPanelOpen ? 'w-80' : 'w-0'
         }`}
       >
         {rightPanelOpen && (
           <>
+            {/* Panel header with close button */}
+            <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/[0.06]">
+              <div className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)] animate-pulse" />
+                <span className="text-[10px] font-mono text-emerald-400/70 font-bold uppercase tracking-wider">Live</span>
+              </div>
+              <button
+                onClick={() => setRightPanelOpen(false)}
+                className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-white/[0.06] transition-colors"
+                aria-label="Close panel"
+              >
+                <X size={13} className="text-white/30" />
+              </button>
+            </div>
+
             <Tabs tabs={visibleTabs} activeTab={effectiveTab} onTabChange={setActiveTab} />
             <div className="flex-1 overflow-y-auto">
               <TabContent tab={effectiveTab} />
-            </div>
-            <div className="px-4 py-2 border-t border-white/[0.06] flex items-center justify-between bg-[#0a0a0f]">
-              <div className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)] animate-pulse" />
-                <span className="text-[9px] font-mono text-emerald-400/80 font-bold uppercase tracking-wider">Live</span>
-              </div>
-              <span className="text-[8px] font-mono text-white/20 font-bold uppercase tracking-wider">Magneetar OS</span>
             </div>
           </>
         )}
