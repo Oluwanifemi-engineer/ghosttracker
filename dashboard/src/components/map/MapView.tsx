@@ -775,20 +775,20 @@ export function MapView() {
             )
           ))}
 
-        </MapContainer>
-      )}
+          {/* Distance Overlay — must be inside MapContainer for useMap() context */}
+          {latestLocation && deviceOnline && (
+            <DistanceOverlay
+              userPos={effectiveUserPos}
+              userAccuracy={userAccuracy}
+              userPinned={!!userPinned}
+              deviceLat={latestLocation.lat}
+              deviceLng={latestLocation.lng}
+              offline={false}
+              lastSeen={null}
+            />
+          )}
 
-      {/* Distance Overlay — Premium Dark */}
-      {latestLocation && deviceOnline && (
-        <DistanceOverlay
-          userPos={effectiveUserPos}
-          userAccuracy={userAccuracy}
-          userPinned={!!userPinned}
-          deviceLat={latestLocation.lat}
-          deviceLng={latestLocation.lng}
-          offline={false}
-          lastSeen={null}
-        />
+        </MapContainer>
       )}
 
       {/* Unified map controls — bottom-right, compact grid */}
