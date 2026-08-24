@@ -5,7 +5,7 @@ import { useStore } from '@/store/useStore';
 import { getAPI } from '@/lib/api';
 import { cn, getCommandLabel, isDestructiveCommand, formatTimestamp, stepUpPasswordHint } from '@/lib/utils';
 import { CommandButton, type CommandTone } from '@/components/ui/CommandButton';
-import { Radio, Camera, Webcam, Mic, LocateFixed, Lock, Siren, ShieldAlert, AlertTriangle, CheckCircle2, Trash2, X, MessageSquareText, Zap } from 'lucide-react';
+import { Radio, Camera, Webcam, Mic, LocateFixed, Lock, Siren, ShieldAlert, AlertTriangle, CheckCircle2, Trash2, X, MessageSquareText, Zap, ChevronDown } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import type { CommandType } from '@/types';
 
@@ -33,11 +33,12 @@ const COMMAND_GROUPS: {
   icon: typeof Radio;
   commands: string[];
   color: string;
+  gradient: string;
 }[] = [
-  { id: 'locate', label: 'Locate', icon: LocateFixed, commands: ['ping', 'location_burst'], color: 'emerald' },
-  { id: 'evidence', label: 'Evidence', icon: Camera, commands: ['capture_photo_front', 'capture_photo', 'capture_audio'], color: 'blue' },
-  { id: 'control', label: 'Control', icon: Siren, commands: ['lock', 'alarm', 'lost_mode'], color: 'amber' },
-  { id: 'danger', label: 'Danger', icon: AlertTriangle, commands: ['wipe'], color: 'red' },
+  { id: 'locate', label: 'Locate', icon: LocateFixed, commands: ['ping', 'location_burst'], color: 'emerald', gradient: 'from-emerald-500/10 to-emerald-500/[0.02]' },
+  { id: 'evidence', label: 'Evidence', icon: Camera, commands: ['capture_photo_front', 'capture_photo', 'capture_audio'], color: 'blue', gradient: 'from-blue-500/10 to-blue-500/[0.02]' },
+  { id: 'control', label: 'Control', icon: Siren, commands: ['lock', 'alarm', 'lost_mode'], color: 'amber', gradient: 'from-amber-500/10 to-amber-500/[0.02]' },
+  { id: 'danger', label: 'Danger', icon: AlertTriangle, commands: ['wipe'], color: 'red', gradient: 'from-red-500/10 to-red-500/[0.02]' },
 ];
 
 const commandById = (c: string) => COMMANDS.find(x => x.command === c)!;
@@ -163,8 +164,8 @@ export function CommandPanel() {
     <div className="p-3 space-y-3">
       {/* Offline SMS relay notice */}
       {smsRelayActive && (
-        <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-blue-500/[0.08] border border-blue-500/15 text-blue-400/80 animate-fade-in">
-          <MessageSquareText size={13} className="shrink-0 mt-0.5" />
+        <div className="flex items-start gap-2.5 px-3 py-3 rounded-xl bg-blue-500/[0.08] border border-blue-500/15 text-blue-400/80 animate-fade-in">
+          <MessageSquareText size={14} className="shrink-0 mt-0.5" />
           <div className="text-[10px] font-mono leading-relaxed">
             <span className="font-bold">Offline — SMS mode</span>
             <span className="opacity-70"> Commands sent to {selectedDevice?.sms_phone}</span>
@@ -175,68 +176,68 @@ export function CommandPanel() {
       {/* Quick Actions — owner/admin only */}
       {canCommand && (
       <div>
-        <div className="text-[11px] font-mono text-white/30 uppercase tracking-wider font-bold mb-2 px-1">
+        <div className="text-[11px] font-mono text-white/30 uppercase tracking-wider font-bold mb-2.5 px-1">
           Quick Actions
         </div>
         <div className="space-y-2">
           {COMMAND_GROUPS.map(group => {
             const open = openGroups.has(group.id);
             const GroupIcon = group.icon;
-            const colorMap: Record<string, string> = {
-              emerald: 'border-emerald-500/15 hover:border-emerald-500/30',
-              blue: 'border-blue-500/15 hover:border-blue-500/30',
-              amber: 'border-amber-500/15 hover:border-amber-500/30',
-              red: 'border-red-500/15 hover:border-red-500/30',
+            const borderColor: Record<string, string> = {
+              emerald: 'border-l-emerald-500/50',
+              blue: 'border-l-blue-500/50',
+              amber: 'border-l-amber-500/50',
+              red: 'border-l-red-500/50',
             };
-            const iconColor: Record<string, string> = {
-              emerald: 'text-emerald-400/70',
-              blue: 'text-blue-400/70',
-              amber: 'text-amber-400/70',
-              red: 'text-red-400/70',
-            };
-            const borderColors: Record<string, string> = {
-              emerald: 'border-l-emerald-500/40',
-              blue: 'border-l-blue-500/40',
-              amber: 'border-l-amber-500/40',
-              red: 'border-l-red-500/40',
+            const iconBg: Record<string, string> = {
+              emerald: 'bg-emerald-500/10 text-emerald-400',
+              blue: 'bg-blue-500/10 text-blue-400',
+              amber: 'bg-amber-500/10 text-amber-400',
+              red: 'bg-red-500/10 text-red-400',
             };
             return (
               <div
                 key={group.id}
                 className={cn(
-                  "rounded-xl border-l-2 overflow-hidden transition-all duration-200",
-                  borderColors[group.color],
-                  open ? 'bg-white/[0.03] border border-white/[0.06]' : 'bg-white/[0.02] border border-white/[0.06] border-l-2 hover:bg-white/[0.04]'
+                  'rounded-xl border-l-[3px] overflow-hidden transition-all duration-200',
+                  borderColor[group.color],
+                  open
+                    ? 'bg-white/[0.03] border border-white/[0.06] border-l-[3px]'
+                    : 'bg-white/[0.02] border border-white/[0.04] border-l-[3px] hover:bg-white/[0.04]'
                 )}
               >
                 <button
                   onClick={() => toggleGroup(group.id)}
                   aria-expanded={open}
                   aria-label={`${group.label} commands`}
-                  className="w-full flex items-center justify-between gap-2 px-3 py-3 hover:bg-white/[0.03] transition-colors"
+                  className="w-full flex items-center justify-between gap-3 px-3.5 py-3 hover:bg-white/[0.03] transition-colors"
                 >
-                  <span className="flex items-center gap-2.5">
-                    <span className={cn("w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200", open ? `bg-${group.color}-500/15` : 'bg-white/[0.06]')}>
-                      <GroupIcon size={14} className={iconColor[group.color]} />
+                  <span className="flex items-center gap-3">
+                    <span className={cn(
+                      'w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200',
+                      open ? iconBg[group.color] : 'bg-white/[0.06] text-white/40'
+                    )}>
+                      <GroupIcon size={16} />
                     </span>
                     <div className="text-left">
-                      <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-white/70 block">
+                      <span className="text-[12px] font-mono font-bold uppercase tracking-wider text-white/70 block">
                         {group.label}
                       </span>
-                      <span className="text-[8px] font-mono text-white/25 block mt-0.5">
+                      <span className="text-[9px] font-mono text-white/25 block mt-0.5">
                         {group.commands.length} command{group.commands.length !== 1 ? 's' : ''}
                       </span>
                     </div>
                   </span>
-                  <svg
-                    width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
-                    className={cn("text-white/25 transition-transform duration-200", open && 'rotate-180')}
-                  >
-                    <polyline points="6 9 12 15 18 9" />
-                  </svg>
+                  <ChevronDown
+                    size={14}
+                    className={cn(
+                      'text-white/20 transition-transform duration-200',
+                      open && 'rotate-180 text-white/40'
+                    )}
+                  />
                 </button>
                 {open && (
-                  <div className="grid grid-cols-2 gap-2 p-2.5 border-t border-white/[0.06] bg-white/[0.02] animate-fade-in">
+                  <div className="grid grid-cols-2 gap-2 p-2.5 border-t border-white/[0.06] bg-gradient-to-b from-white/[0.02] to-transparent animate-fade-in">
                     {group.commands.map(c => {
                       const { command, label, icon, tone, title } = commandById(c);
                       return (
@@ -393,7 +394,7 @@ export function CommandPanel() {
           </div>
         )}
 
-        <div className="space-y-2 max-h-56 overflow-y-auto">
+        <div className="space-y-1.5 max-h-56 overflow-y-auto">
           {commands.length === 0 ? (
             <div className="text-center py-8">
               <div className="w-11 h-11 rounded-2xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center mx-auto mb-3">
@@ -408,14 +409,14 @@ export function CommandPanel() {
             commands.slice(0, 10).map((cmd) => (
               <div
                 key={cmd.id}
-                className="flex items-center gap-3 py-2.5 px-3 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:border-white/[0.1] hover:bg-white/[0.04] transition-colors"
+                className="flex items-center gap-3 py-2.5 px-3 rounded-xl bg-white/[0.02] border border-white/[0.04] hover:border-white/[0.08] hover:bg-white/[0.04] transition-all duration-200 group"
               >
                 <div className={cn(
-                  'w-2 h-2 rounded-full shrink-0',
+                  'w-2 h-2 rounded-full shrink-0 transition-all duration-300',
                   cmd.status === 'expired' ? 'bg-white/20' :
-                  cmd.status === 'executed' ? 'bg-emerald-500' :
-                  cmd.status === 'failed' ? 'bg-red-500' :
-                  'bg-amber-500'
+                  cmd.status === 'executed' ? 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)]' :
+                  cmd.status === 'failed' ? 'bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.5)]' :
+                  'bg-amber-500 animate-pulse shadow-[0_0_6px_rgba(245,158,11,0.5)]'
                 )} />
                 <div className="flex-1 min-w-0">
                   <div className="font-mono text-[11px] text-white/70 font-bold">
@@ -426,7 +427,7 @@ export function CommandPanel() {
                   </div>
                 </div>
                 <span className={cn(
-                  'text-[9px] font-mono font-bold uppercase px-2 py-1 rounded-lg shrink-0',
+                  'text-[8px] font-mono font-bold uppercase px-2 py-1 rounded-lg shrink-0',
                   cmd.status === 'expired' ? 'text-white/30 bg-white/[0.04] line-through' :
                   cmd.status === 'executed' ? 'text-emerald-400/70 bg-emerald-500/[0.08]' :
                   cmd.status === 'failed' ? 'text-red-400/70 bg-red-500/[0.08]' :
@@ -438,7 +439,7 @@ export function CommandPanel() {
                 {canCommand && (
                   <button
                     onClick={() => { setDeleteTarget(cmd.id); setDeleteError(''); }}
-                    className="text-white/15 hover:text-red-400/70 transition-colors p-1"
+                    className="text-white/10 hover:text-red-400/70 transition-colors p-1 opacity-0 group-hover:opacity-100"
                     title="Delete from history"
                   >
                     <Trash2 size={11} />

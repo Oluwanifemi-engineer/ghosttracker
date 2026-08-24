@@ -41,7 +41,7 @@ jest.mock('lucide-react', () => {
     Radio: noop, Camera: noop, Webcam: noop, Mic: noop,
     LocateFixed: noop, Lock: noop, Siren: noop, AlertTriangle: noop,
     CheckCircle2: noop, Trash2: noop, X: noop,
-    MessageSquareText: noop, Zap: noop, ShieldAlert: noop,
+    MessageSquareText: noop, Zap: noop, ShieldAlert: noop, ChevronDown: noop,
   };
 });
 

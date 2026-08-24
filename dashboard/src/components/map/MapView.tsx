@@ -791,10 +791,10 @@ export function MapView() {
         </MapContainer>
       )}
 
-      {/* Unified map controls — bottom-right, compact grid */}
-      <div className="absolute bottom-4 right-3 z-[1000] flex flex-col items-end gap-1 md:bottom-4 bottom-20">
-        {/* Compact 2-column grid for all controls */}
-        <div className="grid grid-cols-2 gap-1">
+      {/* Unified map controls — bottom-right, premium dark glass panel */}
+      <div className="absolute bottom-4 right-3 z-[1000] flex flex-col items-end gap-1.5 md:bottom-4 bottom-20">
+        <div className="bg-[#111118]/90 backdrop-blur-xl border border-white/[0.08] rounded-2xl shadow-2xl p-1.5">
+          <div className="grid grid-cols-2 gap-1">
           {/* Pin position */}
           <button
             onClick={() => setPinning(!pinning)}
@@ -923,6 +923,7 @@ export function MapView() {
               {showPathTracker ? 'Close' : 'Replay'}
             </button>
           )}
+        </div>
         </div>
       </div>
 

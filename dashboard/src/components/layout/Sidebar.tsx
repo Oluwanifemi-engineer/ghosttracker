@@ -316,17 +316,17 @@ export function Sidebar() {
                     key={device.id}
                     onClick={() => selectDevice(device.id)}
                     className={cn(
-                      'w-full text-left px-4 py-3 border-b border-white/[0.04] transition-all duration-200',
-                      'hover:bg-white/[0.04] group active:scale-[0.99]',
+                      'w-full text-left px-4 py-3.5 border-b border-white/[0.04] transition-all duration-200',
+                      'hover:bg-white/[0.04] group active:scale-[0.995]',
                       selectedDeviceId === device.id
-                        ? 'bg-white/[0.06] border-l-2 border-l-emerald-500 shadow-lg shadow-emerald-500/5'
+                        ? 'bg-white/[0.06] border-l-2 border-l-emerald-500 shadow-[inset_0_0_20px_rgba(16,185,129,0.04)]'
                         : 'border-l-2 border-l-transparent',
                       archived && 'opacity-45 hover:opacity-70'
                     )}
                   >
                     {/* Top row: Name + Status */}
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-[13px] font-bold text-white/90 truncate group-hover:text-white transition-colors max-w-[60%]">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-[13px] font-bold text-white/90 truncate group-hover:text-white transition-colors max-w-[65%]">
                         {deviceDisplayName(device)}
                       </span>
                       <div className="flex items-center gap-1.5">

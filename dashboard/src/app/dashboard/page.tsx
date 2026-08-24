@@ -114,35 +114,22 @@ export default function DashboardPage() {
 
   return (
     <div className="flex h-full relative bg-[#0a0a0f]">
-      {/* ═══ Map (Full Width — Premium Dark) ═══ */}
+      {/* ═══ Map (Full Width — Fills remaining space) ═══ */}
       <div className="flex-1 h-full pb-16 md:pb-0">
         <MapView />
       </div>
 
-      {/* ═══ Left Sidebar — Collapsible (Desktop) ═══ */}
-      <div
-        className={`hidden md:flex flex-col bg-[#0a0a0f] border-r border-white/[0.06] transition-all duration-300 ease-out ${
-          leftSidebarOpen ? 'w-64' : 'w-0 overflow-hidden'
-        }`}
-      >
-        {leftSidebarOpen && (
-          <div className="flex-1 overflow-y-auto">
-            {/* Sidebar content rendered by layout */}
-          </div>
-        )}
-      </div>
-
-      {/* ═══ Right Panel Toggle — Always Visible ═══ */}
+      {/* ═══ Right Panel Toggle — Premium floating button ═══ */}
       <button
         onClick={() => setRightPanelOpen(!rightPanelOpen)}
-        className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 z-50 w-5 h-14 items-center justify-center bg-[#111118] border border-white/[0.08] border-r-0 rounded-l-lg shadow-xl hover:bg-[#1a1a24] transition-all duration-200 group"
-        style={{ right: rightPanelOpen ? '320px' : '0px', transition: 'right 0.3s ease-out' }}
+        className="hidden md:flex absolute top-1/2 -translate-y-1/2 z-50 w-6 h-16 items-center justify-center bg-[#111118]/90 backdrop-blur-xl border border-white/[0.10] rounded-l-xl shadow-2xl hover:bg-[#1a1a24] hover:border-white/[0.15] transition-all duration-200 group"
+        style={{ right: rightPanelOpen ? '320px' : '0px', transition: 'right 0.3s cubic-bezier(0.16,1,0.3,1)' }}
         aria-label={rightPanelOpen ? 'Close panel' : 'Open panel'}
       >
         {rightPanelOpen ? (
-          <ChevronRight size={12} className="text-white/30 group-hover:text-white/70 transition-colors" />
+          <ChevronRight size={13} className="text-white/40 group-hover:text-white/80 transition-colors" />
         ) : (
-          <ChevronLeft size={12} className="text-white/30 group-hover:text-white/70 transition-colors" />
+          <ChevronLeft size={13} className="text-white/40 group-hover:text-white/80 transition-colors" />
         )}
       </button>
 
