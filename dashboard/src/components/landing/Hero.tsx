@@ -4,6 +4,9 @@ import { useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowRight, ShieldCheck, Download, Check, Smartphone, Battery, MapPin, Camera, Lock } from 'lucide-react';
 import { VersionBadge } from './VersionBadge';
+import { AuroraBackground } from '@/components/ui/AuroraBackground';
+import { BlurText } from '@/components/ui/BlurText';
+import { MagneticButton } from '@/components/ui/MagneticButton';
 import { AnimatedCounter } from '@/components/ui/AnimatedCounter';
 import { PRODUCT_STATS } from '@/lib/productStats';
 import { getVariant, trackConversion, HERO_EXPERIMENT, HERO_COPY } from '@/lib/abTest';
@@ -112,37 +115,23 @@ export function Hero({ authed }: { authed: boolean }) {
   }, [variant]);
 
   return (
-    <section className="relative pt-36 pb-24 sm:pt-44 sm:pb-32 overflow-hidden bg-white">
-      {/* Subtle grid */}
-      <div
-        className="absolute inset-0 pointer-events-none opacity-[0.02]"
-        style={{
-          backgroundImage: 'linear-gradient(#000 1px, transparent 1px), linear-gradient(90deg, #000 1px, transparent 1px)',
-          backgroundSize: '44px 44px',
-        }}
-      />
+    <AuroraBackground className="relative pt-36 pb-24 sm:pt-44 sm:pb-32 overflow-hidden bg-gray-950">
 
       <div className="relative max-w-7xl mx-auto px-5 sm:px-8 grid lg:grid-cols-2 gap-16 lg:gap-20 items-center">
         {/* ─── Copy ─────────────────────────────────────────────────────── */}
         <div>
           <VersionBadge />
 
-          <h1
-            className="text-5xl sm:text-6xl lg:text-7xl font-display font-extrabold tracking-[-0.03em] text-gray-900 leading-[1.02] mt-8"
-            style={{ animation: 'heroFadeIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both' }}
-          >
+          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-display font-extrabold tracking-[-0.03em] text-white leading-[1.02] mt-8">
             {copy.headline.split('\n').map((line, i) => (
               <span key={i}>
-                {i === 1 ? <span className="text-gray-400">{line}</span> : line}
+                {i === 1 ? <span className="text-gray-400">{line}</span> : <BlurText text={line} delay={i * 400} staggerDelay={25} />}
                 {i < copy.headline.split('\n').length - 1 && <br />}
               </span>
             ))}
           </h1>
 
-          <p
-            className="mt-7 text-lg sm:text-xl text-gray-500 leading-relaxed max-w-xl"
-            style={{ animation: 'heroFadeIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both' }}
-          >
+          <p className="mt-7 text-lg sm:text-xl text-gray-400 leading-relaxed max-w-xl">
             {copy.subheadline}
           </p>
 
@@ -152,26 +141,26 @@ export function Hero({ authed }: { authed: boolean }) {
             style={{ animation: 'heroFadeIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.5s both' }}
           >
             {authed ? (
-              <Link href="/dashboard" className="inline-flex items-center gap-2.5 px-8 py-4 rounded-2xl text-[13px] font-bold uppercase tracking-wider bg-gray-900 text-white shadow-lg shadow-gray-900/10 hover:bg-gray-800 transition-all duration-200">
+              <MagneticButton as="a" href="/dashboard" className="inline-flex items-center gap-2.5 px-8 py-4 rounded-2xl text-[13px] font-bold uppercase tracking-wider bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 hover:bg-emerald-400 hover:shadow-emerald-500/30 transition-all duration-200">
                 <ShieldCheck size={16} />
                 Open Command Center
                 <ArrowRight size={15} />
-              </Link>
+              </MagneticButton>
             ) : (
               <>
-                <Link href="/signup" className="inline-flex items-center gap-2.5 px-8 py-4 rounded-2xl text-[13px] font-bold uppercase tracking-wider bg-gray-900 text-white shadow-lg shadow-gray-900/10 hover:bg-gray-800 transition-all duration-200">
+                <MagneticButton as="a" href="/signup" className="inline-flex items-center gap-2.5 px-8 py-4 rounded-2xl text-[13px] font-bold uppercase tracking-wider bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 hover:bg-emerald-400 hover:shadow-emerald-500/30 transition-all duration-200">
                   Get Started Free
                   <ArrowRight size={15} />
-                </Link>
-                <Link href="/login" className="inline-flex items-center gap-2 px-7 py-4 rounded-2xl text-[13px] font-bold uppercase tracking-wider border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-900 transition-all duration-200">
+                </MagneticButton>
+                <MagneticButton as="a" href="/login" className="inline-flex items-center gap-2 px-7 py-4 rounded-2xl text-[13px] font-bold uppercase tracking-wider border border-white/10 text-gray-400 hover:bg-white/5 hover:border-white/20 hover:text-white transition-all duration-200">
                   Sign In
-                </Link>
+                </MagneticButton>
               </>
             )}
-            <Link href="/download" className="inline-flex items-center gap-2 px-7 py-4 rounded-2xl text-[13px] font-bold uppercase tracking-wider border border-gray-200 text-gray-600 hover:bg-gray-900 hover:text-white hover:border-gray-900 transition-all duration-200">
+            <MagneticButton as="a" href="/download" className="inline-flex items-center gap-2 px-7 py-4 rounded-2xl text-[13px] font-bold uppercase tracking-wider border border-white/10 text-gray-400 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 transition-all duration-200">
               <Download size={15} />
               Download APK
-            </Link>
+            </MagneticButton>
           </div>
 
           <div
@@ -179,7 +168,7 @@ export function Hero({ authed }: { authed: boolean }) {
             style={{ animation: 'heroFadeIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.6s both' }}
           >
             <Check size={14} className="text-gray-400" />
-            <span className="text-[12px] font-mono font-medium tracking-wide text-gray-400">
+            <span className="text-[12px] font-mono font-medium tracking-wide text-gray-500">
               Free for 1 device · No credit card required
             </span>
           </div>
@@ -191,10 +180,10 @@ export function Hero({ authed }: { authed: boolean }) {
           >
             {HERO_STATS.map((stat) => (
               <div key={stat.label}>
-                <div className="text-gray-900 text-xl font-bold font-mono">
+                <div className="text-white text-xl font-bold font-mono">
                   <AnimatedCounter value={stat.value} prefix={stat.prefix} suffix={stat.suffix} className="text-xl" />
                 </div>
-                <div className="text-[10px] font-mono text-gray-400 uppercase tracking-wider mt-1 font-semibold">{stat.label}</div>
+                <div className="text-[10px] font-mono text-gray-500 uppercase tracking-wider mt-1 font-semibold">{stat.label}</div>
               </div>
             ))}
           </div>
@@ -299,6 +288,6 @@ export function Hero({ authed }: { authed: boolean }) {
           </div>
         </div>
       </div>
-    </section>
+    </AuroraBackground>
   );
 }

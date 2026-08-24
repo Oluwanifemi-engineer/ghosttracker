@@ -278,7 +278,7 @@ export default function DashboardPage() {
   // DESKTOP LAYOUT — Sidebar + Map + Right Panel
   // ═══════════════════════════════════════════════════════════════════
   return (
-    <div className="flex h-full relative bg-[#0a0a0f]">
+    <div className="flex h-full relative bg-[#0a0a0f] noise-overlay">
       {/* ═══ Full-screen map — the entire interface ═══ */}
       <div className="flex-1 h-full">
         <MapView />

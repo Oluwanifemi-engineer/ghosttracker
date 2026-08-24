@@ -14,6 +14,7 @@ import {
   Users,
   BellRing,
 } from 'lucide-react';
+import { TiltCard } from '@/components/ui/TiltCard';
 
 const FEATURES = [
   {
@@ -92,19 +93,21 @@ const FEATURES = [
 
 function FeatureCard({ feature }: { feature: typeof FEATURES[0]; index: number }) {
   return (
-    <div className="group relative p-7 rounded-2xl bg-white/[0.02] border border-white/[0.06] hover:bg-white/[0.04] hover:border-white/[0.10] hover:-translate-y-1 transition-all duration-300 cursor-default overflow-hidden">
-      {/* Bottom accent line on hover */}
-      <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-emerald-500 scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left" />
-      <div className="w-12 h-12 rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center mb-5 group-hover:bg-emerald-500/10 group-hover:border-emerald-500/20 transition-all duration-300">
-        <feature.icon size={22} className="text-gray-400 group-hover:text-emerald-400 transition-colors duration-300" />
+    <TiltCard className="rounded-2xl bg-white/[0.02] border border-white/[0.06] hover:bg-white/[0.04] hover:border-white/[0.10] transition-all duration-300 cursor-default">
+      <div className="relative p-7 overflow-hidden">
+        {/* Bottom accent line on hover */}
+        <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-emerald-500 scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left" />
+        <div className="w-12 h-12 rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center mb-5 group-hover:bg-emerald-500/10 group-hover:border-emerald-500/20 transition-all duration-300">
+          <feature.icon size={22} className="text-gray-400 group-hover:text-emerald-400 transition-colors duration-300" />
+        </div>
+        <h3 className="text-white font-bold text-[15px] tracking-tight group-hover:translate-x-1 transition-transform duration-300">
+          {feature.title}
+        </h3>
+        <p className="mt-2.5 text-[13px] leading-relaxed text-gray-400 group-hover:text-gray-300 transition-colors duration-300">
+          {feature.description}
+        </p>
       </div>
-      <h3 className="text-white font-bold text-[15px] tracking-tight group-hover:translate-x-1 transition-transform duration-300">
-        {feature.title}
-      </h3>
-      <p className="mt-2.5 text-[13px] leading-relaxed text-gray-400 group-hover:text-gray-300 transition-colors duration-300">
-        {feature.description}
-      </p>
-    </div>
+    </TiltCard>
   );
 }
 

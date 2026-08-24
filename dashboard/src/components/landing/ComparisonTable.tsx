@@ -1,6 +1,7 @@
 'use client';
 
 import { Check, X, Minus } from 'lucide-react';
+import { Spotlight } from '@/components/ui/Spotlight';
 
 /**
  * ComparisonTable — side-by-side feature comparison vs the top 3 competitors.
@@ -79,7 +80,7 @@ export function ComparisonTable() {
   const categories = [...new Set(FEATURES.map((f) => f.category))];
 
   return (
-    <section className="py-20 sm:py-28 bg-gray-950 relative overflow-hidden">
+    <Spotlight className="py-20 sm:py-28 bg-gray-950 relative overflow-hidden" color="rgba(16,185,129,0.06)">
       <div className="max-w-6xl mx-auto px-5 sm:px-8">
         {/* Section header */}
         <div className="text-center mb-16">
@@ -235,7 +236,7 @@ export function ComparisonTable() {
           iOS support is on the roadmap.
         </p>
       </div>
-    </section>
+    </Spotlight>
   );
 }
 

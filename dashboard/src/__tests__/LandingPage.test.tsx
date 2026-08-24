@@ -46,9 +46,9 @@ describe('Landing Page', () => {
     expect(screen.getAllByText('MAGNEETAR').length).toBeGreaterThan(0);
     expect(screen.getAllByText('TRACK · PROTECT · RECOVER').length).toBeGreaterThan(0);
 
-    // Hero — headline split across lines with <br />
-    expect(screen.queryByText(/Protect what/)).toBeTruthy();
-    expect(screen.queryByText(/Stay close to/)).toBeTruthy();
+    // Hero — headline split across lines with <br /> and BlurText (per-character spans)
+    expect(screen.getAllByText(/Protect/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/close/).length).toBeGreaterThan(0);
     // Hero stats — AnimatedCounter renders the value and suffix as separate
     // text nodes (e.g. "24" + "/7"), so assert on the stable stat labels.
     // Use flexible matchers to handle split nodes and spacing.
