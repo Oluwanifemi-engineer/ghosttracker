@@ -11,7 +11,7 @@ import { stepUpPasswordHint } from '@/lib/utils';
 import {
   ChevronLeft, ChevronRight, Smartphone, BarChart3,
   Link2, Trash2, X, AlertTriangle, Shield, ShieldCheck,
-  ExternalLink
+  ExternalLink, LogOut, Wifi, WifiOff
 } from 'lucide-react';
 import { SidebarSkeleton } from '@/components/ui/Skeleton';
 
@@ -45,7 +45,7 @@ function useIsMobile() {
 export function Sidebar() {
   const {
     devices, selectedDeviceId, selectDevice, sidebarOpen, setSidebarOpen,
-    isConnected, setDevices, userProfile, setUserProfile
+    isConnected, setDevices, userProfile, setUserProfile, logout
   } = useStore();
   const isMobile = useIsMobile();
   const sidebarVisible = sidebarOpen;
@@ -69,7 +69,7 @@ export function Sidebar() {
       const profile = await api.fetchMe();
       setUserProfile(profile);
     } catch (e) {
-      console.log('Could not fetch user profile');
+      // Profile may not exist
     }
   }, [isConnected, userProfile, setUserProfile]);
 
@@ -120,7 +120,6 @@ export function Sidebar() {
 
   return (
     <>
-    {/* Mobile backdrop */}
     {isMobile && sidebarVisible && (
       <div
         className="fixed inset-0 z-30 bg-black/70 backdrop-blur-md md:hidden"
@@ -148,14 +147,28 @@ export function Sidebar() {
 
       {sidebarOpen && (
         <>
-          {/* Brand Bar */}
+          {/* Brand Bar with connection status */}
           <div className="px-4 py-3 border-b border-white/[0.06] flex items-center gap-3 shrink-0">
             <img src="/magneetar-mhalf.svg" alt="Magneetar" className="w-7 h-7 rounded-lg shrink-0" />
-            <div>
+            <div className="flex-1 min-w-0">
               <div className="text-[10px] font-bold tracking-[0.25em] text-white/90">MAGNEETAR</div>
-              <div className="text-[7px] font-mono text-white/30 tracking-[0.2em] font-bold">COMMAND CENTER</div>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <div className={cn(
+                  'w-1.5 h-1.5 rounded-full transition-all duration-300',
+                  isConnected ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)] animate-pulse' : 'bg-white/20'
+                )} />
+                <span className="text-[7px] font-mono text-white/25 tracking-[0.15em] font-bold uppercase">
+                  {isConnected ? 'CONNECTED' : 'OFFLINE'}
+                </span>
+              </div>
             </div>
-            <div className="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
+            <button
+              onClick={logout}
+              className="w-7 h-7 flex items-center justify-center rounded-lg text-white/20 hover:text-red-400 hover:bg-red-500/[0.06] transition-all"
+              title="Disconnect"
+            >
+              <LogOut size={12} />
+            </button>
           </div>
 
           {/* Quick Nav Links */}
@@ -192,25 +205,48 @@ export function Sidebar() {
             </div>
           </div>
 
-          {/* Stats Overview */}
+          {/* Hero KPI Card */}
           {stats && (
             <div className="px-3 py-3 border-b border-white/[0.06] shrink-0">
-              <div className="flex items-center gap-1.5 mb-2.5">
+              <div className="flex items-center gap-1.5 mb-3">
                 <BarChart3 size={10} className="text-white/25" />
                 <span className="text-[8px] font-mono text-white/30 uppercase tracking-[0.15em] font-bold">Overview</span>
               </div>
-              <div className="grid grid-cols-3 gap-1.5">
-                <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-2 text-center transition-all duration-200 hover:border-white/[0.1] hover:bg-white/[0.05]">
-                  <div className="font-mono text-sm font-bold text-white/90 tabular-nums">{stats.total_devices}</div>
-                  <div className="text-[7px] font-mono text-white/30 font-bold uppercase tracking-wider">Total</div>
+
+              {/* Hero metric */}
+              <div className="bg-emerald-500/[0.06] border border-emerald-500/15 rounded-xl p-3 mb-2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-mono text-2xl font-bold text-emerald-400 tabular-nums leading-none">{stats.total_devices}</div>
+                    <div className="text-[8px] font-mono text-white/30 font-bold uppercase tracking-wider mt-1">Device{stats.total_devices !== 1 ? 's' : ''} Linked</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="flex items-center gap-1.5 justify-end">
+                      <Wifi size={10} className="text-emerald-400/60" />
+                      <span className="font-mono text-sm font-bold text-emerald-400 tabular-nums">{stats.active_devices}</span>
+                    </div>
+                    <div className="text-[7px] font-mono text-white/20 font-bold uppercase tracking-wider mt-0.5">Active</div>
+                  </div>
                 </div>
-                <div className="bg-emerald-500/[0.06] border border-emerald-500/15 rounded-xl p-2 text-center transition-all duration-200 hover:border-emerald-500/30 hover:bg-emerald-500/[0.1]">
-                  <div className="font-mono text-sm font-bold text-emerald-400 tabular-nums">{stats.active_devices}</div>
-                  <div className="text-[7px] font-mono text-white/30 font-bold uppercase tracking-wider">Active</div>
+              </div>
+
+              {/* Secondary metrics */}
+              <div className="grid grid-cols-2 gap-1.5">
+                <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-2 text-center">
+                  <div className="font-mono text-sm font-bold text-white/90 tabular-nums">{stats.total_locations}</div>
+                  <div className="text-[7px] font-mono text-white/25 font-bold uppercase tracking-wider">Locations</div>
                 </div>
-                <div className="bg-red-500/[0.06] border border-red-500/15 rounded-xl p-2 text-center transition-all duration-200 hover:border-red-500/30 hover:bg-red-500/[0.1]">
-                  <div className="font-mono text-sm font-bold text-red-400 tabular-nums">{stats.stolen_devices}</div>
-                  <div className="text-[7px] font-mono text-white/30 font-bold uppercase tracking-wider">Stolen</div>
+                <div className={cn(
+                  'rounded-xl p-2 text-center border',
+                  stats.stolen_devices > 0
+                    ? 'bg-red-500/[0.06] border-red-500/15'
+                    : 'bg-white/[0.03] border-white/[0.06]'
+                )}>
+                  <div className={cn(
+                    'font-mono text-sm font-bold tabular-nums',
+                    stats.stolen_devices > 0 ? 'text-red-400' : 'text-white/90'
+                  )}>{stats.stolen_devices}</div>
+                  <div className="text-[7px] font-mono text-white/25 font-bold uppercase tracking-wider">Stolen</div>
                 </div>
               </div>
             </div>
@@ -250,7 +286,7 @@ export function Sidebar() {
                 <div className="text-white/25 text-[10px] font-mono mt-1">Connect to server first.</div>
               </div>
             ) : (
-              [...activeDevices, ...archivedDevices].map((device, idx) => {
+              [...activeDevices, ...archivedDevices].map((device) => {
                 const archived = !!device.archived_at;
                 const online = isOnline(device.last_seen);
                 const signal = getSignalLevel(device.last_seen);
@@ -276,7 +312,7 @@ export function Sidebar() {
                     )}
                   >
                     <div className="flex items-center justify-between mb-0.5">
-                      <span className="text-sm font-bold text-white/90 truncate group-hover:text-white transition-colors max-w-[55%]">
+                      <span className="text-[13px] font-bold text-white/90 truncate group-hover:text-white transition-colors max-w-[55%]">
                         {deviceDisplayName(device)}
                       </span>
                       {archived && (

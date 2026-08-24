@@ -108,13 +108,13 @@ describe('GeofencePanel — zone policy UI', () => {
 
     expect(await screen.findByText('Home')).toBeInTheDocument();
     expect(screen.getByText('School')).toBeInTheDocument();
-    // Note: badges render 'Safe zone'/'Restricted' (uppercase is CSS-only).
+    // Note: badges render 'Safe'/'Restricted' (uppercase is CSS-only).
     // Two of the three fixtures are safe zones (is_safe_zone defaults true).
-    expect(screen.getAllByText('Safe zone')).toHaveLength(2);
+    expect(screen.getAllByText('Safe')).toHaveLength(2);
     expect(screen.getByText('Restricted')).toBeInTheDocument();
-    expect(screen.getByText('On exit: CAPTURE')).toBeInTheDocument();
-    expect(screen.getByText('On exit: SIREN')).toBeInTheDocument();
-    expect(screen.getByText('On exit: ALERT')).toBeInTheDocument();
+    expect(screen.getByText('CAPTURE')).toBeInTheDocument();
+    expect(screen.getByText('SIREN')).toBeInTheDocument();
+    expect(screen.getByText('ALERT')).toBeInTheDocument();
   });
 
   it('shows the empty state when no zones exist', async () => {
@@ -162,7 +162,7 @@ describe('GeofencePanel — zone policy UI', () => {
     fireEvent.change(screen.getByLabelText('Zone latitude'), { target: { value: '99' } });
     fireEvent.click(screen.getByText('Create Zone'));
 
-    expect(await screen.findByText('Enter a valid latitude (−90 to 90).')).toBeInTheDocument();
+    expect(await screen.findByText('Enter a valid latitude (-90 to 90).')).toBeInTheDocument();
     expect(mockCreateCalls).toHaveLength(0);
   });
 

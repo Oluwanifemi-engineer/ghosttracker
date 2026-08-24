@@ -791,136 +791,139 @@ export function MapView() {
         />
       )}
 
-      {/* Map controls — bottom left, premium dark */}
-      <div className="absolute bottom-4 left-3 z-[1000] flex flex-col gap-1.5 md:bottom-4 bottom-20">
-        <button
-          onClick={() => setPinning(!pinning)}
-          className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-[10px] font-mono font-bold uppercase tracking-wider transition-all ${
-            pinning
-              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-lg shadow-emerald-500/10'
-              : 'bg-[#111118]/90 text-white/60 border border-white/[0.08] hover:bg-[#1a1a24] hover:text-white/80'
-          }`}
-          title="Pin your position"
-        >
-          <MapPin size={12} />
-          {pinning ? 'Tap map...' : 'Pin'}
-        </button>
-
-        <button
-          onClick={() => setFollowDevice(!followDevice)}
-          className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-[10px] font-mono font-bold uppercase tracking-wider transition-all ${
-            followDevice
-              ? 'bg-[#111118]/90 text-white/80 border border-white/[0.08]'
-              : 'bg-[#111118]/90 text-white/50 border border-white/[0.08] hover:bg-[#1a1a24] hover:text-white/70'
-          }`}
-          title={followDevice ? 'Stop following' : 'Follow device'}
-        >
-          {followDevice ? (
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/>
-            </svg>
-          ) : (
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="1"/>
-            </svg>
-          )}
-          {followDevice ? 'Following' : 'Follow'}
-        </button>
-
-        <button
-          onClick={() => setShowTrail(!showTrail)}
-          className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-[10px] font-mono font-bold uppercase tracking-wider transition-all ${
-            showTrail
-              ? 'bg-[#111118]/90 text-white/80 border border-white/[0.08]'
-              : 'bg-[#111118]/90 text-white/50 border border-white/[0.08] hover:bg-[#1a1a24] hover:text-white/70'
-          }`}
-          title={showTrail ? 'Hide trail' : 'Show trail'}
-        >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M3 17l4-4 4 4 4-4 4 4"/>
-          </svg>
-          Trail
-        </button>
-
-        <button
-          onClick={() => setShowSatellite(!showSatellite)}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-[10px] font-mono font-bold uppercase tracking-wider transition-all bg-[#111118]/90 text-white/50 border border-white/[0.08] hover:bg-[#1a1a24] hover:text-white/70"
-          title={showSatellite ? 'Map view' : 'Satellite view'}
-        >
-          {showSatellite ? (
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
-            </svg>
-          ) : (
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20z"/>
-            </svg>
-          )}
-          {showSatellite ? 'Map' : 'Sat'}
-        </button>
-      </div>
-
-      {/* Map controls — bottom right, premium dark */}
-      <div className="absolute bottom-4 right-3 z-[1000] flex flex-col gap-1.5 md:bottom-4 bottom-20">
-        <button
-          onClick={() => setShowHeatmap(!showHeatmap)}
-          className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-[10px] font-mono font-bold uppercase tracking-wider transition-all ${
-            showHeatmap
-              ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30 shadow-lg shadow-amber-500/10'
-              : 'bg-[#111118]/90 text-white/50 border border-white/[0.08] hover:bg-[#1a1a24] hover:text-white/70'
-          }`}
-          title={showHeatmap ? 'Hide heatmap' : 'Show heatmap'}
-        >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M12 2C8 6 4 10 4 14a8 8 0 0 0 16 0c0-4-4-8-8-12z"/>
-          </svg>
-          Heatmap
-        </button>
-
-        {effectiveUserPos && latestLocation && userNavigationUsable && (
+      {/* Unified map controls — bottom-right, compact grid */}
+      <div className="absolute bottom-4 right-3 z-[1000] flex flex-col items-end gap-1 md:bottom-4 bottom-20">
+        {/* Compact 2-column grid for all controls */}
+        <div className="grid grid-cols-2 gap-1">
+          {/* Pin position */}
           <button
-            onClick={handleNavigate}
-            disabled={navigating}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-[10px] font-mono font-bold uppercase tracking-wider transition-all bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30 disabled:opacity-50"
-            title="Navigate to device"
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M3 11l19-9-9 19-2-8-8-2z"/>
-            </svg>
-            {navigating ? '...' : 'Nav'}
-          </button>
-        )}
-
-        {locations.length > 2 && (
-          <button
-            onClick={() => {
-              if (showPathTracker) {
-                setShowPathTracker(false);
-                setPathPlaying(false);
-                if (followBeforeReplay.current !== null) {
-                  setFollowDevice(followBeforeReplay.current);
-                  followBeforeReplay.current = null;
-                }
-              } else {
-                followBeforeReplay.current = followDevice;
-                setFollowDevice(false);
-                setShowPathTracker(true);
-                setPathIndex(0);
-              }
-            }}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-[10px] font-mono font-bold uppercase tracking-wider transition-all ${
-              showPathTracker
-                ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30 shadow-lg shadow-blue-500/10'
-                : 'bg-[#111118]/90 text-white/50 border border-white/[0.08] hover:bg-[#1a1a24] hover:text-white/70'
+            onClick={() => setPinning(!pinning)}
+            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[9px] font-mono font-bold uppercase tracking-wider transition-all ${
+              pinning
+                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                : 'bg-[#111118]/95 backdrop-blur text-white/50 border border-white/[0.08] hover:bg-[#1a1a24] hover:text-white/70'
             }`}
-            title={showPathTracker ? 'Close replay' : 'Replay trail'}
+            title="Pin your position"
           >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polygon points="5 3 19 12 5 21 5 3"/>
-            </svg>
-            {showPathTracker ? 'Close' : 'Replay'}
+            <MapPin size={10} />
+            {pinning ? 'Tap...' : 'Pin'}
           </button>
-        )}
+
+          {/* Follow */}
+          <button
+            onClick={() => setFollowDevice(!followDevice)}
+            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[9px] font-mono font-bold uppercase tracking-wider transition-all ${
+              followDevice
+                ? 'bg-emerald-500/15 text-emerald-400/80 border border-emerald-500/20'
+                : 'bg-[#111118]/95 backdrop-blur text-white/50 border border-white/[0.08] hover:bg-[#1a1a24] hover:text-white/70'
+            }`}
+            title={followDevice ? 'Stop following' : 'Follow device'}
+          >
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r={followDevice ? '3' : '1'} />
+            </svg>
+            {followDevice ? 'Track' : 'Follow'}
+          </button>
+
+          {/* Trail */}
+          <button
+            onClick={() => setShowTrail(!showTrail)}
+            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[9px] font-mono font-bold uppercase tracking-wider transition-all ${
+              showTrail
+                ? 'bg-white/[0.08] text-white/70 border border-white/[0.1]'
+                : 'bg-[#111118]/95 backdrop-blur text-white/50 border border-white/[0.08] hover:bg-[#1a1a24] hover:text-white/70'
+            }`}
+            title={showTrail ? 'Hide trail' : 'Show trail'}
+          >
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M3 17l4-4 4 4 4-4 4 4"/>
+            </svg>
+            Trail
+          </button>
+
+          {/* Satellite */}
+          <button
+            onClick={() => setShowSatellite(!showSatellite)}
+            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[9px] font-mono font-bold uppercase tracking-wider transition-all ${
+              showSatellite
+                ? 'bg-blue-500/15 text-blue-400/80 border border-blue-500/20'
+                : 'bg-[#111118]/95 backdrop-blur text-white/50 border border-white/[0.08] hover:bg-[#1a1a24] hover:text-white/70'
+            }`}
+            title={showSatellite ? 'Map view' : 'Satellite view'}
+          >
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              {showSatellite ? (
+                <><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></>
+              ) : (
+                <><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20z"/></>
+              )}
+            </svg>
+            {showSatellite ? 'Map' : 'Sat'}
+          </button>
+
+          {/* Heatmap */}
+          <button
+            onClick={() => setShowHeatmap(!showHeatmap)}
+            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[9px] font-mono font-bold uppercase tracking-wider transition-all ${
+              showHeatmap
+                ? 'bg-amber-500/15 text-amber-400/80 border border-amber-500/20'
+                : 'bg-[#111118]/95 backdrop-blur text-white/50 border border-white/[0.08] hover:bg-[#1a1a24] hover:text-white/70'
+            }`}
+            title={showHeatmap ? 'Hide heatmap' : 'Show heatmap'}
+          >
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M12 2C8 6 4 10 4 14a8 8 0 0 0 16 0c0-4-4-8-8-12z"/>
+            </svg>
+            Heat
+          </button>
+
+          {/* Nav */}
+          {effectiveUserPos && latestLocation && userNavigationUsable && (
+            <button
+              onClick={handleNavigate}
+              disabled={navigating}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[9px] font-mono font-bold uppercase tracking-wider transition-all bg-emerald-500/15 text-emerald-400/80 border border-emerald-500/20 hover:bg-emerald-500/25 disabled:opacity-50"
+              title="Navigate to device"
+            >
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M3 11l19-9-9 19-2-8-8-2z"/>
+              </svg>
+              {navigating ? '...' : 'Nav'}
+            </button>
+          )}
+
+          {/* Replay */}
+          {locations.length > 2 && (
+            <button
+              onClick={() => {
+                if (showPathTracker) {
+                  setShowPathTracker(false);
+                  setPathPlaying(false);
+                  if (followBeforeReplay.current !== null) {
+                    setFollowDevice(followBeforeReplay.current);
+                    followBeforeReplay.current = null;
+                  }
+                } else {
+                  followBeforeReplay.current = followDevice;
+                  setFollowDevice(false);
+                  setShowPathTracker(true);
+                  setPathIndex(0);
+                }
+              }}
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[9px] font-mono font-bold uppercase tracking-wider transition-all ${
+                showPathTracker
+                  ? 'bg-blue-500/15 text-blue-400/80 border border-blue-500/20'
+                  : 'bg-[#111118]/95 backdrop-blur text-white/50 border border-white/[0.08] hover:bg-[#1a1a24] hover:text-white/70'
+              }`}
+              title={showPathTracker ? 'Close replay' : 'Replay trail'}
+            >
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polygon points="5 3 19 12 5 21 5 3"/>
+              </svg>
+              {showPathTracker ? 'Close' : 'Replay'}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Path replay timeline — premium dark */}
