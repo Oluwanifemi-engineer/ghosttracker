@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import {
   Brain,
   MapPin,
@@ -57,7 +56,7 @@ const FEATURES = [
     icon: ShieldCheck,
     title: 'Phantom Mode',
     description:
-      'Hidden operation for stealth tracking. The app runs invisibly with 3-layer background persistence.',
+      'Hidden operation for stealth tracking. The app runs invisibly with multi-layer background persistence — OEM-aware watchdog, health checks, and wakelock management.',
   },
   {
     icon: Smartphone,
@@ -93,16 +92,16 @@ const FEATURES = [
 
 function FeatureCard({ feature }: { feature: typeof FEATURES[0]; index: number }) {
   return (
-    <div className="group relative p-7 rounded-2xl bg-white shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.08)] hover:-translate-y-1 transition-all duration-300 cursor-default overflow-hidden">
+    <div className="group relative p-7 rounded-2xl bg-white/[0.02] border border-white/[0.06] hover:bg-white/[0.04] hover:border-white/[0.10] hover:-translate-y-1 transition-all duration-300 cursor-default overflow-hidden">
       {/* Bottom accent line on hover */}
-      <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gray-900 scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left" />
-      <div className="w-12 h-12 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center mb-5 group-hover:scale-110 group-hover:bg-gray-900 group-hover:border-gray-900 transition-all duration-300">
-        <feature.icon size={22} className="text-gray-700 group-hover:text-white transition-colors duration-300" />
+      <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-emerald-500 scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left" />
+      <div className="w-12 h-12 rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center mb-5 group-hover:bg-emerald-500/10 group-hover:border-emerald-500/20 transition-all duration-300">
+        <feature.icon size={22} className="text-gray-400 group-hover:text-emerald-400 transition-colors duration-300" />
       </div>
-      <h3 className="text-gray-900 font-bold text-[15px] tracking-tight group-hover:translate-x-1 transition-transform duration-300">
+      <h3 className="text-white font-bold text-[15px] tracking-tight group-hover:translate-x-1 transition-transform duration-300">
         {feature.title}
       </h3>
-      <p className="mt-2.5 text-[13px] leading-relaxed text-gray-500 group-hover:text-gray-600 transition-colors duration-300">
+      <p className="mt-2.5 text-[13px] leading-relaxed text-gray-400 group-hover:text-gray-300 transition-colors duration-300">
         {feature.description}
       </p>
     </div>
@@ -111,16 +110,16 @@ function FeatureCard({ feature }: { feature: typeof FEATURES[0]; index: number }
 
 export function Features() {
   return (
-    <section id="features" className="relative py-32 sm:py-40 bg-white scroll-mt-20">
+    <section id="features" className="relative py-32 sm:py-40 bg-gray-950 scroll-mt-20">
       <div className="max-w-7xl mx-auto px-5 sm:px-8">
         <div className="max-w-2xl mx-auto text-center mb-16">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gray-200 bg-white mb-5">
-            <span className="text-[10px] font-mono font-bold tracking-[0.2em] text-gray-500">CAPABILITIES</span>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gray-700 bg-gray-800/50 mb-5">
+            <span className="text-[10px] font-mono font-bold tracking-[0.2em] text-gray-400">CAPABILITIES</span>
           </div>
-          <h2 className="text-3xl sm:text-4xl font-display font-extrabold tracking-tight text-gray-900">
-            One command center for <span className="text-gray-400">what matters</span>
+          <h2 className="text-3xl sm:text-4xl font-display font-extrabold tracking-tight text-white">
+            One command center for <span className="text-gray-500">what matters</span>
           </h2>
-          <p className="mt-4 text-gray-500 leading-relaxed">
+          <p className="mt-4 text-gray-400 leading-relaxed">
             Protect the devices you own and stay close to the people you love — from silent background
             tracking and forensic-grade evidence to live circles that keep everyone in sync.
           </p>

@@ -3,9 +3,9 @@
 import { useEffect, useState } from 'react';
 import { LandingNav } from '@/components/landing/LandingNav';
 import { Hero } from '@/components/landing/Hero';
-import { ProductTour } from '@/components/landing/ProductTour';
 import { VideoDemo } from '@/components/landing/VideoDemo';
 import { ComparisonTable } from '@/components/landing/ComparisonTable';
+import { Testimonials } from '@/components/landing/Testimonials';
 import { Features } from '@/components/landing/Features';
 import { HowItWorks } from '@/components/landing/HowItWorks';
 import { Africa } from '@/components/landing/Africa';
@@ -26,13 +26,13 @@ export default function HomePage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-white text-gray-900 overflow-x-hidden">
+    <div className="min-h-screen bg-gray-950 text-white overflow-x-hidden">
       <LandingNav authed={authed} />
       <main>
         <Hero authed={authed} />
         <VideoDemo />
-        <ProductTour />
         <Reveal><ComparisonTable /></Reveal>
+        <Reveal><Testimonials /></Reveal>
         <Reveal><Features /></Reveal>
         <Reveal><HowItWorks /></Reveal>
         <Reveal><Africa /></Reveal>

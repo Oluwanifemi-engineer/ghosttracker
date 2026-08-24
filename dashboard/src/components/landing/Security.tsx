@@ -37,19 +37,20 @@ const SECURITY_POINTS = [
 
 export function Security() {
   return (
-    <section id="security" className="relative py-24 sm:py-32 bg-gray-50/50 border-y border-gray-100 overflow-hidden scroll-mt-20">
+    <section id="security" className="relative py-24 sm:py-32 bg-gray-950 overflow-hidden scroll-mt-20">
       <div className="relative max-w-7xl mx-auto px-5 sm:px-8 grid lg:grid-cols-2 gap-14 items-center">
         {/* Copy */}
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gray-200 bg-white mb-5">
-            <span className="text-[10px] font-mono font-bold tracking-[0.2em] text-gray-500">SECURITY</span>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gray-700 bg-gray-800/50 mb-5">
+            <Lock size={10} className="text-emerald-400" />
+            <span className="text-[10px] font-mono font-bold tracking-[0.2em] text-gray-400">SECURITY</span>
           </div>
-          <h2 className="text-3xl sm:text-4xl font-display font-extrabold tracking-tight text-gray-900 leading-tight">
+          <h2 className="text-3xl sm:text-4xl font-display font-extrabold tracking-tight text-white leading-tight">
             Built like it protects
             <br />
-            <span className="text-gray-400">something precious.</span>
+            <span className="text-gray-500">something precious.</span>
           </h2>
-          <p className="mt-5 text-gray-500 leading-relaxed max-w-lg">
+          <p className="mt-5 text-gray-400 leading-relaxed max-w-lg">
             Because it does. Magneetar treats every device as a vault — with per-device secrets,
             cryptographic evidence, and instant session revocation.
           </p>
@@ -57,45 +58,45 @@ export function Security() {
           <div className="mt-8 space-y-4">
             {SECURITY_POINTS.map((point) => (
               <div key={point.title} className="flex items-start gap-4 group">
-                <div className="w-9 h-9 rounded-lg bg-gray-50 border border-gray-200 flex items-center justify-center shrink-0 group-hover:bg-gray-100 transition-colors">
-                  <point.icon size={16} className="text-gray-600" />
+                <div className="w-9 h-9 rounded-lg bg-white/[0.04] border border-white/[0.06] flex items-center justify-center shrink-0 group-hover:bg-emerald-500/10 group-hover:border-emerald-500/20 transition-all">
+                  <point.icon size={16} className="text-gray-400 group-hover:text-emerald-400 transition-colors" />
                 </div>
                 <div>
-                  <div className="text-gray-900 font-semibold text-sm">{point.title}</div>
-                  <div className="text-[12.5px] text-gray-500 leading-relaxed mt-1">{point.description}</div>
+                  <div className="text-white font-semibold text-sm">{point.title}</div>
+                  <div className="text-[12.5px] text-gray-400 leading-relaxed mt-1">{point.description}</div>
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Shield visual */}
+        {/* Shield visual — dark theme */}
         <div className="relative flex items-center justify-center py-10">
           <div className="relative w-72 h-72 sm:w-80 sm:h-80">
             {/* Rotating rings */}
-            <div className="absolute inset-0 rounded-full border border-gray-200 animate-slow-spin">
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-gray-900" />
+            <div className="absolute inset-0 rounded-full border border-white/[0.06] animate-slow-spin">
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-emerald-400" />
             </div>
             <div
-              className="absolute inset-6 rounded-full border border-dashed border-gray-200 animate-slow-spin"
+              className="absolute inset-6 rounded-full border border-dashed border-white/[0.06] animate-slow-spin"
               style={{ animationDirection: 'reverse', animationDuration: '18s' }}
             >
-              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-gray-400" />
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-gray-500" />
             </div>
 
             {/* Core shield */}
-            <div className="absolute inset-16 rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center">
-              <svg viewBox="0 0 24 24" className="w-16 h-16 text-gray-700" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+            <div className="absolute inset-16 rounded-full bg-white/[0.03] border border-white/[0.06] flex items-center justify-center">
+              <svg viewBox="0 0 24 24" className="w-16 h-16 text-emerald-400/70" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                 <path d="M9 12l2 2 4-4" />
               </svg>
             </div>
 
             {/* Status chips */}
-            <div className="absolute -top-2 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-full border border-gray-200 bg-white text-[10px] font-mono font-bold text-gray-700 shadow-sm">
+            <div className="absolute -top-2 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-full border border-white/[0.08] bg-[#0f172a] text-[10px] font-mono font-bold text-white/70 shadow-lg">
               TOTP 2FA
             </div>
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-full border border-gray-200 bg-white text-[10px] font-mono font-bold text-gray-500 shadow-sm">
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-full border border-white/[0.08] bg-[#0f172a] text-[10px] font-mono font-bold text-white/50 shadow-lg">
               SHA-256 CHAIN
             </div>
           </div>

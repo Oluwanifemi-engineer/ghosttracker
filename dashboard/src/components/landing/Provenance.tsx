@@ -27,23 +27,22 @@ export function Provenance() {
   return (
     <section
       id="our-story"
-      className="relative py-24 sm:py-32 bg-white scroll-mt-20 overflow-hidden"
+      className="relative py-24 sm:py-32 bg-gray-950 scroll-mt-20 overflow-hidden"
     >
       <div className="relative max-w-7xl mx-auto px-5 sm:px-8">
         <div className="max-w-3xl mx-auto text-center mb-14">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gray-200 bg-gray-50 mb-5">
-            <span className="text-[10px] font-mono font-bold tracking-[0.2em] text-gray-500">OUR STORY</span>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gray-700 bg-gray-800/50 mb-5">
+            <span className="text-[10px] font-mono font-bold tracking-[0.2em] text-gray-400">OUR STORY</span>
           </div>
-          <h2 className="text-3xl sm:text-4xl font-display font-extrabold tracking-tight text-gray-900 leading-tight">
+          <h2 className="text-3xl sm:text-4xl font-display font-extrabold tracking-tight text-white leading-tight">
             Built by students who
             <br />
-            <span className="text-gray-400">lived these problems.</span>
+            <span className="text-gray-500">lived these problems.</span>
           </h2>
-          <p className="mt-5 text-gray-500 leading-relaxed">
+          <p className="mt-5 text-gray-400 leading-relaxed">
             Magneetar began with students who knew both problems firsthand. Phone theft is a reality
             on university campuses across Nigeria, and staying in touch with family back home is how
-            students everywhere hold their lives together. We didn&apos;t start from a boardroom; we
-            started from problems our whole generation recognizes.
+            students everywhere hold their lives together.
           </p>
         </div>
 
@@ -51,20 +50,20 @@ export function Provenance() {
           {ORIGIN_POINTS.map((point) => (
             <div
               key={point.title}
-              className="relative group rounded-2xl border border-gray-200 bg-white p-7 overflow-hidden hover:border-gray-300 hover:shadow-lg hover:shadow-gray-900/[0.04] transition-all duration-300"
+              className="relative group rounded-2xl border border-white/[0.06] bg-white/[0.02] p-7 overflow-hidden hover:bg-white/[0.04] hover:border-white/[0.10] transition-all duration-300"
             >
-              <div className="w-10 h-10 rounded-lg bg-gray-50 border border-gray-200 flex items-center justify-center mb-5 group-hover:bg-gray-100 transition-colors">
-                <point.icon size={17} className="text-gray-600" />
+              <div className="w-10 h-10 rounded-lg bg-white/[0.04] border border-white/[0.06] flex items-center justify-center mb-5 group-hover:bg-emerald-500/10 group-hover:border-emerald-500/20 transition-all">
+                <point.icon size={17} className="text-gray-400 group-hover:text-emerald-400 transition-colors" />
               </div>
-              <div className="text-gray-900 font-semibold text-sm">{point.title}</div>
-              <div className="text-[12.5px] text-gray-500 leading-relaxed mt-2">{point.description}</div>
+              <div className="text-white font-semibold text-sm">{point.title}</div>
+              <div className="text-[12.5px] text-gray-400 leading-relaxed mt-2">{point.description}</div>
             </div>
           ))}
         </div>
 
-        <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-2 text-[11px] font-mono text-gray-400">
+        <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-2 text-[11px] font-mono text-gray-600">
           <span>STARTED BY STUDENTS</span>
-          <span className="w-1 h-1 rounded-full bg-gray-300" />
+          <span className="w-1 h-1 rounded-full bg-gray-700" />
           <span>EVERY CLAIM ON THIS PAGE IS VERIFIABLE</span>
         </div>
       </div>

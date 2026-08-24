@@ -9,8 +9,10 @@ import { PRODUCT_STATS } from '@/lib/productStats';
 import { getVariant, trackConversion, HERO_EXPERIMENT, HERO_COPY } from '@/lib/abTest';
 
 const HERO_STATS: { value: number; label: string; prefix?: string; suffix?: string }[] = [
-  ...PRODUCT_STATS.map((s) => ({ value: s.value, label: s.label, prefix: s.prefix, suffix: s.suffix })),
-  { value: 3, label: 'background persistence', suffix: '-layer' },
+  { value: 17, label: 'features vs competitors', suffix: '' },
+  { value: 3, label: 'second GPS updates', suffix: 's' },
+  { value: 256, label: 'chain-of-custody hashing', prefix: 'SHA-', suffix: '-bit' },
+  { value: 24, label: 'seven monitoring', suffix: '/7' },
 ];
 
 /* ── Battery Arc SVG (dark card version — white strokes) ─────────────────── */

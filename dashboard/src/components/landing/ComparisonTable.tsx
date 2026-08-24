@@ -44,7 +44,7 @@ const FEATURES: Feature[] = [
   { name: 'Android', magneetar: true, cerberus: true, prey: true, findMy: true, category: 'Platform' },
   { name: 'iOS', magneetar: 'Coming', cerberus: false, prey: true, findMy: true, category: 'Platform' },
   { name: 'Web dashboard', magneetar: true, cerberus: true, prey: true, findMy: false, category: 'Platform' },
-  { name: 'Offline-first (no server)', magneetar: true, cerberus: true, prey: false, findMy: false, category: 'Platform' },
+  { name: 'Offline location queuing (works without signal)', magneetar: true, cerberus: false, prey: true, findMy: false, category: 'Platform' },
 ];
 
 function CellValue({ value }: { value: boolean | string }) {
@@ -96,8 +96,8 @@ export function ComparisonTable() {
           </p>
         </div>
 
-        {/* Table */}
-        <div className="overflow-x-auto -mx-5 px-5 sm:mx-0 sm:px-0">
+        {/* Table — desktop */}
+        <div className="hidden sm:block overflow-x-auto -mx-5 px-5 sm:mx-0 sm:px-0">
           <table className="w-full min-w-[640px]">
             {/* Header */}
             <thead>
@@ -200,6 +200,33 @@ export function ComparisonTable() {
               </tr>
             </tfoot>
           </table>
+        </div>
+
+        {/* Mobile card view */}
+        <div className="sm:hidden space-y-4">
+          {COMPETITORS.map((comp) => (
+            <div key={comp.name} className={`rounded-xl border p-4 ${comp.highlight ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-gray-800 bg-gray-900/50'}`}>
+              <div className="flex items-center justify-between mb-3">
+                <span className={`text-xs font-bold tracking-wide ${comp.highlight ? 'text-emerald-400' : 'text-gray-400'}`}>{comp.name.toUpperCase()}</span>
+                {comp.highlight && <span className="text-[8px] font-mono text-emerald-500/60">★ YOU</span>}
+              </div>
+              <div className="space-y-2">
+                {FEATURES.map((f) => {
+                  const val = comp.name === 'Magneetar' ? f.magneetar : comp.name === 'Cerberus' ? f.cerberus : comp.name === 'Prey' ? f.prey : f.findMy;
+                  if (val === false) return null;
+                  return (
+                    <div key={f.name} className="flex items-center gap-2">
+                      <div className="w-4 h-4 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0">
+                        <Check size={8} className="text-emerald-500" />
+                      </div>
+                      <span className="text-[11px] text-gray-300">{f.name}</span>
+                      {typeof val === 'string' && <span className="text-[9px] font-mono text-amber-400 font-bold ml-auto">{val}</span>}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
 
         {/* Source note */}

@@ -55,8 +55,8 @@ describe('Landing Page', () => {
     // Ensure at least one of the product stat displays is present (24/7, SHA-256 or 3-layer)
     expect(screen.getAllByText(/24\/7|SHA-256|3-layer/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/stealth\s*tracking/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/chain-?of-?custody\s*hashing/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/background\s*persistence/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/chain-?of-?custody/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/multi-layer background persistence/i).length).toBeGreaterThan(0);
 
     // Features grid (may appear in both Features section and ComparisonTable)
     expect(screen.getAllByText('Sentinel AI').length).toBeGreaterThanOrEqual(1);
@@ -73,10 +73,10 @@ describe('Landing Page', () => {
     expect(screen.getByText('Theft detected — recover it')).toBeInTheDocument();
 
     // Built for Africa (NBS-sourced stats)
-    expect(screen.getByText('WHY MAGNEETAR')).toBeInTheDocument();
+    expect(screen.getByText('THE PROBLEM')).toBeInTheDocument();
     expect(screen.getByText('25M+')).toBeInTheDocument();
     expect(screen.getByText('11.7%')).toBeInTheDocument();
-    expect(screen.getByText('of reported stolen phones are recovered')).toBeInTheDocument();
+    expect(screen.getByText('Fewer than 1 in 8 thefts end in recovery')).toBeInTheDocument();
     expect(screen.getByText(/National Bureau of Statistics/)).toBeInTheDocument();
 
     // Our story (provenance / social proof)
