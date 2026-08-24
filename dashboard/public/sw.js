@@ -1,17 +1,17 @@
 /**
- * Magneetar PWA Service Worker
- * Provides offline support and caching for the dashboard.
+ * Magneetar PWA Service Worker v5
+ *
+ * Key change: _next/static/* chunks use NETWORK-ONLY strategy.
+ * Previous versions used stale-while-revalidate which caused intermittent
+ * crashes when old cached JS referenced module IDs that changed in new builds.
+ * Next.js already uses content-hashed filenames, so HTTP caching handles
+ * freshness — the SW doesn't need to cache these at all.
  */
 
-const CACHE_NAME = 'magneetar-v4';
-const STATIC_CACHE = 'magneetar-static-v4';
-const DYNAMIC_CACHE = 'magneetar-dynamic-v4';
+const CACHE_VERSION = 'v5';
+const STATIC_CACHE = `magneetar-static-${CACHE_VERSION}`;
+const DYNAMIC_CACHE = `magneetar-dynamic-${CACHE_VERSION}`;
 
-// Assets to cache on install. NOTE: /download is deliberately EXCLUDED —
-// its APK ticket logic must always come from the latest bundle, and a stale
-// cached copy of it broke the download button for clients running the old
-// service worker (the button looped back to the page). Network-first on
-// navigations serves it fresh instead.
 const STATIC_ASSETS = [
   '/',
   '/login',
@@ -21,22 +21,17 @@ const STATIC_ASSETS = [
   '/m-logo.svg',
 ];
 
-// Install event - cache static assets
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing service worker...');
+  console.log('[SW] Installing v5...');
   event.waitUntil(
     caches.open(STATIC_CACHE)
-      .then((cache) => {
-        console.log('[SW] Caching static assets');
-        return cache.addAll(STATIC_ASSETS);
-      })
+      .then((cache) => cache.addAll(STATIC_ASSETS))
       .then(() => self.skipWaiting())
   );
 });
 
-// Activate event - clean up ALL old caches (including v1, v2, v3)
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Activating service worker...');
+  console.log('[SW] Activating v5 — purging ALL old caches');
   event.waitUntil(
     caches.keys()
       .then((cacheNames) => {
@@ -53,94 +48,55 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch event - serve from cache, fall back to network
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Skip non-GET requests (POST, OPTIONS, etc.) — they must go to network
-  if (request.method !== 'GET') {
+  // Skip non-GET requests
+  if (request.method !== 'GET') return;
+
+  // Skip cross-origin requests (api.magneetar.me, tiles, etc.)
+  if (url.origin !== self.location.origin) return;
+
+  // Skip API and WebSocket calls
+  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/ws/')) return;
+
+  // *** NETWORK-ONLY for _next/static JS/CSS chunks ***
+  // This prevents stale cached JS from crashing the app after a new deploy.
+  // Next.js content-hashed filenames + browser HTTP cache handle freshness.
+  if (url.pathname.startsWith('/_next/static/')) {
+    event.respondWith(fetch(request));
     return;
   }
 
-  // Skip ALL cross-origin requests (trust page calls api.magneetar.me directly)
-  if (url.origin !== self.location.origin) {
-    return;
-  }
-
-  // Skip API calls and WebSocket
-  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/ws/')) {
-    return;
-  }
-
-  // Network-first strategy for HTML pages (navigations)
+  // Network-first for HTML navigations
   if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          const responseClone = response.clone();
-          caches.open(DYNAMIC_CACHE).then((cache) => {
-            cache.put(request, responseClone);
-          });
+          const clone = response.clone();
+          caches.open(DYNAMIC_CACHE).then((cache) => cache.put(request, clone));
           return response;
         })
-        .catch(() => {
-          return caches.match(request).then((cachedResponse) => {
-            return cachedResponse || caches.match('/');
-          });
-        })
+        .catch(() => caches.match(request).then((r) => r || caches.match('/')))
     );
     return;
   }
 
-  // Stale-while-revalidate for JS/CSS chunks (_next/static/*)
-  // Serves cached version instantly, then updates cache in background
-  if (url.pathname.startsWith('/_next/static/')) {
-    event.respondWith(
-      caches.open(DYNAMIC_CACHE).then((cache) => {
-        return cache.match(request).then((cachedResponse) => {
-          const fetchPromise = fetch(request).then((networkResponse) => {
-            if (networkResponse && networkResponse.status === 200) {
-              cache.put(request, networkResponse.clone());
-            }
-            return networkResponse;
-          }).catch(() => cachedResponse);
-
-          // Return cached version immediately if available, otherwise wait for network
-          return cachedResponse || fetchPromise;
-        });
-      })
-    );
-    return;
-  }
-
-  // Cache-first for other static assets (images, fonts, etc.)
+  // Cache-first for other static assets (images, fonts, SVGs)
   event.respondWith(
-    caches.match(request)
-      .then((cachedResponse) => {
-        if (cachedResponse) {
-          return cachedResponse;
-        }
-
-        return fetch(request)
-          .then((response) => {
-            // Don't cache non-successful responses
-            if (!response || response.status !== 200) {
-              return response;
-            }
-
-            const responseClone = response.clone();
-            caches.open(DYNAMIC_CACHE).then((cache) => {
-              cache.put(request, responseClone);
-            });
-
-            return response;
-          });
-      })
+    caches.match(request).then((cached) => {
+      if (cached) return cached;
+      return fetch(request).then((response) => {
+        if (!response || response.status !== 200) return response;
+        const clone = response.clone();
+        caches.open(DYNAMIC_CACHE).then((cache) => cache.put(request, clone));
+        return response;
+      });
+    })
   );
 });
 
-// Handle messages from the main thread
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
