@@ -254,7 +254,7 @@ class AnomalyNotificationService : FirebaseMessagingService() {
         }
 
         val notification = NotificationCompat.Builder(this, channelId)
-            .setSmallIcon(R.drawable.ic_notification)
+            .setSmallIcon(R.drawable.ic_stat_m)
             .setContentTitle(title)
             .setContentText(body)
             .setStyle(NotificationCompat.BigTextStyle().bigText(body))
@@ -314,7 +314,7 @@ class AnomalyNotificationService : FirebaseMessagingService() {
         // Fire-and-forget registration with the server
         Thread {
             try {
-                val url = java.net.URL("${BuildConfig.API_BASE_URL}/notifications/fcm-token")
+                val url = java.net.URL("${BuildConfig.SERVER_URL}/notifications/fcm-token")
                 val connection = url.openConnection() as java.net.HttpURLConnection
                 connection.requestMethod = "POST"
                 connection.setRequestProperty("Content-Type", "application/json")

@@ -1552,6 +1552,7 @@ class TrackingService : Service() {
      * Fused: remove old callback + request with new LocationRequest.
      * Raw GPS/network: stored as instance vars, removed + re-registered.
      */
+    @SuppressLint("MissingPermission")
     private fun reRegisterLocationListeners(intervalMs: Long) {
         // Fused provider
         val client = fusedClient
@@ -1575,7 +1576,7 @@ class TrackingService : Service() {
         // Raw GPS listener
         val gpsCb = rawGpsListener
         if (gpsCb != null) {
-            try { locationManager.removeLocationUpdates(gpsCb) } catch (_: Exception) {}
+            try { locationManager.removeUpdates(gpsCb) } catch (_: Exception) {}
             try {
                 locationManager.requestLocationUpdates(
                     LocationManager.GPS_PROVIDER, intervalMs, 0f,
@@ -1586,7 +1587,7 @@ class TrackingService : Service() {
         // Raw network listener
         val netCb = rawNetworkListener
         if (netCb != null) {
-            try { locationManager.removeLocationUpdates(netCb) } catch (_: Exception) {}
+            try { locationManager.removeUpdates(netCb) } catch (_: Exception) {}
             try {
                 locationManager.requestLocationUpdates(
                     LocationManager.NETWORK_PROVIDER, intervalMs, 0f,

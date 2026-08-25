@@ -3,6 +3,8 @@ package com.magneetar.app
 import android.annotation.SuppressLint
 import android.app.*
 import android.content.Context
+import android.location.Location
+import android.location.LocationManager
 import android.content.Intent
 import android.hardware.camera2.CameraManager
 import android.media.AudioManager
@@ -16,6 +18,7 @@ import androidx.core.app.NotificationCompat
 import kotlinx.coroutines.*
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import java.io.File
@@ -181,7 +184,7 @@ class PanicService : Service() {
 
         if (serverUrl.isEmpty() || apiKey.isEmpty()) return
 
-        while (isActive) {
+        while (scope.isActive) {
             try {
                 val location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
                     ?: locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
@@ -224,7 +227,7 @@ class PanicService : Service() {
         val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
         val pattern = longArrayOf(0, 500, 200, 500, 200, 500)
 
-        while (isActive) {
+        while (scope.isActive) {
             try {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     vibrator.vibrate(VibrationEffect.createWaveform(pattern, 0))
