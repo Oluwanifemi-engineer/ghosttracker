@@ -6,15 +6,24 @@ on:
   workflow_dispatch:
 
 jobs:
-  # ─── Deploy via Docker Compose + Cloudflare Tunnel ───────────────────────
   deploy:
     name: Deploy (Docker Compose)
     runs-on: ubuntu-latest
-    if: secrets.PRODUCTION_HOST != ''
     steps:
       - uses: actions/checkout@v4
 
+      - name: Check if deployment secrets are configured
+        id: check-secrets
+        run: |
+          if [ -n "${{ secrets.PRODUCTION_HOST }}" ]; then
+            echo "has_secrets=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_secrets=false" >> $GITHUB_OUTPUT
+            echo "::warning::Deployment secrets not configured — skipping deploy"
+          fi
+
       - name: Deploy to production server
+        if: steps.check-secrets.outputs.has_secrets == 'true'
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.PRODUCTION_HOST }}
@@ -25,7 +34,6 @@ jobs:
             git pull origin main
             bash scripts/deploy.sh
 
-  # ─── Smoke Test ──────────────────────────────────────────────────────────
   smoke-test:
     name: Smoke Test Production
     runs-on: ubuntu-latest
@@ -37,12 +45,12 @@ jobs:
       - name: Check backend health
         run: |
           curl -sf https://api.magneetar.me/health || \
-            echo "⚠️ Backend health check failed (may still be deploying)"
+            echo "⚠️ Backend health check failed"
 
       - name: Check dashboard
         run: |
           curl -sf https://app.magneetar.me > /dev/null || \
-            echo "⚠️ Dashboard check failed (may still be deploying)"
+            echo "⚠️ Dashboard check failed"
 
       - name: Verify dual-host consistency
         run: |
