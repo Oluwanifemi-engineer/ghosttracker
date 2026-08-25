@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Magneetar — Icon Preview</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #0a0a0f; color: #fff; font-family: -apple-system, system-ui, sans-serif; padding: 40px; }
+    h1 { font-size: 24px; font-weight: 700; margin-bottom: 8px; }
+    .subtitle { color: #6b7280; font-size: 14px; margin-bottom: 40px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 32px; }
+    .card { background: #111827; border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 24px; text-align: center; }
+    .card img { margin: 0 auto 16px; display: block; border-radius: 22%; image-rendering: -webkit-optimize-contrast; }
+    .label { font-size: 12px; font-weight: 600; color: #9ca3af; }
+    .size { font-size: 11px; font-family: monospace; color: #6b7280; margin-top: 4px; }
+    .section { margin-bottom: 48px; }
+    .section-title { font-size: 16px; font-weight: 700; color: #d1d5db; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .safe-zone { position: relative; display: inline-block; }
+    .safe-zone::after { content: ''; position: absolute; inset: 16.7%; border: 2px dashed rgba(239,68,68,0.5); border-radius: 50%; pointer-events: none; }
+    .note { background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.2); border-radius: 12px; padding: 16px; margin-bottom: 32px; font-size: 13px; color: #9ca3af; line-height: 1.6; }
+    .note strong { color: #10b981; }
+  </style>
+</head>
+<body>
+  <h1>Magneetar — Icon Preview</h1>
+  <p class="subtitle">Verifying visibility, safe zones, and rendering across sizes</p>
+
+  <div class="note">
+    <strong>Safe zone rule:</strong> Android adaptive icons use a 108dp canvas, but only the inner 66dp
+    (21dp margin from each edge) is guaranteed visible under all mask shapes. The red dashed circle
+    below shows this boundary.
+  </div>
+
+  <div class="section">
+    <div class="section-title">Favicon Sizes</div>
+    <div class="grid">
+      <div class="card">
+        <img src="/favicon.svg" width="16" height="16" alt="16px">
+        <div class="label">Favicon</div>
+        <div class="size">16 × 16</div>
+      </div>
+      <div class="card">
+        <img src="/favicon.svg" width="32" height="32" alt="32px">
+        <div class="label">Favicon</div>
+        <div class="size">32 × 32</div>
+      </div>
+      <div class="card">
+        <img src="/favicon.svg" width="48" height="48" alt="48px">
+        <div class="label">Favicon</div>
+        <div class="size">48 × 48</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">App Icon Sizes</div>
+    <div class="grid">
+      <div class="card">
+        <img src="/magneetar-mhalf.svg" width="48" height="48" alt="48px">
+        <div class="label">MDPI</div>
+        <div class="size">48 × 48</div>
+      </div>
+      <div class="card">
+        <img src="/magneetar-mhalf.svg" width="72" height="72" alt="72px">
+        <div class="label">HDPI</div>
+        <div class="size">72 × 72</div>
+      </div>
+      <div class="card">
+        <img src="/magneetar-mhalf.svg" width="96" height="96" alt="96px">
+        <div class="label">XHDPI</div>
+        <div class="size">96 × 96</div>
+      </div>
+      <div class="card">
+        <img src="/magneetar-mhalf.svg" width="144" height="144" alt="144px">
+        <div class="label">XXHDPI</div>
+        <div class="size">144 × 144</div>
+      </div>
+      <div class="card">
+        <img src="/magneetar-mhalf.svg" width="192" height="192" alt="192px">
+        <div class="label">XXXHDPI</div>
+        <div class="size">192 × 192</div>
+      </div>
+      <div class="card">
+        <img src="/magneetar-mhalf.svg" width="512" height="512" alt="512px">
+        <div class="label">Play Store</div>
+        <div class="size">512 × 512</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Android Adaptive Icon — Safe Zone Check</div>
+    <div class="grid">
+      <div class="card">
+        <div class="safe-zone">
+          <img src="/magneetar-mhalf.svg" width="192" height="192" alt="safe zone check">
+        </div>
+        <div class="label">With safe zone overlay</div>
+        <div class="size">Red circle = 66dp inner zone</div>
+      </div>
+      <div class="card">
+        <img src="/magneetar-mhalf.svg" width="192" height="192" alt="clean">
+        <div class="label">Clean render</div>
+        <div class="size">As users will see it</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Context — Home Screen Mockup</div>
+    <div class="grid">
+      <div class="card" style="background: #1a1a2e; padding: 32px;">
+        <div style="display: flex; gap: 16px; justify-content: center; align-items: flex-end;">
+          <div style="text-align: center;">
+            <img src="/magneetar-mhalf.svg" width="60" height="60" style="border-radius: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.4);" alt="Magneetar">
+            <div style="font-size: 10px; color: #9ca3af; margin-top: 6px;">Magneetar</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="width: 60px; height: 60px; border-radius: 14px; background: linear-gradient(135deg, #4285f4, #34a853); display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.4);">G</div>
+            <div style="font-size: 10px; color: #9ca3af; margin-top: 6px;">Google</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="width: 60px; height: 60px; border-radius: 14px; background: linear-gradient(135deg, #25D366, #128C7E); display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.4);">W</div>
+            <div style="font-size: 10px; color: #9ca3af; margin-top: 6px;">WhatsApp</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="width: 60px; height: 60px; border-radius: 14px; background: linear-gradient(135deg, #1DA1F2, #0d8ecf); display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.4);">X</div>
+            <div style="font-size: 10px; color: #9ca3af; margin-top: 6px;">X</div>
+          </div>
+        </div>
+        <div style="font-size: 10px; color: #6b7280; margin-top: 16px; text-align: center;">Home screen context</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
