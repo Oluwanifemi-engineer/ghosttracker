@@ -1,7 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { Check, Crown, Smartphone, Users, ShieldCheck, Building2, ArrowRight } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Check, Crown, Smartphone, Users, ShieldCheck, Building2, ArrowRight, ExternalLink } from 'lucide-react';
+import { usePayment } from '@/hooks/usePayment';
 
 const TIERS = [
   {
@@ -11,6 +13,7 @@ const TIERS = [
     period: 'free forever',
     devices: '1 device',
     tagline: 'Protect your main phone.',
+    plan: null,
     features: [
       'Full theft detection (Sentinel AI)',
       'Live tracking + route to device',
@@ -27,13 +30,17 @@ const TIERS = [
     period: 'per month · or ₦5,000/year',
     devices: 'Up to 3 devices',
     tagline: 'You plus the phones closest to you.',
+    plan: 'personal_monthly',
+    yearlyPlan: 'personal_yearly',
+    yearlyPrice: '₦5,000',
+    yearlyPeriod: 'per year',
     features: [
       'Everything in Free',
       'Protect up to 3 devices on one account',
       'Family & coworker circles',
       'Priority alert delivery',
     ],
-    cta: { label: 'Start Free', href: '/signup', primary: false },
+    cta: { label: 'Upgrade', href: '/signup', primary: false },
   },
   {
     icon: ShieldCheck,
@@ -42,13 +49,17 @@ const TIERS = [
     period: 'per month · or ₦15,000/year',
     devices: 'Up to 10 devices',
     tagline: 'The whole family — or a small business.',
+    plan: 'guardian_monthly',
+    yearlyPlan: 'guardian_yearly',
+    yearlyPrice: '₦15,000',
+    yearlyPeriod: 'per year',
     features: [
       'Everything in Personal',
       'Protect up to 10 devices',
       'Whole-fleet command center',
       'Multi-owner team access',
     ],
-    cta: { label: 'Start Free', href: '/signup', primary: false },
+    cta: { label: 'Upgrade', href: '/signup', primary: false },
     bestValue: true,
   },
   {
@@ -58,6 +69,7 @@ const TIERS = [
     period: 'tailored to your organisation',
     devices: 'Unlimited devices',
     tagline: 'Fleets, schools, and security teams.',
+    plan: null,
     features: [
       'Everything in Guardian',
       'Unlimited device allowance',
@@ -69,6 +81,39 @@ const TIERS = [
 ];
 
 export function Pricing({ authed }: { authed: boolean }) {
+  const { initPayment, loading, error } = usePayment();
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+  const [userEmail, setUserEmail] = useState('');
+
+  useEffect(() => {
+    // Try to get user email from session for payment
+    if (authed) {
+      // The email is available after login — we'll use it for Paystack
+      const email = sessionStorage.getItem('mt_user_email') || '';
+      setUserEmail(email);
+    }
+  }, [authed]);
+
+  const handleUpgrade = (tier: typeof TIERS[0]) => {
+    if (!tier.plan) return; // Free or Enterprise — no direct payment
+
+    if (!authed) {
+      // Not logged in — redirect to signup
+      window.location.href = '/signup';
+      return;
+    }
+
+    const plan = billingCycle === 'yearly' && tier.yearlyPlan ? tier.yearlyPlan : tier.plan;
+
+    if (!userEmail) {
+      // No email available — ask user to contact support
+      window.location.href = 'mailto:sales@magneetar.me?subject=Upgrade to ' + tier.name;
+      return;
+    }
+
+    initPayment(plan, userEmail);
+  };
+
   return (
     <section id="pricing" className="relative py-28 sm:py-36 scroll-mt-20 overflow-hidden bg-gradient-to-b from-gray-950 via-[#060a10] to-gray-950">
       <div className="relative max-w-7xl mx-auto px-5 sm:px-8">
@@ -86,13 +131,48 @@ export function Pricing({ authed }: { authed: boolean }) {
             Every plan includes every feature — theft detection, live tracking, evidence capture, the
             whole command center. The only difference is how many devices you protect.
           </p>
+
+          {/* Billing toggle */}
+          <div className="mt-6 inline-flex items-center gap-1 p-1 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+            <button
+              onClick={() => setBillingCycle('monthly')}
+              className={`px-4 py-2 rounded-lg text-[11px] font-mono font-bold tracking-wider transition-all ${
+                billingCycle === 'monthly'
+                  ? 'bg-white/[0.08] text-white'
+                  : 'text-gray-500 hover:text-gray-300'
+              }`}
+            >
+              MONTHLY
+            </button>
+            <button
+              onClick={() => setBillingCycle('yearly')}
+              className={`px-4 py-2 rounded-lg text-[11px] font-mono font-bold tracking-wider transition-all ${
+                billingCycle === 'yearly'
+                  ? 'bg-white/[0.08] text-white'
+                  : 'text-gray-500 hover:text-gray-300'
+              }`}
+            >
+              YEARLY
+              <span className="ml-1 text-emerald-400 text-[9px]">SAVE 2MO</span>
+            </button>
+          </div>
         </div>
+
+        {error && (
+          <div className="max-w-md mx-auto mb-6 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-mono text-center">
+            {error}
+          </div>
+        )}
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {TIERS.map((tier) => {
-            const cta = authed && tier.cta.href === '/signup'
-              ? { label: 'Open Command Center', href: '/dashboard', primary: true }
-              : tier.cta;
+            const isYearly = billingCycle === 'yearly' && tier.yearlyPlan;
+            const displayPrice = isYearly ? tier.yearlyPrice : tier.price;
+            const displayPeriod = isYearly ? tier.yearlyPeriod : tier.period;
+            const isPaid = tier.plan && tier.plan !== null;
+            const isFree = tier.name === 'Free';
+            const isEnterprise = tier.name === 'Enterprise';
+
             return (
               <div
                 key={tier.name}
@@ -118,12 +198,14 @@ export function Pricing({ authed }: { authed: boolean }) {
                   {tier.name}
                 </div>
                 <div className="mt-3 flex items-baseline gap-1.5">
-                  <span className="text-3xl font-display font-extrabold tracking-tight text-white">{tier.price}</span>
-                  {tier.price !== 'Custom' && (
-                    <span className={`text-[10px] font-mono font-semibold ${tier.bestValue ? 'text-emerald-400/60' : 'text-gray-500'}`}>/MO</span>
+                  <span className="text-3xl font-display font-extrabold tracking-tight text-white">{displayPrice}</span>
+                  {displayPrice !== 'Custom' && displayPrice !== '₦0' && (
+                    <span className={`text-[10px] font-mono font-semibold ${tier.bestValue ? 'text-emerald-400/60' : 'text-gray-500'}`}>
+                      {isYearly ? '/YEAR' : '/MO'}
+                    </span>
                   )}
                 </div>
-                <div className={`text-[10px] font-mono mt-1 ${tier.bestValue ? 'text-emerald-400/40' : 'text-gray-500'}`}>{tier.period}</div>
+                <div className={`text-[10px] font-mono mt-1 ${tier.bestValue ? 'text-emerald-400/40' : 'text-gray-500'}`}>{displayPeriod}</div>
 
                 <div className={`mt-4 inline-flex self-start px-2.5 py-1 rounded-md border text-[10px] font-mono font-bold tracking-wider ${
                   tier.bestValue ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400' : 'border-white/[0.06] bg-white/[0.03] text-gray-400'
@@ -142,30 +224,54 @@ export function Pricing({ authed }: { authed: boolean }) {
                   ))}
                 </ul>
 
-                {cta.href.startsWith('mailto:') ? (
+                {/* CTA Button */}
+                {isEnterprise ? (
                   <a
-                    href={cta.href}
-                    className={`group mt-7 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-300 ${
-                      tier.bestValue
-                        ? 'border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10'
-                        : 'border border-white/[0.08] text-gray-400 hover:bg-white/[0.04] hover:border-white/[0.15]'
-                    }`}
+                    href={tier.cta.href}
+                    className="group mt-7 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-[11px] font-bold uppercase tracking-wider border border-white/[0.08] text-gray-400 hover:bg-white/[0.04] hover:border-white/[0.15] transition-all duration-300"
                   >
-                    {cta.label}
-                    <ArrowRight size={13} className="transition-transform group-hover:translate-x-0.5" />
+                    {tier.cta.label}
+                    <ExternalLink size={11} className="opacity-50" />
                   </a>
+                ) : isFree ? (
+                  authed ? (
+                    <Link
+                      href="/dashboard"
+                      className="group mt-7 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-[11px] font-bold uppercase tracking-wider border border-white/[0.08] text-gray-400 hover:bg-white/[0.04] hover:border-white/[0.15] transition-all duration-300"
+                    >
+                      Current Plan
+                    </Link>
+                  ) : (
+                    <Link
+                      href="/signup"
+                      className="group mt-7 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-[11px] font-bold uppercase tracking-wider bg-emerald-500 text-white hover:bg-emerald-400 shadow-glow-md hover:shadow-glow-lg transition-all duration-300"
+                    >
+                      Get Started Free
+                      <ArrowRight size={13} className="transition-transform group-hover:translate-x-0.5" />
+                    </Link>
+                  )
                 ) : (
-                  <Link
-                    href={cta.href}
-                    className={`group mt-7 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-300 ${
-                      cta.primary || tier.bestValue
+                  <button
+                    onClick={() => handleUpgrade(tier)}
+                    disabled={loading}
+                    className={`group mt-7 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-300 w-full ${
+                      tier.bestValue
                         ? 'bg-emerald-500 text-white hover:bg-emerald-400 shadow-glow-md hover:shadow-glow-lg'
                         : 'border border-white/[0.08] text-gray-400 hover:bg-white/[0.04] hover:border-white/[0.15]'
-                    }`}
+                    } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
-                    {cta.label}
-                    <ArrowRight size={13} className="transition-transform group-hover:translate-x-0.5" />
-                  </Link>
+                    {loading ? (
+                      <span className="flex items-center gap-2">
+                        <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                        Processing…
+                      </span>
+                    ) : (
+                      <>
+                        {authed ? 'Upgrade Now' : 'Get Started'}
+                        <ArrowRight size={13} className="transition-transform group-hover:translate-x-0.5" />
+                      </>
+                    )}
+                  </button>
                 )}
               </div>
             );
@@ -183,12 +289,9 @@ export function Pricing({ authed }: { authed: boolean }) {
           <div className="flex items-start gap-2.5 rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-3">
             <Smartphone size={14} className="text-gray-500 mt-0.5 shrink-0" />
             <p className="text-[12.5px] leading-relaxed text-gray-400">
-              Online payment is rolling out soon. Until then, upgrades are activated by our team after a bank
-              transfer — email{' '}
-              <a href="mailto:sales@magneetar.me" className="text-emerald-400 font-semibold hover:underline transition-colors">
-                sales@magneetar.me
-              </a>{' '}
-              and we&apos;ll switch your plan the same day.
+              Payments are processed securely via{' '}
+              <span className="text-white font-semibold">Paystack</span> — Nigeria&apos;s leading payment gateway.
+              We never see or store your card details.
             </p>
           </div>
         </div>
