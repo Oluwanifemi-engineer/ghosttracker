@@ -172,14 +172,6 @@ export function Sidebar() {
                 )}
               </div>
             </div>
-            <button
-              onClick={logout}
-              className="flex items-center gap-1 px-2 py-1 rounded-lg text-[8px] font-mono font-bold text-white/25 hover:text-red-400 hover:bg-red-500/[0.06] transition-all active:scale-95 border border-transparent hover:border-red-500/15"
-              title="Disconnect"
-            >
-              <LogOut size={10} />
-              <span className="hidden lg:inline">EXIT</span>
-            </button>
           </div>
 
           {/* Quick Nav Links */}
@@ -415,6 +407,14 @@ export function Sidebar() {
                 {offlineCount} offline
               </span>
             </div>
+            <button
+              onClick={logout}
+              className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-[9px] font-mono font-bold text-white/25 hover:text-red-400 hover:bg-red-500/[0.06] transition-all active:scale-95 border border-transparent hover:border-red-500/15"
+              title="Disconnect"
+            >
+              <LogOut size={11} />
+              <span>EXIT</span>
+            </button>
           </div>
         </>
       )}
