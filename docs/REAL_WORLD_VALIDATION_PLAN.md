@@ -8,7 +8,7 @@ feedback loop, and the exit criteria that turn a pass into an approved
 launch.
 
 Nothing here replaces the automated gates — those run continuously
-(549 backend / 198 dashboard / Android JVM, live E2E against production).
+(621 backend / 214 dashboard / Android JVM, live E2E against production).
 This program tests what automation cannot: real phones, real users, real
 days.
 

@@ -22,7 +22,7 @@ session.
 | **Keystore backup** `~/Documents/magneetar-keystore-backup-2026-08-12/` (keystore + RECOVERY.md, byte-identical hashes) | ✅ created |
 | **Public URLs** — magneetar.me, /privacy, /terms, /download, /login = 200; api.magneetar.me/api/config = 1.4.3 | ✅ all live |
 | **Privacy policy** live and honest (TLS in transit, SHA-256 evidence chain, deletion paths) | ✅ checked |
-| **Test standard** — backend 549 passed / 4 skipped (full-suite, CI-equivalent), dashboard 198 passed + tsc + eslint clean, Android both flavors compile + JVM tests | ✅ green |
+| **Test standard** — backend 621 passed / 4 skipped (full-suite, CI-equivalent), dashboard 214 passed + tsc + eslint clean, Android both flavors compile + JVM tests | ✅ green |
 
 ### Still yours to do (needs a phone / console / money)
 

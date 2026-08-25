@@ -17,7 +17,7 @@ dossier), **iOS companion app code-complete** (both roles, honest scope,
 build pending a Mac), and a **Docker Compose + Cloudflare Tunnel production
 deploy** (SQLite data plane, healthy).
 
-**All 780 tests pass** (569 backend + 211 dashboard) plus 150 Android JVM
+**All 835 tests pass** (621 backend + 214 dashboard) plus 150 Android JVM
 tests per flavor (300 total, incl. the G1-16/G1-17 location suites and the
 offline-network Phase A–C codec/relay suites); typecheck clean; production
 `/health` green on v1.4.4. Every finding
@@ -35,7 +35,7 @@ Nearby Connections with BLE fallback; opt-in guardian model kept). `MeshBeacon`
 (v2 relay envelope, backward-compatible with the v1 SOS UUID) + `P2pPairing`
 (deterministic discovery id + HMAC-SHA256 handshake) locked by 16 JVM tests;
 server sighting metadata (`hop_count`/`relayed`, guarded ALTERs + migration 16)
-with a relay test. 569 server tests, 150 Android JVM tests per flavor.
+with a relay test. 621 server tests, 150 Android JVM tests per flavor.
 Phases B + C shipped same day: Android relay mesh (`RelayOutbox` + envelope
 decode/re-advertise/flush in `GuardianBeaconScanner`, 11 tests) and paired P2P
 (server `/api/p2p/pair/*` with hashed single-use codes + encrypted-at-rest
@@ -43,15 +43,15 @@ secrets, migration 17, 9 tests; Android `PairingApi`/`PairingActivity` UI,
 Keystore-backed `PairVault`, AES-GCM `P2pMessage` codec 11 tests, and
 `P2pOfflineService` — Nearby CLUSTER with mutual HMAC handshake, offline
 siren/lock/lost_mode/ping + ack, SIGHTING_CARRIER mesh density, lost-mode
-auto-advertise). 569 server tests, 150 Android JVM tests per flavor.
+auto-advertise). 621 server tests, 150 Android JVM tests per flavor.
 Phase D (this round): the dashboard sighting feed now tags relayed sightings
 "VIA MESH · N hops" (server already serialized hop_count/relayed).
 Handshake extracted to a pure-JVM `P2pHandshake` state machine (+9 tests).
 All of A–C + the Phase D tag are DEPLOYED (2026-08-18): p2p routes live,
 migrations 16–17 applied; **vc16** (0 SMS perms) staged (`/apk/checksum` →
 `a4b1f9c8…`, AAB `b3de0911…`) and field-installed on the tester phone
-(heartbeats flowing seconds-fresh). Tests: 569 server, 159 Android ×2,
-216 dashboard. Remaining: 2-phone paired-P2P field E2E (roster, only one
+(heartbeats flowing seconds-fresh). Tests: 621 server, 159 Android ×2,
+214 dashboard. Remaining: 2-phone paired-P2P field E2E (roster, only one
 device on adb today), BLE fallback, battery/telemetry monitoring.
 
 **Latest (2026-08-18, v1.4.4):** G1-17 location accuracy (vc15):
@@ -108,9 +108,9 @@ browser tab — the server/DB/device were all verified correct at the time.
 
 | Test Suite | Count | Status |
 |------------|-------|--------|
-| **Backend (server/)** | **569** | ✅ **All pass, 4 skipped** (2026-08-18 run — full suite incl. security: TOTP 2FA lifecycle, step-up password gates, device-share RBAC, geofence auto-actions, evidence chain, rate limits, offline-network pairing + relay metadata) |
-| **Dashboard (dashboard/)** | **211** | ✅ **All pass, 24 suites** (2026-08-18 run, `tsc --noEmit` clean) |
-| **Grand Total** | **780** | ✅ **All pass** (569 backend + 211 dashboard) |
+| **Backend (server/)** | **621** | ✅ **All pass, 4 skipped** (2026-08-25 run — full suite incl. security: TOTP 2FA lifecycle, step-up password gates, device-share RBAC, geofence auto-actions, evidence chain, rate limits, offline-network pairing + relay metadata) |
+| **Dashboard (dashboard/)** | **214** | ✅ **All pass, 24 suites** (2026-08-25 run, `tsc --noEmit` clean) |
+| **Grand Total** | **835** | ✅ **All pass** (621 backend + 214 dashboard) |
 | **Android JVM Tests** | **150** | ✅ **All pass × both flavors** (G1-15/16/17 location suites, SOS beacon wire contract, relay outbox, P2P codec + pairing, etc.) |
 | **iOS unit tests** | 6 | ⏳ Written (`MagneetarTests`) — run on first Mac build |
 | **Live verification** | — | ✅ Recovery drill 12/12 · sharing-RBAC 27/27 · geofence exit/capture/siren · 2FA flow · theft-flood fix (G1-9) · trigger-first audio lifecycle |

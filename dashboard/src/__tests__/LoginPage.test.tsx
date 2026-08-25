@@ -40,7 +40,8 @@ async function renderPage() {
 describe('Login Page', () => {
   beforeEach(() => {
     sessionStorage.clear();
-    mockFetch.mockClear();
+    mockFetch.mockReset();
+    (global as any).fetch = mockFetch;
     mockSetCredentials.mockClear();
     mockSetConnected.mockClear();
   });

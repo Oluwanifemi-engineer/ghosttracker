@@ -10,7 +10,7 @@ Magneetar is technically ~85% submission-ready (see
 `docs/PLAY_READINESS_VERDICT.md`): fresh signed AAB, play-clean permission
 profile, live privacy policy, store-listing assets, paste-ready declaration
 answers. All verification to date has been **developer-driven** — automated
-suites (549 backend / 198 dashboard / Android JVM), live E2E scripts against
+suites (621 backend / 214 dashboard / Android JVM), live E2E scripts against
 production, and a single-fleet-phone recovery drill.
 
 What has NOT happened is validation by **real users under real-world
