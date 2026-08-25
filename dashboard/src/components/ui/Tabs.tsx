@@ -20,7 +20,7 @@ interface TabsProps {
 export function Tabs({ tabs, activeTab, onTabChange }: TabsProps) {
   return (
     <div className="px-2 pt-2 pb-0 border-b border-white/[0.06] bg-[#0a0a0f]">
-      <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-2">
+      <div className="flex gap-1 overflow-x-auto scrollbar-hide pb-2">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -30,8 +30,8 @@ export function Tabs({ tabs, activeTab, onTabChange }: TabsProps) {
               onClick={() => onTabChange(tab.id)}
               title={tab.label}
               className={cn(
-                'flex items-center gap-2 px-4 py-2.5 rounded-xl whitespace-nowrap',
-                'text-[11px] font-bold font-mono uppercase tracking-wider',
+                'flex items-center gap-1.5 px-3 py-2 rounded-lg whitespace-nowrap',
+                'text-[10px] font-bold font-mono uppercase tracking-wider',
                 'cursor-pointer transition-all duration-200',
                 'active:scale-[0.97] shrink-0',
                 isActive
@@ -39,10 +39,10 @@ export function Tabs({ tabs, activeTab, onTabChange }: TabsProps) {
                   : 'text-white/35 hover:text-white/60 hover:bg-white/[0.04] bg-transparent border border-transparent',
               )}
             >
-              {Icon && <Icon size={14} strokeWidth={2} />}
+              {Icon && <Icon size={12} strokeWidth={2} />}
               <span>{tab.label}</span>
               {tab.badge !== undefined && tab.badge > 0 && (
-                <span className="px-1.5 py-0.5 text-[8px] font-bold bg-red-500/90 text-white rounded-full leading-none">
+                <span className="px-1 py-0.5 text-[7px] font-bold bg-red-500/90 text-white rounded-full leading-none">
                   {tab.badge}
                 </span>
               )}

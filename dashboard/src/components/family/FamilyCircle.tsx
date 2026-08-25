@@ -78,9 +78,9 @@ export function FamilyCircle() {
   if (loading) {
     return (
       <div className="p-4 space-y-3">
-        <div className="h-4 bg-gray-100 rounded animate-pulse w-1/2" />
-        <div className="h-20 bg-gray-50 rounded-lg animate-pulse" />
-        <div className="h-20 bg-gray-50 rounded-lg animate-pulse" />
+        <div className="h-4 bg-white/[0.06] rounded animate-pulse w-1/2" />
+        <div className="h-20 bg-white/[0.03] rounded-lg animate-pulse" />
+        <div className="h-20 bg-white/[0.03] rounded-lg animate-pulse" />
       </div>
     );
   }
@@ -89,8 +89,8 @@ export function FamilyCircle() {
     return (
       <div className="p-4 text-center">
         <Shield size={20} className="mx-auto text-gray-300 mb-2" />
-        <div className="text-xs text-gray-700 font-bold">Family Circle</div>
-        <div className="text-[10px] font-mono text-gray-700 mt-1">
+        <div className="text-xs text-white/40 font-bold">Family Circle</div>
+        <div className="text-[10px] font-mono text-white/40 mt-1">
           Upgrade to Personal plan to create a family circle
         </div>
       </div>
@@ -103,10 +103,10 @@ export function FamilyCircle() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Shield size={12} className="text-emerald-500" />
-          <span className="text-[10px] font-mono text-gray-700 uppercase tracking-wider font-bold">
+          <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider font-bold">
             {circle.circle_name}
           </span>
-          <span className="text-[9px] font-mono text-gray-700 bg-gray-100 px-1.5 py-0.5 rounded">
+          <span className="text-[9px] font-mono text-white/40 bg-white/[0.06] px-1.5 py-0.5 rounded">
             {circle.member_count} member{circle.member_count !== 1 ? 's' : ''}
           </span>
         </div>
@@ -135,7 +135,7 @@ export function FamilyCircle() {
             value={inviteEmail}
             onChange={(e) => setInviteEmail(e.target.value)}
             placeholder="Email address"
-            className="w-full px-3 py-2 rounded-lg border border-emerald-200 bg-white text-xs font-mono text-gray-900 placeholder:text-gray-700 focus:outline-none focus:border-emerald-400"
+            className="w-full px-3 py-2 rounded-lg border border-emerald-200 bg-white text-xs font-mono text-white/80 placeholder:text-white/40 focus:outline-none focus:border-emerald-400"
             onKeyDown={(e) => e.key === 'Enter' && handleInvite()}
           />
           {inviteError && (
@@ -156,7 +156,7 @@ export function FamilyCircle() {
         {circle.members.map((member) => (
           <div
             key={member.user_id}
-            className="flex items-center gap-3 p-2.5 rounded-lg bg-gray-50 border border-gray-100 hover:border-gray-200 transition-colors"
+            className="flex items-center gap-3 p-2.5 rounded-lg bg-white/[0.03] border border-gray-100 hover:border-white/[0.08] transition-colors"
           >
             {/* Avatar */}
             <div className="relative">
@@ -173,7 +173,7 @@ export function FamilyCircle() {
             {/* Info */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5">
-                <span className="text-xs font-bold text-gray-900 truncate">
+                <span className="text-xs font-bold text-white/80 truncate">
                   {member.name}
                 </span>
                 {member.role === 'admin' && (
@@ -188,12 +188,12 @@ export function FamilyCircle() {
                     <Wifi size={8} /> Online
                   </span>
                 ) : (
-                  <span className="flex items-center gap-1 text-[9px] font-mono text-gray-700">
+                  <span className="flex items-center gap-1 text-[9px] font-mono text-white/40">
                     <WifiOff size={8} /> Offline
                   </span>
                 )}
                 {member.last_seen && (
-                  <span className="flex items-center gap-1 text-[9px] font-mono text-gray-700">
+                  <span className="flex items-center gap-1 text-[9px] font-mono text-white/40">
                     <Clock size={8} /> {formatLastSeen(member.last_seen)}
                   </span>
                 )}
@@ -203,13 +203,13 @@ export function FamilyCircle() {
             {/* Location + Battery */}
             <div className="text-right shrink-0">
               {member.location && (
-                <div className="flex items-center gap-1 text-[9px] font-mono text-gray-700">
+                <div className="flex items-center gap-1 text-[9px] font-mono text-white/40">
                   <MapPin size={8} className="text-emerald-500" />
                   {member.location.lat.toFixed(4)}, {member.location.lng.toFixed(4)}
                 </div>
               )}
               {member.battery_percent != null && (
-                <div className="flex items-center gap-1 text-[9px] font-mono text-gray-700 justify-end">
+                <div className="flex items-center gap-1 text-[9px] font-mono text-white/40 justify-end">
                   <Battery
                     size={8}
                     className={member.battery_percent <= 20 ? 'text-red-500' : 'text-emerald-500'}
@@ -225,7 +225,7 @@ export function FamilyCircle() {
       {circle.members.length === 0 && (
         <div className="text-center py-4">
           <UserPlus size={16} className="mx-auto text-gray-300 mb-2" />
-          <div className="text-[10px] font-mono text-gray-700">
+          <div className="text-[10px] font-mono text-white/40">
             No family members yet. Invite someone!
           </div>
         </div>
