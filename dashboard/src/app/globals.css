@@ -1,4 +1,7 @@
-/* ─── Google Fonts (must come before Tailwind directives) ────────────────── */
+/* ════════════════════════════════════════════════════════════════════════════
+   Magneetar — Dark-First Design System
+   Premium security dashboard aesthetic.
+   ════════════════════════════════════════════════════════════════════════════ */
 
 @tailwind base;
 @tailwind components;
@@ -21,224 +24,168 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
-  /* Bold text defaults */
   h1, h2, h3, h4, h5, h6 {
     @apply font-bold tracking-tight;
   }
 
-  strong, b {
-    @apply font-bold;
-  }
-
   ::selection {
-    @apply bg-mag-primary/20 text-mag-primary;
+    @apply bg-emerald-500/20 text-emerald-400;
   }
 
-  /* Scrollbar — clean & minimal */
-  ::-webkit-scrollbar {
-    @apply w-1;
-  }
-  ::-webkit-scrollbar-track {
-    @apply bg-transparent;
-  }
-  ::-webkit-scrollbar-thumb {
-    @apply bg-mag-border rounded-full hover:bg-mag-border-bright transition-colors;
-  }
+  /* Scrollbar — thin dark */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.15); }
 }
 
-/* ─── Components ───────────────────────────────────────────────────────────── */
+/* ─── Dark Theme Panels (Landing) ─────────────────────────────────────── */
 @layer components {
-  /* Military Panel — clean, functional */
-  .mag-panel {
-    @apply bg-white border border-gray-200 rounded-xl;
-    @apply shadow-[0_1px_3px_rgba(0,0,0,0.04)];
-  }
-
-  /* Military Card — subtle depth */
-  .mag-card {
-    @apply bg-white border border-gray-200 rounded-lg p-4;
-    @apply hover:border-gray-300 hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)];
-    @apply transition-all duration-200;
+  /* Glass card — frosted dark */
+  .glass-card {
+    background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%);
+    border: 1px solid rgba(255,255,255,0.06);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
   }
 
   /* Glow border on hover */
-  .mag-glow-border {
-    @apply border border-gray-200 rounded-lg transition-all duration-200;
+  .glow-border {
+    position: relative;
+    border: 1px solid rgba(255,255,255,0.06);
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   }
-  .mag-glow-border:hover {
-    @apply border-gray-400 shadow-[0_2px_12px_rgba(0,0,0,0.08)];
-  }
-
-  /* HUD Corner Brackets — tactical feel */
-  .mag-hud-frame {
-    @apply relative;
-  }
-  .mag-hud-frame::before,
-  .mag-hud-frame::after {
-    content: '';
-    @apply absolute w-2.5 h-2.5 border-gray-400;
-  }
-  .mag-hud-frame::before {
-    @apply top-0 left-0 border-t border-l;
-  }
-  .mag-hud-frame::after {
-    @apply bottom-0 right-0 border-b border-r;
+  .glow-border:hover {
+    border-color: rgba(16, 185, 129, 0.2);
+    box-shadow: 0 0 24px rgba(16, 185, 129, 0.06), 0 4px 16px rgba(0,0,0,0.3);
   }
 
-  /* Status Dot — military clarity */
-  .mag-status-dot {
-    @apply w-2 h-2 rounded-full;
-  }
-  .mag-status-dot.online {
-    @apply bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)] animate-pulse-slow;
-  }
-  .mag-status-dot.offline {
-    @apply bg-gray-300;
+  /* Section container — with visual breaks */
+  .section-dark { @apply bg-gray-950; }
+  .section-darker { background: #020609; }
+  .section-surface { background: linear-gradient(180deg, #0a0f1a 0%, #060a10 100%); }
+
+  /* Premium button */
+  .btn-emerald {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3;
+    @apply font-bold text-sm tracking-wide;
+    @apply bg-emerald-500 text-white rounded-xl;
+    @apply shadow-glow-md;
+    @apply transition-all duration-300;
+    @apply hover:bg-emerald-400 hover:shadow-glow-lg hover:-translate-y-0.5;
+    @apply active:translate-y-0 active:scale-[0.98];
   }
 
-  /* Grid Background — subtle tactical grid */
-  .mag-grid-bg {
-    background-image:
-      linear-gradient(rgba(0, 0, 0, 0.02) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0, 0, 0, 0.02) 1px, transparent 1px);
-    background-size: 48px 48px;
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3;
+    @apply font-bold text-sm tracking-wide;
+    @apply border border-white/10 text-gray-400 rounded-xl;
+    @apply transition-all duration-300;
+    @apply hover:bg-white/5 hover:border-white/20 hover:text-white;
+    @apply active:scale-[0.98];
   }
 
-  /* Tactical Button Base */
-  .mag-btn {
-    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5;
-    @apply font-mono text-xs font-bold uppercase tracking-wider;
-    @apply border rounded-lg transition-all duration-150;
-    @apply active:scale-[0.97] focus:outline-none focus:ring-2 focus:ring-offset-0;
+  /* Feature badge */
+  .badge-dark {
+    @apply inline-flex items-center gap-2 px-3 py-1 rounded-full;
+    @apply border border-white/10 bg-white/5;
+    @apply text-[10px] font-mono font-bold tracking-[0.2em] text-gray-400;
   }
 
-  .mag-btn-primary {
-    @apply mag-btn;
-    @apply border-gray-900 text-white bg-gray-900;
-    @apply hover:bg-gray-800 hover:border-gray-800;
-    @apply focus:ring-gray-900/30;
-  }
-
-  .mag-btn-secondary {
-    @apply mag-btn;
-    @apply border-gray-300 text-gray-700 bg-white;
-    @apply hover:bg-gray-50 hover:border-gray-400;
-    @apply focus:ring-gray-900/10;
-  }
-
-  .mag-btn-danger {
-    @apply mag-btn;
-    @apply border-red-500 text-red-600 bg-red-50;
-    @apply hover:bg-red-100 hover:border-red-600;
-    @apply focus:ring-red-500/30;
-  }
-
-  .mag-btn-warning {
-    @apply mag-btn;
-    @apply border-amber-500 text-amber-600 bg-amber-50;
-    @apply hover:bg-amber-100 hover:border-amber-600;
-    @apply focus:ring-amber-500/30;
-  }
-
-  .mag-btn-ghost {
-    @apply mag-btn;
-    @apply border-transparent text-gray-500 bg-transparent;
-    @apply hover:text-gray-900 hover:bg-gray-100;
-  }
-
-  /* Tab Component — clean military tabs */
-  .mag-tab {
-    @apply flex items-center justify-center gap-1.5 px-3 py-3;
-    @apply text-[10px] font-bold tracking-wide font-mono uppercase;
-    @apply text-gray-400 cursor-pointer transition-all duration-200;
-    @apply border-b-2 border-transparent;
-  }
-  .mag-tab:hover {
-    @apply text-gray-600;
-  }
-  .mag-tab.active {
-    @apply text-gray-900 border-gray-900;
-    @apply bg-gray-50;
-  }
-
-  /* Input — clean, functional */
-  .mag-input {
-    @apply w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg;
-    @apply text-gray-900 text-sm font-medium font-sans placeholder:text-gray-400;
-    @apply focus:outline-none focus:border-gray-400 focus:ring-2 focus:ring-gray-100;
-    @apply transition-all duration-150;
-  }
-
-  /* Badge — military status */
-  .mag-badge {
-    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-mono font-bold uppercase tracking-wider;
-  }
-  .mag-badge-online {
-    @apply mag-badge bg-emerald-50 text-emerald-600 border border-emerald-200;
-  }
-  .mag-badge-offline {
-    @apply mag-badge bg-gray-100 text-gray-500 border border-gray-200;
-  }
-  .mag-badge-danger {
-    @apply mag-badge bg-red-50 text-red-600 border border-red-200;
-  }
-  .mag-badge-info {
-    @apply mag-badge bg-gray-100 text-gray-700 border border-gray-200;
-  }
-
-  /* M-Brand Logo */
-  .mag-m-logo {
-    @apply inline-flex items-center justify-center;
-    font-family: var(--font-inter), sans-serif;
-    font-weight: 800;
-    line-height: 1;
-  }
-
-  .mag-m-logo-ring {
-    @apply absolute rounded-full border border-gray-200;
+  /* Stat number */
+  .stat-number {
+    @apply font-display font-extrabold tabular-nums;
   }
 }
 
-/* ─── Leaflet Overrides — Clean & Modern ──────────────────────────────────── */
-.leaflet-container {
-  @apply bg-gray-100;
-  font-family: inherit;
+/* ─── Hero Animations ─────────────────────────────────────────────────── */
+@keyframes heroFadeIn {
+  0% { opacity: 0; transform: translateY(16px); }
+  100% { opacity: 1; transform: translateY(0); }
 }
 
-.leaflet-control-zoom {
-  @apply !border-gray-200 !rounded-xl overflow-hidden !shadow-[0_1px_3px_rgba(0,0,0,0.1)];
+@keyframes arcDraw {
+  0% { stroke-dashoffset: 220; }
+  100% { stroke-dashoffset: 28; }
 }
 
-.leaflet-control-zoom a {
-  @apply !bg-gray-900 !text-white !w-10 !h-10 !leading-10 !text-lg;
-  @apply !border-gray-700 hover:!bg-gray-700 !transition-colors;
+@keyframes barGrow {
+  0% { transform: scaleY(0); }
+  100% { transform: scaleY(1); }
 }
 
-.leaflet-control-zoom a:first-child {
-  @apply !border-b-gray-700;
+@keyframes liveBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
 }
 
-.leaflet-popup-content-wrapper {
-  @apply !bg-gray-900 !text-white !rounded-xl !border !border-gray-200 !shadow-[0_4px_16px_rgba(0,0,0,0.1)];
+@keyframes numTick {
+  0%, 85%, 100% { transform: translateY(0); }
+  90% { transform: translateY(-2px); }
+  95% { transform: translateY(0); }
 }
 
-.leaflet-popup-tip {
-  @apply !bg-white;
+@keyframes chipFloat {
+  0% { transform: translateY(16px) scale(0.95); opacity: 0; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
 }
 
-.leaflet-popup-content {
-  @apply !m-3 !text-sm;
+.hero-arc-draw {
+  stroke-dasharray: 220;
+  stroke-dashoffset: 220;
+  animation: arcDraw 1.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation-delay: 0.8s;
 }
 
-.leaflet-control-attribution {
-  @apply !bg-transparent !text-gray-400 !text-[9px];
+.hero-bar-grow {
+  transform-origin: bottom;
+  animation: barGrow 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  opacity: 0;
 }
 
-.leaflet-control-attribution a {
-  @apply !text-gray-500;
+.hero-live-blink {
+  animation: liveBlink 1.5s ease-in-out infinite;
 }
 
-/* Custom marker pulse animation */
+.hero-num-tick {
+  animation: numTick 4s ease-in-out infinite;
+}
+
+.hero-chip-float {
+  animation: chipFloat 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  opacity: 0;
+}
+
+/* ─── Security Rings ────────────────────────────────────────────────────── */
+@keyframes slowSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-slow-spin {
+  animation: slowSpin 14s linear infinite;
+}
+
+/* ─── Leaflet Map Overrides ─────────────────────────────────────────────── */
+.leaflet-container { @apply bg-gray-950; font-family: inherit; }
+.leaflet-control-zoom { @apply !border-white/10 !rounded-xl overflow-hidden !shadow-elevation-2; }
+.leaflet-control-zoom a { @apply !bg-gray-900 !text-white !w-10 !h-10 !leading-10 !text-lg; @apply !border-white/10 hover:!bg-gray-700 !transition-colors; }
+.leaflet-control-zoom a:first-child { @apply !border-b-white/10; }
+.leaflet-popup-content-wrapper { @apply !bg-gray-900 !text-white !rounded-xl !border !border-white/10 !shadow-elevation-3; }
+.leaflet-popup-tip { @apply !bg-gray-900; }
+.leaflet-popup-content { @apply !m-3 !text-sm; }
+.leaflet-control-attribution { @apply !bg-transparent !text-gray-500 !text-[9px]; }
+.leaflet-control-attribution a { @apply !text-gray-400; }
+
+/* ─── Login Shake ──────────────────────────────────────────────────────── */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
+  20%, 40%, 60%, 80% { transform: translateX(2px); }
+}
+.animate-shake { animation: shake 0.4s ease-in-out; }
+
+/* ─── Marker Pulse ──────────────────────────────────────────────────────── */
 @keyframes marker-pulse {
   0% { transform: scale(1); opacity: 0.8; }
   50% { transform: scale(1.15); opacity: 0.4; }
@@ -251,967 +198,37 @@
   100% { transform: scale(1); opacity: 0.6; }
 }
 
-/* ─── Path Animation ────────────────────────────────────────────────────────── */
-@keyframes pathGlow {
-  0%, 100% { filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.2)); }
-  50% { filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.3)); }
-}
-
-.animate-path-glow {
-  animation: pathGlow 1.5s ease-in-out infinite;
-}
-
-/* ─── Login Page Effects ──────────────────────────────────────────────────── */
-
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
-  20%, 40%, 60%, 80% { transform: translateX(2px); }
-}
-
-.animate-shake {
-  animation: shake 0.4s ease-in-out;
-}
-
-/* ─── M-Logo Glow Effect ──────────────────────────────────────────────────── */
-@keyframes mGlow {
-  0%, 100% { opacity: 0.4; transform: scale(1); }
-  50% { opacity: 0.8; transform: scale(1.02); }
-}
-
-.animate-m-glow {
-  animation: mGlow 3s ease-in-out infinite;
-}
-
-/* ─── Scanning Effect ───────────────────────────────────────────────────────── */
-@keyframes scanningLine {
-  0% { top: 0%; opacity: 0; }
-  5% { opacity: 1; }
-  90% { opacity: 1; }
-  100% { top: 100%; opacity: 0; }
-}
-
-.animate-scan-line {
-  animation: scanningLine 3s ease-in-out infinite;
-}
-
-/* ─── Dashboard Subtle Animations ──────────────────────────────────────────── */
-@keyframes dataPulse {
-  0%, 100% { border-color: rgba(0,0,0,0.06); }
-  50% { border-color: rgba(0,0,0,0.12); }
-}
-
-.animate-data-pulse {
-  animation: dataPulse 4s ease-in-out infinite;
-}
-
-/* ─── Fade in from bottom ──────────────────────────────────────────────────── */
-@keyframes fadeSlideUp {
-  0% { opacity: 0; transform: translateY(8px); }
-  100% { opacity: 1; transform: translateY(0); }
-}
-
-.animate-fade-slide {
-  animation: fadeSlideUp 0.4s ease-out forwards;
-}
-
-/* ─── Toast slide-in from right ──────────────────────────────────────────── */
-@keyframes slideInRight {
-  0% { opacity: 0; transform: translateX(100%); }
-  100% { opacity: 1; transform: translateX(0); }
-}
-
-.animate-slide-in-right {
-  animation: slideInRight 0.3s ease-out forwards;
-}
-
-/* ─── Subtle Background Particle Effect ───────────────────────────────────── */
-@keyframes floatParticle {
-  0%, 100% { transform: translateY(0) translateX(0); opacity: 0; }
-  10% { opacity: 0.3; }
-  90% { opacity: 0.3; }
-  100% { transform: translateY(-100px) translateX(20px); opacity: 0; }
-}
-
-/* ─── Dashboard - Data Flow Animation ─────────────────────────────────────── */
-@keyframes data-flow {
-  0% { background-position: 200% center; }
-  100% { background-position: -200% center; }
-}
-
-.animate-data-flow {
-  background-image: linear-gradient(90deg, transparent, rgba(0,0,0,0.05), transparent);
-  background-size: 200% 100%;
-  background-position: 0% 0;
-  animation: data-flow 2s linear infinite;
-}
-
-/* ════════════════════════════════════════════════════════════════════════════
-   Military Grade Design System — White & Gray Focus
-   ════════════════════════════════════════════════════════════════════════════ */
-
-/* Military border effect */
-.gradient-border {
-  position: relative;
-  border-radius: 16px;
-  overflow: hidden;
-}
-
-.gradient-border::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px;
-  background: linear-gradient(135deg, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.15));
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  opacity: 0.6;
-  transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.gradient-border:hover::before {
-  opacity: 1;
-}
-
-/* Military glass panel */
-.glass-panel {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(249, 250, 251, 0.9) 100%);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow:
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.8),
-    0 4px 16px -4px rgba(0, 0, 0, 0.08);
-}
-
-/* Military card with layered shadows */
-.premium-card {
-  background: linear-gradient(180deg, #FFFFFF 0%, #F9FAFB 100%);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 16px;
-  box-shadow:
-    0 1px 1px rgba(0,0,0,0.02),
-    0 2px 2px rgba(0,0,0,0.02),
-    0 4px 4px rgba(0,0,0,0.02),
-    0 8px 8px rgba(0,0,0,0.02);
-  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.premium-card:hover {
-  border-color: rgba(0, 0, 0, 0.12);
-  box-shadow:
-    0 1px 1px rgba(0,0,0,0.03),
-    0 2px 2px rgba(0,0,0,0.03),
-    0 4px 4px rgba(0,0,0,0.03),
-    0 8px 8px rgba(0,0,0,0.03),
-    0 16px 16px rgba(0,0,0,0.03);
-  transform: translateY(-2px);
-}
-
-/* Military button with shimmer */
-.btn-premium {
-  position: relative;
-  overflow: hidden;
-  background: linear-gradient(135deg, #111827 0%, #1F2937 100%);
-  color: #FFFFFF;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.btn-premium::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-  transition: left 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.btn-premium:hover::after {
-  left: 100%;
-}
-
-.btn-premium:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 16px -4px rgba(0, 0, 0, 0.2);
-}
-
-.btn-premium:active {
-  transform: translateY(0) scale(0.98);
-}
-
-/* Spotlight hover effect */
-.spotlight {
-  position: relative;
-  overflow: hidden;
-}
-
-.spotlight::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(0, 0, 0, 0.04) 0%, transparent 50%);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  pointer-events: none;
-  z-index: 0;
-}
-
-.spotlight:hover::before {
-  opacity: 1;
-}
-
-/* Military badge */
-.badge-premium {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 12px;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  border-radius: 9999px;
-  background: linear-gradient(135deg, rgba(0, 0, 0, 0.05) 0%, rgba(0, 0, 0, 0.03) 100%);
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  color: rgba(0, 0, 0, 0.7);
-}
-
-/* Military divider */
-.divider-premium {
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.1), transparent);
-}
-
-/* ─── Landing Page — Military Grade Effects ─────────────────────────────────── */
-
-/* Gradient text — dark monochrome for light theme */
-.text-gradient-primary {
-  background: linear-gradient(120deg, #111827 0%, #374151 35%, #6B7280 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  color: transparent;
-}
-
-.text-gradient-cyan {
-  background: linear-gradient(120deg, #111827, #374151);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  color: transparent;
-}
-
-/* Animated gradient text sweep */
-@keyframes gradientShift {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-}
-
-.animate-gradient-x {
-  background-size: 200% 200%;
-  animation: gradientShift 6s ease infinite;
-}
-
-/* Subtle tactical grid for landing sections */
-.landing-grid {
-  background-image:
-    linear-gradient(rgba(0, 0, 0, 0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 0, 0, 0.02) 1px, transparent 1px);
-  background-size: 44px 44px;
-}
-
-/* Ambient color wash for hero/footer */
-.landing-vignette {
-  background:
-    radial-gradient(ellipse 80% 60% at 50% 0%, rgba(0, 0, 0, 0.01) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 50% at 90% 100%, rgba(0, 0, 0, 0.005) 0%, transparent 60%);
-}
-
-/* Radar ping for hero mockup */
-@keyframes radarPing {
-  0% { transform: scale(0.5); opacity: 0.9; }
-  100% { transform: scale(2.4); opacity: 0; }
-}
-
-.animate-radar-ping {
-  animation: radarPing 2.4s cubic-bezier(0, 0, 0.2, 1) infinite;
-}
-
-/* ═══ Hero Text Animation ═══════════════════════════════════════════════════════ */
-@keyframes heroFadeIn {
-  0% { opacity: 0; transform: translateY(12px); }
-  100% { opacity: 1; transform: translateY(0); }
-}
-
-/* ═══ Hero Mockup — Device Status Card Animations ═══════════════════════════════ */
-
-/* Card entrance — unfolds from center */
-@keyframes cardUnfold {
-  0% { transform: scale(0.92) translateY(12px); opacity: 0; filter: blur(4px); }
-  100% { transform: scale(1) translateY(0); opacity: 1; filter: blur(0); }
-}
-.hero-card-unfold {
-  animation: cardUnfold 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  opacity: 0;
-}
-
-/* Section stagger reveal */
-@keyframes sectionReveal {
-  0% { transform: translateY(16px); opacity: 0; }
-  100% { transform: translateY(0); opacity: 1; }
-}
-.hero-section-reveal {
-  animation: sectionReveal 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  opacity: 0;
-}
-
-/* Battery arc draw */
-@keyframes arcDraw {
-  0% { stroke-dashoffset: 220; }
-  100% { stroke-dashoffset: 28; }
-}
-.hero-arc-draw {
-  stroke-dasharray: 220;
-  stroke-dashoffset: 220;
-  animation: arcDraw 1.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-  animation-delay: 0.8s;
-}
-
-/* Signal waveform */
-@keyframes waveFlow {
-  0% { d: path('M0,20 Q15,8 30,20 T60,20 T90,20 T120,20'); }
-  50% { d: path('M0,20 Q15,4 30,20 T60,14 T90,20 T120,16'); }
-  100% { d: path('M0,20 Q15,8 30,20 T60,20 T90,20 T120,20'); }
-}
-
-/* Timeline dot pulse */
-@keyframes timelinePulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(0,0,0,0.2); }
-  50% { box-shadow: 0 0 0 4px rgba(0,0,0,0); }
-}
-
-/* Live dot blink */
-@keyframes liveBlink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
-}
-.hero-live-blink {
-  animation: liveBlink 1.5s ease-in-out infinite;
-}
-
-/* Telemetry number tick */
-@keyframes numTick {
-  0%, 85%, 100% { transform: translateY(0); }
-  90% { transform: translateY(-2px); }
-  95% { transform: translateY(0); }
-}
-.hero-num-tick {
-  animation: numTick 4s ease-in-out infinite;
-}
-
-/* Threat level transition */
-@keyframes threatShift {
-  0%, 70% { opacity: 0; transform: translateX(-4px); }
-  75% { opacity: 1; transform: translateX(0); }
-  85% { opacity: 1; transform: translateX(0); }
-  90% { opacity: 0; transform: translateX(4px); }
-  100% { opacity: 0; transform: translateX(4px); }
-}
-
-/* Ambient ring rotation */
-@keyframes ambientRing {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-.hero-ambient-ring {
-  animation: ambientRing 20s linear infinite;
-}
-
-/* Floating chip entrance */
-@keyframes chipFloat {
-  0% { transform: translateY(16px) scale(0.95); opacity: 0; }
-  100% { transform: translateY(0) scale(1); opacity: 1; }
-}
-.hero-chip-float {
-  animation: chipFloat 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  opacity: 0;
-}
-
-/* Bar graph stagger */
-@keyframes barGrow {
-  0% { transform: scaleY(0); }
-  100% { transform: scaleY(1); }
-}
-.hero-bar-grow {
-  transform-origin: bottom;
-  animation: barGrow 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  opacity: 0;
-}
-
-/* Subtle shimmer across card */
-@keyframes cardShimmer {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(200%); }
-}
-.hero-card-shimmer::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 50%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(0,0,0,0.02), transparent);
-  animation: cardShimmer 6s ease-in-out infinite;
-  pointer-events: none;
-}
-
-/* Slow float for decorative orbs */
-@keyframes floatSlow {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-16px); }
-}
-
-.animate-float-slow {
-  animation: floatSlow 7s ease-in-out infinite;
-}
-
-/* Slow spin for security rings */
-@keyframes slowSpin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-.animate-slow-spin {
-  animation: slowSpin 14s linear infinite;
-}
-
-/* Shimmer sweep for CTA buttons */
-@keyframes shimmerSweep {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
-}
-
-.animate-shimmer {
-  animation: shimmerSweep 3.5s ease-in-out infinite;
-}
-
-/* Subtle card border glow on hover */
-.card-glow {
-  transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
-}
-
-/* ═══ Premium Auth Experience (login / signup) ══════════════════════════════ */
-
-/* Aurora drift for ambient background blobs */
-@keyframes auroraDrift {
-  0%   { transform: translate3d(0, 0, 0) scale(1); }
-  33%  { transform: translate3d(60px, -40px, 0) scale(1.12); }
-  66%  { transform: translate3d(-50px, 30px, 0) scale(0.94); }
-  100% { transform: translate3d(0, 0, 0) scale(1); }
-}
-
-.animate-aurora {
-  animation: auroraDrift 16s ease-in-out infinite alternate;
-}
-
-/* Rising particle specks (uses floatParticle keyframes defined above) */
-.animate-float-particle {
-  animation: floatParticle 10s ease-in-out infinite;
-}
-
-/* Animated route dashes for the telemetry mockup */
-@keyframes dashFlow {
-  to { stroke-dashoffset: -28; }
-}
-
-.dash-flow {
-  stroke-dasharray: 7 5;
-  animation: dashFlow 1.6s linear infinite;
-}
-
-/* Sentinel score bar sweep */
-@keyframes barSweep {
-  0%, 100% { width: 14%; }
-  50% { width: 38%; }
-}
-
-.bar-sweep {
-  animation: barSweep 3.2s ease-in-out infinite;
-}
-
-/* Live telemetry ticker (seamless vertical loop) */
-@keyframes tickerScroll {
-  0% { transform: translateY(0); }
-  100% { transform: translateY(-50%); }
-}
-
-.ticker-scroll {
-  animation: tickerScroll 14s linear infinite;
-}
-
-/* Cursor-tracking spotlight card — driven by --mx / --my custom properties */
-.spotlight-card::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.35s ease;
-  background: radial-gradient(
-    360px circle at var(--mx, 50%) var(--my, 50%),
-    rgba(0, 0, 0, 0.06),
-    rgba(0, 0, 0, 0.03) 45%,
-    transparent 65%
-  );
-  z-index: 1;
-}
-
-.spotlight-card:hover::before {
-  opacity: 1;
-}
-
-/* Perspective grid floor for the showcase panel */
-.grid-floor {
-  position: absolute;
-  inset: auto 0 0 0;
-  height: 38%;
-  background-image:
-    linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
-  background-size: 42px 42px;
-  transform: perspective(420px) rotateX(58deg);
-  transform-origin: bottom center;
-  -webkit-mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent);
-  mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent);
-  pointer-events: none;
-}
-
-/* Light-theme autofill fix */
-input:-webkit-autofill,
-input:-webkit-autofill:hover,
-input:-webkit-autofill:focus {
-  -webkit-text-fill-color: rgba(17, 24, 39, 0.9);
-  -webkit-box-shadow: 0 0 0 1000px #F9FAFB inset;
-  transition: background-color 9999s ease-in-out 0s;
-}
-
-/* Hide scrollbars for horizontal tab strips (keeps the strip usable while
-   letting it scroll when the tab set overflows a narrow panel) */
-.no-scrollbar {
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE/Edge */
-}
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-
-/* Respect reduced-motion preferences */
+/* ─── Reduced Motion ───────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
-  .animate-aurora,
-  .animate-float-particle,
-  .animate-radar-ping,
-  .animate-float-slow,
-  .animate-slow-spin,
-  .animate-shimmer,
-  .animate-gradient-x,
-  .animate-scan-line,
-  .dash-flow,
-  .bar-sweep,
-  .ticker-scroll {
-    animation: none !important;
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
 
-.card-glow:hover {
-  border-color: rgba(0, 0, 0, 0.12);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-  transform: translateY(-2px);
-}
-
-/* ═══ Premium Action Panel (Military Style) ════════════════════════════════════════ */
-.action-item {
-  @apply flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 cursor-pointer;
-  @apply border border-transparent hover:border-gray-300 hover:bg-gray-50;
-}
-
-.action-item:hover {
-  @apply shadow-[0_2px_8px_rgba(0,0,0,0.04)];
-}
-
-.action-icon {
-  @apply w-10 h-10 rounded-xl flex items-center justify-center;
-  @apply bg-gray-100 border border-gray-200;
-  @apply transition-all duration-200;
-}
-
-.action-item:hover .action-icon {
-  @apply bg-gray-900 border-gray-900 text-white;
-}
-
-/* ═══ Premium Sidebar (Military Style) ════════════════════════════════════════════ */
-.sidebar-item {
-  @apply flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 cursor-pointer;
-  @apply border border-transparent hover:bg-gray-100 hover:border-gray-200;
-}
-
-.sidebar-item.active {
-  @apply bg-gray-100 border-gray-200;
-}
-
-/* ═══ Premium Map Overlay ════════════════════════════════════════════════════════ */
-.map-overlay {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.8) 0%, transparent 30%, transparent 70%, rgba(255, 255, 255, 0.8) 100%);
-  pointer-events: none;
-}
-
-/* ═══ Top 1% Landing Page Effects ═══════════════════════════════════════════ */
-
-/* Noise texture overlay — film grain for premium feel */
+/* ─── Noise Overlay ────────────────────────────────────────────────────── */
 .noise-overlay::before {
   content: '';
   position: fixed;
   inset: 0;
   z-index: 9999;
   pointer-events: none;
-  opacity: 0.02;
+  opacity: 0.015;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   background-repeat: repeat;
   background-size: 200px 200px;
 }
 
-/* Gradient mesh — organic drifting color fields */
-.gradient-mesh {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  pointer-events: none;
-}
+/* ─── Scroll Reveal ────────────────────────────────────────────────────── */
+.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
 
-.gradient-mesh .orb {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(100px);
-  opacity: 0.02;
-  animation: meshDrift 20s ease-in-out infinite alternate;
-}
-
-.gradient-mesh .orb-1 {
-  width: 600px; height: 600px;
-  top: -10%; left: 20%;
-  background: #000;
-  animation-delay: 0s;
-}
-
-.gradient-mesh .orb-2 {
-  width: 500px; height: 500px;
-  top: 30%; right: -5%;
-  background: #000;
-  animation-delay: -7s;
-  animation-duration: 25s;
-}
-
-.gradient-mesh .orb-3 {
-  width: 400px; height: 400px;
-  bottom: -5%; left: 10%;
-  background: #000;
-  animation-delay: -14s;
-  animation-duration: 22s;
-}
-
-@keyframes meshDrift {
-  0% { transform: translate(0, 0) scale(1); }
-  33% { transform: translate(40px, -30px) scale(1.05); }
-  66% { transform: translate(-30px, 20px) scale(0.95); }
-  100% { transform: translate(20px, -10px) scale(1.02); }
-}
-
-/* Nav link underline animation — draws from left */
-.nav-link-hover {
-  position: relative;
-  display: inline-block;
-}
-
-.nav-link-hover::after {
-  content: '';
-  position: absolute;
-  bottom: -2px;
-  left: 0;
-  width: 0;
-  height: 1px;
-  background: rgba(0, 0, 0, 0.6);
-  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.nav-link-hover:hover::after {
-  width: 100%;
-}
-
-/* Hero section — stacked depth layers */
-.hero-depth {
-  transform-style: preserve-3d;
-  perspective: 1200px;
-}
-
-.hero-depth .depth-layer-1 {
-  transform: translateZ(0px);
-}
-
-.hero-depth .depth-layer-2 {
-  transform: translateZ(-20px) scale(1.02);
-}
-
-.hero-depth .depth-layer-3 {
-  transform: translateZ(-40px) scale(1.04);
-}
-
-/* Section bleed — sections overlap slightly */
-.section-bleed {
-  margin-bottom: -60px;
-  position: relative;
-  z-index: 1;
-}
-
-.section-bleed + .section-bleed {
-  margin-top: -60px;
-}
-
-/* Feature card enhanced spotlight */
-.feature-spotlight {
-  position: relative;
-  overflow: hidden;
-}
-
-.feature-spotlight::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(
-    600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
-    rgba(0, 0, 0, 0.04),
-    transparent 40%
-  );
-  opacity: 0;
-  transition: opacity 0.4s ease;
-  z-index: 0;
-  pointer-events: none;
-}
-
-.feature-spotlight:hover::before {
-  opacity: 1;
-}
-
-/* Gradient border glow on hover */
-.gradient-border-glow {
-  position: relative;
-}
-
-.gradient-border-glow::before {
-  content: '';
-  position: absolute;
-  inset: -1px;
-  border-radius: inherit;
-  background: linear-gradient(135deg, rgba(0,0,0,0.1), transparent 50%, rgba(0,0,0,0.05));
-  opacity: 0;
-  transition: opacity 0.4s ease;
-  z-index: -1;
-}
-
-.gradient-border-glow:hover::before {
-  opacity: 1;
-}
-
-/* Smooth link underline */
-.link-underline {
-  position: relative;
-  text-decoration: none;
-}
-
-.link-underline::after {
-  content: '';
-  position: absolute;
-  bottom: -1px;
-  left: 0;
-  width: 0;
-  height: 1px;
-  background: currentColor;
-  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.link-underline:hover::after {
-  width: 100%;
-}
-
-/* Stats counter glow */
-.stat-glow {
-  text-shadow: 0 0 30px rgba(0, 0, 0, 0.1);
-}
-
-/* Military divider with gradient */
-.premium-divider {
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(0,0,0,0.08), transparent);
-}
-
-/* Animated border on focus */
-@keyframes borderGlow {
-  0%, 100% { border-color: rgba(0,0,0,0.06); }
-  50% { border-color: rgba(0,0,0,0.15); }
-}
-
-/* Horizontal scroll ticker */
-.ticker-track {
-  display: flex;
-  animation: tickerScroll 30s linear infinite;
-  width: max-content;
-}
-
-@keyframes tickerScroll {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
-}
-
-/* Floating label entrance */
-@keyframes floatLabel {
-  0% { transform: translateY(10px) scale(0.95); opacity: 0; }
-  100% { transform: translateY(0) scale(1); opacity: 1; }
-}
-
-.float-label {
-  animation: floatLabel 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  opacity: 0;
-}
-
-/* Custom scrollbar — ultra thin */
-::-webkit-scrollbar {
-  width: 4px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(0,0,0,0.1);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(0,0,0,0.2);
-}
-
-/* Reduced motion */
-@media (prefers-reduced-motion: reduce) {
-  .hero-card-unfold,
-  .hero-section-reveal,
-  .hero-arc-draw,
-  .hero-bar-grow,
-  .hero-chip-float,
-  .hero-stat-reveal,
-  .hero-threat-blink,
-  .hero-card-shimmer::after,
-  .gradient-mesh .orb,
-  .nav-link-hover::after,
-  .link-underline::after {
-    animation: none !important;
-    opacity: 1 !important;
-    transform: none !important;
-  }
-}
-
-/* ─── Dark Mode ─────────────────────────────────────────────────────────── */
-@layer base {
-  .dark {
-    --mag-bg: #0a0a0f;
-    --mag-text: #e5e7eb;
-    --mag-border: #1f2937;
-  }
-
-  .dark body {
-    @apply bg-gray-950 text-gray-100;
-  }
-
-  .dark .mag-panel {
-    @apply bg-gray-900 border-gray-800;
-  }
-
-  .dark .mag-card {
-    @apply bg-gray-900 border-gray-800 hover:border-gray-700;
-  }
-
-  .dark .mag-input {
-    @apply bg-gray-800 border-gray-700 text-gray-100 placeholder:text-gray-500;
-  }
-
-  .dark .mag-tab {
-    @apply text-gray-500;
-  }
-  .dark .mag-tab:hover {
-    @apply text-gray-300;
-  }
-  .dark .mag-tab.active {
-    @apply text-white border-white bg-gray-800;
-  }
-
-  .dark .mag-badge-online {
-    @apply bg-emerald-900/30 text-emerald-400 border-emerald-800;
-  }
-  .dark .mag-badge-offline {
-    @apply bg-gray-800 text-gray-400 border-gray-700;
-  }
-  .dark .mag-badge-danger {
-    @apply bg-red-900/30 text-red-400 border-red-800;
-  }
-  .dark .mag-badge-info {
-    @apply bg-gray-800 text-gray-300 border-gray-700;
-  }
-
-  /* Dashboard layout dark overrides */
-  .dark [class*="bg-white"] {
-    @apply bg-gray-900;
-  }
-  .dark [class*="border-gray-200"] {
-    @apply border-gray-700;
-  }
-  .dark [class*="text-gray-900"] {
-    @apply text-gray-100;
-  }
-  .dark [class*="text-gray-700"] {
-    @apply text-gray-300;
-  }
-  .dark [class*="text-gray-500"] {
-    @apply text-gray-400;
-  }
-  .dark [class*="bg-gray-50"] {
-    @apply bg-gray-800;
-  }
-}
-
-/* ─── Noise Texture Overlay ─────────────────────────────────────────────── */
-.noise-overlay {
-  position: relative;
-}
-.noise-overlay::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  opacity: 0.03;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-  background-repeat: repeat;
-  background-size: 256px 256px;
-}
-
-/* ─── Grid Dot Background ─────────────────────────────────────────────── */
-.grid-dots {
-  background-image: radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px);
-  background-size: 24px 24px;
+/* ─── Autofill ─────────────────────────────────────────────────────────── */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #f9fafb;
+  -webkit-box-shadow: 0 0 0 1000px #111827 inset;
+  transition: background-color 9999s ease-in-out 0s;
 }

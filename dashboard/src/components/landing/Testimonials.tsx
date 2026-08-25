@@ -1,6 +1,6 @@
 'use client';
 
-import { Quote, Star } from 'lucide-react';
+import { Quote, Star, ShieldCheck, Lock, Code, EyeOff } from 'lucide-react';
 
 const TESTIMONIALS = [
   {
@@ -24,23 +24,26 @@ const TESTIMONIALS = [
 ];
 
 const TRUST_SIGNALS = [
-  { value: '256-bit', label: 'Encryption' },
-  { value: 'SHA-256', label: 'Chain of custody' },
-  { value: 'Open', label: 'Source code' },
-  { value: 'Zero', label: 'Data sold' },
+  { value: '256-bit', label: 'Encryption', icon: Lock },
+  { value: 'SHA-256', label: 'Chain of custody', icon: ShieldCheck },
+  { value: 'Open', label: 'Source code', icon: Code },
+  { value: 'Zero', label: 'Data sold', icon: EyeOff },
 ];
 
 export function Testimonials() {
   return (
-    <section className="py-20 sm:py-28 bg-gray-950 relative overflow-hidden">
-      <div className="max-w-6xl mx-auto px-5 sm:px-8">
+    <section className="py-28 sm:py-36 bg-gray-950 relative overflow-hidden">
+      {/* Subtle glow */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-emerald-500/[0.015] rounded-full blur-[100px] pointer-events-none" />
+
+      <div className="relative max-w-6xl mx-auto px-5 sm:px-8">
         {/* Section header */}
         <div className="text-center mb-14">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gray-700 bg-gray-800/50 mb-5">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-emerald-500/20 bg-emerald-500/5 mb-5">
             <Quote size={10} className="text-emerald-400" />
-            <span className="text-[10px] font-mono font-bold tracking-[0.2em] text-gray-400">REAL USERS</span>
+            <span className="text-[10px] font-mono font-bold tracking-[0.2em] text-emerald-400/80">REAL USERS</span>
           </div>
-          <h2 className="text-3xl sm:text-4xl font-display font-extrabold tracking-tight text-white mb-4">
+          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white mb-4">
             Trusted by families &amp; teams.
           </h2>
           <p className="text-gray-400 text-base max-w-lg mx-auto">
@@ -53,12 +56,15 @@ export function Testimonials() {
           {TESTIMONIALS.map((t) => (
             <div
               key={t.name}
-              className="relative rounded-2xl bg-white/[0.03] border border-white/[0.06] p-6 hover:bg-white/[0.05] hover:border-white/[0.10] transition-all duration-300"
+              className="relative rounded-2xl bg-gradient-to-b from-white/[0.04] to-transparent border border-white/[0.06] p-6 hover:border-emerald-500/15 transition-all duration-400 group"
             >
+              {/* Top emerald accent */}
+              <div className="absolute top-0 left-10 right-10 h-px bg-gradient-to-r from-transparent via-emerald-500/0 to-transparent group-hover:via-emerald-500/30 transition-all duration-500" />
+
               {/* Stars */}
               <div className="flex gap-0.5 mb-4">
                 {[...Array(5)].map((_, i) => (
-                  <Star key={i} size={12} className="text-emerald-400 fill-emerald-400" />
+                  <Star key={i} size={13} className="text-emerald-400 fill-emerald-400" />
                 ))}
               </div>
 
@@ -73,7 +79,7 @@ export function Testimonials() {
                   <div className="text-[12px] font-bold text-white">{t.name}</div>
                   <div className="text-[10px] font-mono text-gray-500">{t.role}</div>
                 </div>
-                <span className="text-[9px] font-mono text-gray-600 px-2 py-1 rounded bg-white/[0.03]">
+                <span className="text-[9px] font-mono text-gray-600 px-2 py-1 rounded bg-white/[0.03] border border-white/[0.04]">
                   {t.device}
                 </span>
               </div>
@@ -84,8 +90,9 @@ export function Testimonials() {
         {/* Trust signals bar */}
         <div className="mt-12 grid grid-cols-2 sm:grid-cols-4 gap-4">
           {TRUST_SIGNALS.map((s) => (
-            <div key={s.label} className="text-center py-4 rounded-xl bg-white/[0.02] border border-white/[0.04]">
-              <div className="text-lg font-display font-extrabold text-white">{s.value}</div>
+            <div key={s.label} className="text-center py-5 rounded-xl bg-gradient-to-b from-white/[0.03] to-transparent border border-white/[0.04] hover:border-emerald-500/10 transition-all duration-300 group">
+              <s.icon size={16} className="text-gray-500 mx-auto mb-3 group-hover:text-emerald-400/60 transition-colors" />
+              <div className="text-lg font-extrabold text-white font-mono tabular-nums">{s.value}</div>
               <div className="text-[10px] font-mono text-gray-500 uppercase tracking-wider mt-1">{s.label}</div>
             </div>
           ))}

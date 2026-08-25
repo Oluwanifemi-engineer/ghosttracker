@@ -43,27 +43,19 @@ const AFRICA_POINTS = [
 
 export function Africa() {
   return (
-    <section
-      id="africa"
-      className="relative py-24 sm:py-32 bg-gray-950 scroll-mt-20 overflow-hidden"
-    >
-      {/* Subtle grid background */}
-      <div
-        className="absolute inset-0 pointer-events-none opacity-[0.03]"
-        style={{
-          backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)',
-          backgroundSize: '44px 44px',
-        }}
-      />
+    <section id="africa" className="relative py-28 sm:py-36 scroll-mt-20 overflow-hidden bg-gray-950">
+      {/* Red accent glow at top */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[200px] bg-red-500/[0.02] rounded-full blur-[100px] pointer-events-none" />
 
       <div className="relative max-w-7xl mx-auto px-5 sm:px-8">
         <div className="max-w-3xl mx-auto text-center mb-14">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gray-700 bg-gray-800/50 mb-5">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-red-500/20 bg-red-500/5 mb-5">
             <TrendingDown size={10} className="text-red-400" />
-            <span className="text-[10px] font-mono font-bold tracking-[0.2em] text-gray-400">THE PROBLEM</span>
+            <span className="text-[10px] font-mono font-bold tracking-[0.2em] text-red-400/80">THE PROBLEM</span>
           </div>
-          <h2 className="text-3xl sm:text-4xl font-display font-extrabold tracking-tight text-white leading-tight">
-            Built for <span className="text-emerald-400">Africa.</span>
+          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white leading-tight">
+            Built for{' '}
+            <span className="bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">Africa.</span>
           </h2>
           <p className="mt-5 text-gray-400 leading-relaxed">
             Phone theft is the most common crime in Nigeria — and fewer than 1 in 8 reported thefts ever
@@ -71,16 +63,17 @@ export function Africa() {
           </p>
         </div>
 
-        {/* Stats — dark cards with accent borders */}
+        {/* Stats — red accent cards */}
         <div className="grid sm:grid-cols-3 gap-5 max-w-5xl mx-auto">
           {AFRICA_STATS.map((stat) => (
             <div
               key={stat.label}
-              className="relative rounded-2xl bg-white/[0.03] border border-white/[0.06] p-7 text-center hover:bg-white/[0.05] hover:border-white/[0.10] transition-all duration-300"
+              className="relative rounded-2xl bg-gradient-to-b from-white/[0.04] to-transparent border border-white/[0.06] p-7 text-center hover:border-red-500/15 transition-all duration-400 group"
             >
-              {/* Top accent line */}
-              <div className="absolute top-0 left-8 right-8 h-px bg-gradient-to-r from-transparent via-red-500/40 to-transparent" />
-              <div className="text-4xl sm:text-5xl font-extrabold font-mono tabular-nums text-white">
+              {/* Red accent line at top */}
+              <div className="absolute top-0 left-10 right-10 h-px bg-gradient-to-r from-transparent via-red-500/30 to-transparent group-hover:via-red-500/50 transition-all duration-500" />
+
+              <div className="text-4xl sm:text-5xl font-extrabold font-mono tabular-nums text-white group-hover:text-red-50 transition-colors duration-300">
                 {stat.value}
               </div>
               <div className="mt-3 text-gray-300 font-semibold text-sm leading-snug">{stat.label}</div>
@@ -89,18 +82,18 @@ export function Africa() {
           ))}
         </div>
 
-        {/* Points — dark cards */}
-        <div className="mt-14 grid md:grid-cols-3 gap-5 max-w-5xl mx-auto">
+        {/* Points — emerald accent cards */}
+        <div className="mt-14 grid md:grid-cols-3 gap-4 max-w-5xl mx-auto">
           {AFRICA_POINTS.map((point) => (
             <div
               key={point.title}
-              className="flex items-start gap-4 rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6 hover:bg-white/[0.04] hover:border-white/[0.10] transition-all duration-300"
+              className="flex items-start gap-4 rounded-2xl border border-white/[0.06] bg-gradient-to-b from-white/[0.03] to-transparent p-6 hover:border-emerald-500/15 transition-all duration-400 group"
             >
-              <div className="w-9 h-9 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
-                <point.icon size={16} className="text-emerald-400" />
+              <div className="w-9 h-9 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0 group-hover:bg-emerald-500/15 transition-all">
+                <point.icon size={16} className="text-emerald-400/70 group-hover:text-emerald-400 transition-colors" />
               </div>
               <div>
-                <div className="text-white font-semibold text-sm">{point.title}</div>
+                <div className="text-white font-semibold text-sm group-hover:text-emerald-50 transition-colors">{point.title}</div>
                 <div className="text-[12.5px] text-gray-400 leading-relaxed mt-1">{point.description}</div>
               </div>
             </div>
@@ -109,9 +102,7 @@ export function Africa() {
 
         <div className="mt-10 flex items-center justify-center gap-2 text-[11px] font-mono text-gray-600">
           <Smartphone size={11} />
-          <span>
-            Source: National Bureau of Statistics — Crime Experience &amp; Security Perception Survey, 2024
-          </span>
+          <span>Source: National Bureau of Statistics — Crime Experience &amp; Security Perception Survey, 2024</span>
         </div>
       </div>
     </section>

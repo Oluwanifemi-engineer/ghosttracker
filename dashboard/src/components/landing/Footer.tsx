@@ -37,7 +37,7 @@ const FOOTER_LINKS = [
 export function Footer() {
   const { version, status } = useLiveServerInfo();
   return (
-    <footer className="relative border-t border-white/[0.06] bg-[#050508]">
+    <footer className="relative border-t border-white/[0.06] bg-[#020408]">
       <div className="max-w-7xl mx-auto px-5 sm:px-8 py-14">
         <div className="grid gap-10 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
           <div>

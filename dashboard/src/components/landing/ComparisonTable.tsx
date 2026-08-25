@@ -1,5 +1,6 @@
 'use client';
 
+import { Fragment } from 'react';
 import { Check, X, Minus } from 'lucide-react';
 import { Spotlight } from '@/components/ui/Spotlight';
 
@@ -84,11 +85,11 @@ export function ComparisonTable() {
       <div className="max-w-6xl mx-auto px-5 sm:px-8">
         {/* Section header */}
         <div className="text-center mb-16">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gray-700 bg-gray-800/50 mb-5">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/5 mb-5">
             <Minus size={10} className="text-gray-400" />
             <span className="text-[10px] font-mono font-bold tracking-[0.2em] text-gray-400">HOW WE COMPARE</span>
           </div>
-          <h2 className="text-3xl sm:text-4xl font-display font-extrabold tracking-tight text-white mb-4">
+          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white mb-4">
             Not just another tracker.
           </h2>
           <p className="text-gray-400 text-base max-w-lg mx-auto">
@@ -109,7 +110,7 @@ export function ComparisonTable() {
                 {COMPETITORS.map((c) => (
                   <th
                     key={c.name}
-                    className={`py-4 px-4 text-center ${c.highlight ? 'bg-emerald-500/5' : ''}`}
+                    className={`py-4 px-4 text-center ${c.highlight ? 'bg-gradient-to-b from-emerald-500/8 to-emerald-500/2' : ''}`}
                   >
                     <span className={`text-xs font-bold tracking-wide ${
                       c.highlight ? 'text-emerald-400' : 'text-gray-400'
@@ -143,10 +144,10 @@ export function ComparisonTable() {
                   {FEATURES.filter((f) => f.category === category).map((feature) => (
                     <tr
                       key={feature.name}
-                      className="border-b border-gray-800/50 hover:bg-white/[0.02] transition-colors"
+                      className="border-b border-white/[0.04] hover:bg-white/[0.03] transition-colors"
                     >
                       <td className="py-3 px-4 text-xs text-gray-300">{feature.name}</td>
-                      <td className="py-3 px-4 text-center bg-emerald-500/[0.03]">
+                      <td className="py-3 px-4 text-center bg-emerald-500/[0.04]">
                         <div className="flex justify-center">
                           <CellValue value={feature.magneetar} />
                         </div>
@@ -239,6 +240,3 @@ export function ComparisonTable() {
     </Spotlight>
   );
 }
-
-// Fragment import needed
-import { Fragment } from 'react';

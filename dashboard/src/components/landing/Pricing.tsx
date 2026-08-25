@@ -70,17 +70,17 @@ const TIERS = [
 
 export function Pricing({ authed }: { authed: boolean }) {
   return (
-    <section id="pricing" className="relative py-24 sm:py-32 bg-gray-950 scroll-mt-20 overflow-hidden">
+    <section id="pricing" className="relative py-28 sm:py-36 scroll-mt-20 overflow-hidden bg-gradient-to-b from-gray-950 via-[#060a10] to-gray-950">
       <div className="relative max-w-7xl mx-auto px-5 sm:px-8">
         <div className="max-w-2xl mx-auto text-center mb-14">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gray-700 bg-gray-800/50 mb-5">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-emerald-500/20 bg-emerald-500/5 mb-5">
             <Crown size={12} className="text-emerald-400" />
-            <span className="text-[10px] font-mono font-bold tracking-[0.2em] text-gray-400">PRICING</span>
+            <span className="text-[10px] font-mono font-bold tracking-[0.2em] text-emerald-400/80">PRICING</span>
           </div>
-          <h2 className="text-3xl sm:text-4xl font-display font-extrabold tracking-tight text-white leading-tight">
+          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white leading-tight">
             Protection that scales with
             <br />
-            <span className="text-gray-500">your family &amp; team.</span>
+            <span className="bg-gradient-to-r from-gray-400 to-gray-500 bg-clip-text text-transparent">your family &amp; team.</span>
           </h2>
           <p className="mt-5 text-gray-400 leading-relaxed">
             Every plan includes every feature — theft detection, live tracking, evidence capture, the
@@ -96,30 +96,38 @@ export function Pricing({ authed }: { authed: boolean }) {
             return (
               <div
                 key={tier.name}
-                className={`relative flex flex-col rounded-2xl border p-7 transition-all duration-300 hover:-translate-y-1 ${
+                className={`relative flex flex-col rounded-2xl border p-7 transition-all duration-400 hover:-translate-y-1 ${
                   tier.bestValue
-                    ? 'border-emerald-500/30 bg-emerald-500/5 text-white'
-                    : 'border-white/[0.06] bg-white/[0.02] hover:border-white/[0.10] hover:bg-white/[0.04]'
+                    ? 'border-emerald-500/30 bg-gradient-to-b from-emerald-500/8 to-transparent shadow-glow-sm'
+                    : 'border-white/[0.06] bg-gradient-to-b from-white/[0.04] to-transparent hover:border-white/[0.12]'
                 }`}
               >
                 {tier.bestValue && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-emerald-500 text-[9px] font-mono font-bold tracking-[0.2em] text-white shadow-lg whitespace-nowrap">
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-emerald-500 text-[9px] font-mono font-bold tracking-[0.2em] text-white shadow-glow-md whitespace-nowrap">
                     BEST VALUE
                   </div>
                 )}
 
-                <div className={`w-10 h-10 rounded-lg border flex items-center justify-center mb-5 ${tier.bestValue ? 'border-emerald-500/30 bg-emerald-500/10' : 'border-white/[0.06] bg-white/[0.04]'}`}>
+                <div className={`w-10 h-10 rounded-lg border flex items-center justify-center mb-5 ${
+                  tier.bestValue ? 'border-emerald-500/30 bg-emerald-500/10' : 'border-white/[0.06] bg-white/[0.04]'
+                }`}>
                   <tier.icon size={17} className={tier.bestValue ? 'text-emerald-400' : 'text-gray-400'} />
                 </div>
 
-                <div className={`font-bold text-sm tracking-wide ${tier.bestValue ? 'text-white' : 'text-gray-300'}`}>{tier.name}</div>
+                <div className={`font-bold text-sm tracking-wide ${tier.bestValue ? 'text-white' : 'text-gray-300'}`}>
+                  {tier.name}
+                </div>
                 <div className="mt-3 flex items-baseline gap-1.5">
-                  <span className={`text-3xl font-display font-extrabold tracking-tight ${tier.bestValue ? 'text-white' : 'text-white'}`}>{tier.price}</span>
-                  {tier.price !== 'Custom' && <span className={`text-[10px] font-mono font-semibold ${tier.bestValue ? 'text-emerald-400/60' : 'text-gray-500'}`}>/MO</span>}
+                  <span className="text-3xl font-display font-extrabold tracking-tight text-white">{tier.price}</span>
+                  {tier.price !== 'Custom' && (
+                    <span className={`text-[10px] font-mono font-semibold ${tier.bestValue ? 'text-emerald-400/60' : 'text-gray-500'}`}>/MO</span>
+                  )}
                 </div>
                 <div className={`text-[10px] font-mono mt-1 ${tier.bestValue ? 'text-emerald-400/40' : 'text-gray-500'}`}>{tier.period}</div>
 
-                <div className={`mt-4 inline-flex self-start px-2.5 py-1 rounded-md border text-[10px] font-mono font-bold tracking-wider ${tier.bestValue ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400' : 'border-white/[0.06] bg-white/[0.03] text-gray-400'}`}>
+                <div className={`mt-4 inline-flex self-start px-2.5 py-1 rounded-md border text-[10px] font-mono font-bold tracking-wider ${
+                  tier.bestValue ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400' : 'border-white/[0.06] bg-white/[0.03] text-gray-400'
+                }`}>
                   {tier.devices}
                 </div>
 
@@ -137,7 +145,7 @@ export function Pricing({ authed }: { authed: boolean }) {
                 {cta.href.startsWith('mailto:') ? (
                   <a
                     href={cta.href}
-                    className={`group mt-7 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-200 ${
+                    className={`group mt-7 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-300 ${
                       tier.bestValue
                         ? 'border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10'
                         : 'border border-white/[0.08] text-gray-400 hover:bg-white/[0.04] hover:border-white/[0.15]'
@@ -149,9 +157,9 @@ export function Pricing({ authed }: { authed: boolean }) {
                 ) : (
                   <Link
                     href={cta.href}
-                    className={`group mt-7 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-200 ${
+                    className={`group mt-7 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-300 ${
                       cta.primary || tier.bestValue
-                        ? 'bg-emerald-500 text-white hover:bg-emerald-400 shadow-lg shadow-emerald-500/20'
+                        ? 'bg-emerald-500 text-white hover:bg-emerald-400 shadow-glow-md hover:shadow-glow-lg'
                         : 'border border-white/[0.08] text-gray-400 hover:bg-white/[0.04] hover:border-white/[0.15]'
                     }`}
                   >

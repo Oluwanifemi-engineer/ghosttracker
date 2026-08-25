@@ -31,24 +31,28 @@ const SECURITY_POINTS = [
     icon: Globe,
     title: 'Hardened transport',
     description:
-      'Rate-limited endpoints, request timeouts, CORS hardening in production, and TLS in transit. Account secrets are additionally protected with bcrypt + AES-256-GCM.',
+      'Rate-limited endpoints, request timeouts, CORS hardening in production, and TLS in transit with AES-256-GCM.',
   },
 ];
 
 export function Security() {
   return (
-    <section id="security" className="relative py-24 sm:py-32 bg-gray-950 overflow-hidden scroll-mt-20">
+    <section id="security" className="relative py-28 sm:py-36 overflow-hidden scroll-mt-20"
+      style={{ background: 'linear-gradient(180deg, #030712 0%, #060a10 50%, #030712 100%)' }}>
+      {/* Ambient glow */}
+      <div className="absolute top-1/2 right-0 w-[400px] h-[400px] bg-emerald-500/[0.02] rounded-full blur-[100px] pointer-events-none" />
+
       <div className="relative max-w-7xl mx-auto px-5 sm:px-8 grid lg:grid-cols-2 gap-14 items-center">
         {/* Copy */}
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gray-700 bg-gray-800/50 mb-5">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-emerald-500/20 bg-emerald-500/5 mb-5">
             <Lock size={10} className="text-emerald-400" />
-            <span className="text-[10px] font-mono font-bold tracking-[0.2em] text-gray-400">SECURITY</span>
+            <span className="text-[10px] font-mono font-bold tracking-[0.2em] text-emerald-400/80">SECURITY</span>
           </div>
-          <h2 className="text-3xl sm:text-4xl font-display font-extrabold tracking-tight text-white leading-tight">
+          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white leading-tight">
             Built like it protects
             <br />
-            <span className="text-gray-500">something precious.</span>
+            <span className="bg-gradient-to-r from-gray-400 to-gray-500 bg-clip-text text-transparent">something precious.</span>
           </h2>
           <p className="mt-5 text-gray-400 leading-relaxed max-w-lg">
             Because it does. Magneetar treats every device as a vault — with per-device secrets,
@@ -70,12 +74,12 @@ export function Security() {
           </div>
         </div>
 
-        {/* Shield visual — dark theme */}
+        {/* Shield visual */}
         <div className="relative flex items-center justify-center py-10">
           <div className="relative w-72 h-72 sm:w-80 sm:h-80">
             {/* Rotating rings */}
-            <div className="absolute inset-0 rounded-full border border-white/[0.06] animate-slow-spin">
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-emerald-400" />
+            <div className="absolute inset-0 rounded-full border border-emerald-500/10 animate-slow-spin">
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-glow-sm" />
             </div>
             <div
               className="absolute inset-6 rounded-full border border-dashed border-white/[0.06] animate-slow-spin"
@@ -85,7 +89,7 @@ export function Security() {
             </div>
 
             {/* Core shield */}
-            <div className="absolute inset-16 rounded-full bg-white/[0.03] border border-white/[0.06] flex items-center justify-center">
+            <div className="absolute inset-16 rounded-full bg-gradient-to-b from-emerald-500/[0.06] to-transparent border border-emerald-500/10 flex items-center justify-center">
               <svg viewBox="0 0 24 24" className="w-16 h-16 text-emerald-400/70" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                 <path d="M9 12l2 2 4-4" />
@@ -93,10 +97,10 @@ export function Security() {
             </div>
 
             {/* Status chips */}
-            <div className="absolute -top-2 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-full border border-white/[0.08] bg-[#0f172a] text-[10px] font-mono font-bold text-white/70 shadow-lg">
+            <div className="absolute -top-2 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-full border border-emerald-500/20 bg-[#0c1220] text-[10px] font-mono font-bold text-emerald-400/80 shadow-elevation-2">
               TOTP 2FA
             </div>
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-full border border-white/[0.08] bg-[#0f172a] text-[10px] font-mono font-bold text-white/50 shadow-lg">
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-full border border-white/10 bg-[#0c1220] text-[10px] font-mono font-bold text-white/50 shadow-elevation-2">
               SHA-256 CHAIN
             </div>
           </div>

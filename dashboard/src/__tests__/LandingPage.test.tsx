@@ -68,9 +68,9 @@ describe('Landing Page', () => {
     expect(screen.getByText('Forensic Reports')).toBeInTheDocument();
 
     // How it works
-    expect(screen.getByText('Install & connect in minutes')).toBeInTheDocument();
-    expect(screen.getByText('Stay in sync, always')).toBeInTheDocument();
-    expect(screen.getByText('Theft detected — recover it')).toBeInTheDocument();
+    expect(screen.getByText('Install & connect')).toBeInTheDocument();
+    expect(screen.getByText('Stay in sync')).toBeInTheDocument();
+    expect(screen.getByText('Recover it')).toBeInTheDocument();
 
     // Built for Africa (NBS-sourced stats)
     expect(screen.getByText('THE PROBLEM')).toBeInTheDocument();
