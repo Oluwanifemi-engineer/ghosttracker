@@ -15,13 +15,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Trivy
-        uses: aquasecurity/trivy-action@v1
-        with:
-          version: 'latest'
-
       - name: Scan repository for vulnerabilities (filesystem)
-        uses: aquasecurity/trivy-action@v1
+        uses: aquasecurity/trivy-action@master
         with:
           scan-type: 'fs'
           format: 'table'
@@ -35,18 +30,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Trivy
-        uses: aquasecurity/trivy-action@v1
+      - name: Scan server Dockerfile
+        if: hashFiles('server/Dockerfile') != ''
+        uses: aquasecurity/trivy-action@master
         with:
-          version: 'latest'
+          scan-type: 'config'
+          scan-ref: 'server/Dockerfile'
+          format: 'table'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '0'
 
-      - name: Scan Dockerfile(s)
-        run: |
-          set -e
-          # Scan server Dockerfile if present
-          if [ -f server/Dockerfile ]; then
-            trivy config --severity CRITICAL,HIGH server/Dockerfile || true
-          fi
-          if [ -f dashboard/Dockerfile ]; then
-            trivy config --severity CRITICAL,HIGH dashboard/Dockerfile || true
-          fi
+      - name: Scan dashboard Dockerfile
+        if: hashFiles('dashboard/Dockerfile') != ''
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'config'
+          scan-ref: 'dashboard/Dockerfile'
+          format: 'table'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '0'

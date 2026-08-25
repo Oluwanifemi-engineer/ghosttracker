@@ -10,6 +10,7 @@ jobs:
   deploy:
     name: Deploy (Docker Compose)
     runs-on: ubuntu-latest
+    if: secrets.PRODUCTION_HOST != ''
     steps:
       - uses: actions/checkout@v4
 
