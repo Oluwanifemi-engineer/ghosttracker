@@ -3,13 +3,11 @@
 import { useEffect, useState } from 'react';
 import { LandingNav } from '@/components/landing/LandingNav';
 import { Hero } from '@/components/landing/Hero';
-import { VideoDemo } from '@/components/landing/VideoDemo';
+import { ProductShowcase } from '@/components/landing/ProductShowcase';
 import { ComparisonTable } from '@/components/landing/ComparisonTable';
-import { Testimonials } from '@/components/landing/Testimonials';
+import { SocialProof } from '@/components/landing/SocialProof';
 import { Features } from '@/components/landing/Features';
-import { HowItWorks } from '@/components/landing/HowItWorks';
 import { Africa } from '@/components/landing/Africa';
-import { Provenance } from '@/components/landing/Provenance';
 import { Security } from '@/components/landing/Security';
 import { Pricing } from '@/components/landing/Pricing';
 import { CTA } from '@/components/landing/CTA';
@@ -29,15 +27,28 @@ export default function HomePage() {
     <div className="min-h-screen bg-gray-950 text-white overflow-x-hidden">
       <LandingNav authed={authed} />
       <main>
+        {/* 1. Hero — what it is */}
         <Hero authed={authed} />
-        <VideoDemo />
+
+        {/* 2. Product screenshots — what it looks like (honest, not mockups) */}
+        <Reveal><ProductShowcase /></Reveal>
+
+        {/* 3. Comparison — why it's better than alternatives */}
         <Reveal><ComparisonTable /></Reveal>
-        <Reveal><Testimonials /></Reveal>
+
+        {/* 4. Social proof — verifiable claims, not fictional testimonials */}
+        <Reveal><SocialProof /></Reveal>
+
+        {/* 5. Features — the 12 capabilities */}
         <Reveal><Features /></Reveal>
-        <Reveal><HowItWorks /></Reveal>
+
+        {/* 6. Built for Africa — the problem + our approach */}
         <Reveal><Africa /></Reveal>
-        <Reveal><Provenance /></Reveal>
+
+        {/* 7. Security — how it's protected */}
         <Reveal><Security /></Reveal>
+
+        {/* 8. Pricing → CTA → Footer */}
         <Reveal><Pricing authed={authed} /></Reveal>
         <Reveal><CTA authed={authed} /></Reveal>
       </main>
