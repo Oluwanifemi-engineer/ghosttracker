@@ -167,12 +167,17 @@ function MobilePeekContent() {
 }
 
 export default function DashboardPage() {
-  const { activeTab, setActiveTab, devices, selectedDeviceId, _hasHydrated, setSidebarOpen } = useStore();
+  const { activeTab, setActiveTab, devices, selectedDeviceId, _hasHydrated, setSidebarOpen, sidebarOpen } = useStore();
   const [rightPanelOpen, setRightPanelOpen] = useState(false);
   const [mobileSheetState, setMobileSheetState] = useState<'peek' | 'half' | 'full' | 'hidden'>('hidden');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [desktopMenuOpen, setDesktopMenuOpen] = useState(false);
   const isMobile = useIsMobile();
+
+  // Close the floating command menu when the sidebar opens (avoids overlap)
+  useEffect(() => {
+    if (sidebarOpen && desktopMenuOpen) setDesktopMenuOpen(false);
+  }, [sidebarOpen]);
 
   const selectedDevice = devices.find(d => d.id === selectedDeviceId);
   const accessRole: 'owner' | 'admin' | 'viewer' | 'device_only' = selectedDevice?.access_role ?? 'owner';
@@ -284,25 +289,33 @@ export default function DashboardPage() {
         <MapView />
       </div>
 
-      {/* ═══ Floating menu — top-left ═══ */}
-      <button
-        onClick={() => setDesktopMenuOpen(!desktopMenuOpen)}
-        className="hidden md:flex fixed top-4 left-4 z-[1500] h-10 px-3 items-center gap-2 rounded-xl bg-[#111118]/80 backdrop-blur-xl border border-white/[0.08] shadow-lg hover:bg-[#1a1a24] hover:border-white/[0.12] transition-all group"
-        aria-label="Open menu"
-      >
-        {desktopMenuOpen ? (
-          <X size={14} className="text-white/50" />
-        ) : (
-          <>
-            <Menu size={14} className="text-white/50" />
-            <span className="text-[10px] font-mono font-bold text-white/40">Menu</span>
-          </>
-        )}
-      </button>
+      {/* ═══ Floating menu — positioned next to sidebar ═══ */}
+      {/* Only show when sidebar is collapsed; when open, sidebar has its own nav */}
+      {!sidebarOpen && (
+        <button
+          onClick={() => setDesktopMenuOpen(!desktopMenuOpen)}
+          className="hidden md:flex fixed top-4 left-[52px] z-[1500] h-10 px-3 items-center gap-2 rounded-xl bg-[#111118]/80 backdrop-blur-xl border border-white/[0.08] shadow-lg hover:bg-[#1a1a24] hover:border-white/[0.12] transition-all group"
+          aria-label="Open menu"
+        >
+          {desktopMenuOpen ? (
+            <X size={14} className="text-white/50" />
+          ) : (
+            <>
+              <Menu size={14} className="text-white/50" />
+              <span className="text-[10px] font-mono font-bold text-white/40">Menu</span>
+            </>
+          )}
+        </button>
+      )}
+
+      {/* Close floating menu when sidebar opens */}
+      {sidebarOpen && desktopMenuOpen && (
+        <>{/* menu closed by sidebar opening */}</>
+      )}
 
       {/* ═══ Desktop feature dropdown ═══ */}
       {desktopMenuOpen && (
-        <div className="hidden md:block fixed top-16 left-4 z-[1600] w-56 bg-[#111118]/95 backdrop-blur-xl border border-white/[0.08] rounded-2xl shadow-2xl p-3 animate-fade-in">
+        <div className="hidden md:block fixed top-16 left-[52px] z-[1600] w-56 bg-[#111118]/95 backdrop-blur-xl border border-white/[0.08] rounded-2xl shadow-2xl p-3 animate-fade-in">
           <div className="text-[8px] font-mono text-white/25 uppercase tracking-widest mb-2 px-1">Command Center</div>
           <div className="space-y-1">
             {PANEL_TABS.map(tab => {
