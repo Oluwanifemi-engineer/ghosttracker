@@ -30,15 +30,10 @@ export default function SignupPage() {
 
   useEffect(() => { setMounted(true); }, []);
 
-  // Mount-once prefill: adding serverUrl to the deps would re-fill the field
-  // whenever the user clears it to type a custom URL (fighting the input).
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!serverUrl) setServerUrl('https://api.magneetar.me');
   }, []);
 
-  // Write spotlight position straight to CSS custom properties so the glow
-  // follows the cursor without re-rendering the page on every mousemove.
   const handleCardMove = (e: MouseEvent<HTMLDivElement>) => {
     const el = cardRef.current;
     if (!el) return;
@@ -101,43 +96,40 @@ export default function SignupPage() {
   };
 
   const inputClass =
-    'w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 text-sm ' +
-    'placeholder:text-gray-400 focus:outline-none focus:border-gray-900 focus:bg-gray-50 ' +
-    'focus:ring-1 focus:ring-gray-900/10 transition-all duration-200';
+    'w-full pl-10 pr-4 py-3 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white text-sm ' +
+    'placeholder:text-white/25 focus:outline-none focus:border-emerald-500/50 focus:bg-white/[0.06] ' +
+    'focus:ring-1 focus:ring-emerald-500/20 transition-all duration-200';
 
   return (
-    <div className="min-h-screen bg-white text-gray-900 relative overflow-hidden">
+    <div className="min-h-screen bg-[#0a0a0f] text-white relative overflow-hidden">
       {/* Ambient background */}
       <div className="absolute inset-0 landing-vignette pointer-events-none" />
-      <div className="absolute inset-0 landing-grid opacity-40 pointer-events-none" />
-      <div className="absolute -top-40 left-1/3 w-[600px] h-[400px] rounded-full bg-gray-100 blur-[130px] animate-aurora pointer-events-none" aria-hidden="true" />
-      <div className="absolute top-1/3 -right-32 w-[480px] h-[480px] rounded-full bg-gray-100 blur-[120px] animate-aurora pointer-events-none" style={{ animationDelay: '-6s' }} aria-hidden="true" />
-      <div className="absolute -bottom-40 -left-24 w-[520px] h-[380px] rounded-full bg-gray-100 blur-[130px] animate-aurora pointer-events-none" style={{ animationDelay: '-11s' }} aria-hidden="true" />
+      <div className="absolute inset-0 landing-grid opacity-20 pointer-events-none" />
+      <div className="absolute -top-40 left-1/3 w-[600px] h-[400px] rounded-full bg-emerald-500/[0.04] blur-[130px] animate-aurora pointer-events-none" aria-hidden="true" />
+      <div className="absolute top-1/3 -right-32 w-[480px] h-[480px] rounded-full bg-teal-500/[0.03] blur-[120px] animate-aurora pointer-events-none" style={{ animationDelay: '-6s' }} aria-hidden="true" />
+      <div className="absolute -bottom-40 -left-24 w-[520px] h-[380px] rounded-full bg-cyan-500/[0.03] blur-[130px] animate-aurora pointer-events-none" style={{ animationDelay: '-11s' }} aria-hidden="true" />
 
       {/* ─── Split Layout ─────────────────────────────────────────────────── */}
       <div className="relative min-h-screen grid lg:grid-cols-2">
         {/* ─── Left — Brand Showcase ─────────────────────────────────────── */}
-        <div className="hidden lg:flex flex-col justify-between p-12 xl:p-16 border-r border-gray-200 bg-gray-50  relative overflow-hidden">
-          {/* Perspective grid floor */}
+        <div className="hidden lg:flex flex-col justify-between p-12 xl:p-16 border-r border-white/[0.06] bg-[#060609] relative overflow-hidden">
           <div className="grid-floor" aria-hidden="true" />
 
           <div className="relative">
-            {/* Brand */}
             <Link href="/" className="inline-flex items-center gap-2.5 group">
               <img src="/magneetar-mhalf.svg" alt="Magneetar" className="w-9 h-9 rounded-lg" />
               <div className="leading-none">
-                <div className="text-gray-900 text-[15px] font-bold tracking-[0.25em]">MAGNEETAR</div>
-                <div className="text-[8px] font-mono text-gray-900/30 tracking-[0.3em] mt-1">COMMAND CENTER</div>
+                <div className="text-white text-[15px] font-bold tracking-[0.25em]">MAGNEETAR</div>
+                <div className="text-[8px] font-mono text-white/25 tracking-[0.3em] mt-1">COMMAND CENTER</div>
               </div>
             </Link>
 
-            {/* Headline */}
             <h1 className="mt-14 text-4xl xl:text-[42px] font-display font-extrabold tracking-tight leading-[1.12] animate-fade-slide" style={{ animationDelay: '0.05s' }}>
               One account.
               <br />
-              <span className="text-gray-400">Every device protected.</span>
+              <span className="text-white/30">Every device protected.</span>
             </h1>
-            <p className="mt-5 text-gray-500 leading-relaxed max-w-md text-[15px] animate-fade-slide" style={{ animationDelay: '0.1s' }}>
+            <p className="mt-5 text-white/35 leading-relaxed max-w-md text-[15px] animate-fade-slide" style={{ animationDelay: '0.1s' }}>
               Register your email, then link every smart device you own to a single command center.
             </p>
           </div>
@@ -146,37 +138,36 @@ export default function SignupPage() {
           <div className="relative my-10 space-y-4 animate-fade-slide" style={{ animationDelay: '0.15s' }}>
             {PERKS.map((perk) => (
               <div key={perk} className="flex items-start gap-3.5">
-                <div className="w-6 h-6 rounded-full border border-emerald-200/25 bg-emerald-500/10 flex items-center justify-center shrink-0 mt-0.5">
-                  <Check size={12} className="text-emerald-600" />
+                <div className="w-6 h-6 rounded-full border border-emerald-500/20 bg-emerald-500/10 flex items-center justify-center shrink-0 mt-0.5">
+                  <Check size={12} className="text-emerald-400" />
                 </div>
-                <span className="text-gray-900/55 text-[13.5px] leading-relaxed">{perk}</span>
+                <span className="text-white/45 text-[13.5px] leading-relaxed">{perk}</span>
               </div>
             ))}
           </div>
 
-          {/* Live stat strip */}
+          {/* Stats strip */}
           <div className="relative grid grid-cols-3 gap-3 max-w-md animate-fade-slide" style={{ animationDelay: '0.2s' }}>
             {[
               { value: 'FREE', label: 'to start' },
               { value: '24/7', label: 'stealth tracking' },
               { value: '∞', label: 'devices per email' },
             ].map((stat) => (
-              <div key={stat.label} className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
-                <div className="text-gray-900 text-sm font-bold font-mono tabular-nums">{stat.value}</div>
-                <div className="text-[9px] font-mono text-gray-900/35 uppercase tracking-wider mt-0.5 font-semibold">
+              <div key={stat.label} className="rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-3">
+                <div className="text-white text-sm font-bold font-mono tabular-nums">{stat.value}</div>
+                <div className="text-[9px] font-mono text-white/30 uppercase tracking-wider mt-0.5 font-semibold">
                   {stat.label}
                 </div>
               </div>
             ))}
           </div>
 
-          {/* Footer strip */}
           <div className="mt-10 flex items-center gap-3 animate-fade-slide" style={{ animationDelay: '0.25s' }}>
             <span className="relative flex w-2 h-2">
               <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-60 animate-ping" />
               <span className="relative inline-flex rounded-full w-2 h-2 bg-emerald-500" />
             </span>
-            <span className="text-[11px] font-mono font-bold tracking-wider text-gray-400">
+            <span className="text-[11px] font-mono font-bold tracking-wider text-white/35">
               FREE TO START · NO CARD REQUIRED
             </span>
           </div>
@@ -189,39 +180,42 @@ export default function SignupPage() {
             <Link href="/" className="lg:hidden inline-flex items-center gap-2.5 mb-10">
               <img src="/magneetar-mhalf.svg" alt="Magneetar" className="w-9 h-9 rounded-lg" />
               <div className="leading-none">
-                <div className="text-gray-900 text-[15px] font-bold tracking-[0.25em]">MAGNEETAR</div>
-                <div className="text-[8px] font-mono text-gray-900/30 tracking-[0.3em] mt-1">COMMAND CENTER</div>
+                <div className="text-white text-[15px] font-bold tracking-[0.25em]">MAGNEETAR</div>
+                <div className="text-[8px] font-mono text-white/25 tracking-[0.3em] mt-1">COMMAND CENTER</div>
               </div>
             </Link>
 
             {/* Heading */}
             <div className="mb-8">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gray-200 bg-gray-50 mb-4">
-                <ShieldCheck size={11} className="text-gray-900" />
-                <span className="text-[10px] font-mono font-bold tracking-[0.2em] text-gray-500">FREE · NO CARD REQUIRED</span>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/[0.08] bg-white/[0.03] mb-4">
+                <span className="relative flex w-1.5 h-1.5">
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-60 animate-ping" />
+                  <span className="relative inline-flex rounded-full w-1.5 h-1.5 bg-emerald-500" />
+                </span>
+                <span className="text-[10px] font-mono font-bold tracking-[0.2em] text-white/40">FREE · NO CARD REQUIRED</span>
               </div>
-              <h2 className="text-2xl font-display font-extrabold tracking-tight text-gray-900">Create your account</h2>
-              <p className="mt-2 text-gray-400 text-sm">
+              <h2 className="text-2xl font-display font-extrabold tracking-tight text-white/90">Create your account</h2>
+              <p className="mt-2 text-white/35 text-sm">
                 Free forever for individuals. Set up in under a minute.
               </p>
             </div>
 
-            {/* Spotlight glass card */}
+            {/* Glass card */}
             <div
               ref={cardRef}
               onMouseMove={handleCardMove}
-              className="spotlight-card relative rounded-2xl border border-gray-200 bg-white  p-7 sm:p-8 shadow-2xl shadow-black/50"
+              className="spotlight-card relative rounded-2xl border border-white/[0.08] bg-[#0e0e14]/80 backdrop-blur-xl p-7 sm:p-8 shadow-2xl shadow-black/50"
             >
               <div className="relative z-10">
                 <form onSubmit={handleSignup} noValidate>
                   <div className="space-y-4">
                     {/* Server URL */}
                     <div className="space-y-1.5">
-                      <label htmlFor="signup-server-url" className="text-[10px] font-mono text-gray-400 uppercase tracking-[0.2em] font-bold">
+                      <label htmlFor="signup-server-url" className="text-[10px] font-mono text-white/30 uppercase tracking-[0.2em] font-bold">
                         Server URL
                       </label>
                       <div className="relative">
-                        <Globe size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-900/20 pointer-events-none" />
+                        <Globe size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/15 pointer-events-none" />
                         <input
                           id="signup-server-url"
                           name="serverUrl"
@@ -238,11 +232,11 @@ export default function SignupPage() {
 
                     {/* Display name */}
                     <div className="space-y-1.5">
-                      <label htmlFor="signup-name" className="text-[10px] font-mono text-gray-400 uppercase tracking-[0.2em] font-bold">
-                        Display Name <span className="text-gray-900/20 normal-case">(optional)</span>
+                      <label htmlFor="signup-name" className="text-[10px] font-mono text-white/30 uppercase tracking-[0.2em] font-bold">
+                        Display Name <span className="text-white/15 normal-case">(optional)</span>
                       </label>
                       <div className="relative">
-                        <User size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-900/20 pointer-events-none" />
+                        <User size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/15 pointer-events-none" />
                         <input
                           id="signup-name"
                           name="displayName"
@@ -258,11 +252,11 @@ export default function SignupPage() {
 
                     {/* Email */}
                     <div className="space-y-1.5">
-                      <label htmlFor="signup-email" className="text-[10px] font-mono text-gray-400 uppercase tracking-[0.2em] font-bold">
+                      <label htmlFor="signup-email" className="text-[10px] font-mono text-white/30 uppercase tracking-[0.2em] font-bold">
                         Email
                       </label>
                       <div className="relative">
-                        <Mail size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-900/20 pointer-events-none" />
+                        <Mail size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/15 pointer-events-none" />
                         <input
                           id="signup-email"
                           name="email"
@@ -278,11 +272,11 @@ export default function SignupPage() {
 
                     {/* Password */}
                     <div className="space-y-1.5">
-                      <label htmlFor="signup-password" className="text-[10px] font-mono text-gray-400 uppercase tracking-[0.2em] font-bold">
+                      <label htmlFor="signup-password" className="text-[10px] font-mono text-white/30 uppercase tracking-[0.2em] font-bold">
                         Password
                       </label>
                       <div className="relative">
-                        <Lock size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-900/20 pointer-events-none" />
+                        <Lock size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/15 pointer-events-none" />
                         <input
                           id="signup-password"
                           name="password"
@@ -297,7 +291,7 @@ export default function SignupPage() {
                           type="button"
                           onClick={() => setShowPassword((v) => !v)}
                           aria-label={showPassword ? 'Hide password' : 'Show password'}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-900/30 hover:text-gray-700 transition-colors"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-white/20 hover:text-white/50 transition-colors"
                         >
                           {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
                         </button>
@@ -306,11 +300,11 @@ export default function SignupPage() {
 
                     {/* Confirm */}
                     <div className="space-y-1.5">
-                      <label htmlFor="signup-confirm" className="text-[10px] font-mono text-gray-400 uppercase tracking-[0.2em] font-bold">
+                      <label htmlFor="signup-confirm" className="text-[10px] font-mono text-white/30 uppercase tracking-[0.2em] font-bold">
                         Confirm Password
                       </label>
                       <div className="relative">
-                        <Lock size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-900/20 pointer-events-none" />
+                        <Lock size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/15 pointer-events-none" />
                         <input
                           id="signup-confirm"
                           name="confirm"
@@ -328,7 +322,7 @@ export default function SignupPage() {
                     {error && (
                       <div
                         key={error}
-                        className="flex items-center gap-3 text-red-400/90 text-[12px] font-mono bg-red-500/[0.05] border border-red-500/15 rounded-xl px-4 py-3 animate-shake"
+                        className="flex items-center gap-3 text-red-400/90 text-[12px] font-mono bg-red-500/[0.06] border border-red-500/15 rounded-xl px-4 py-3 animate-shake"
                         role="alert"
                       >
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="shrink-0" aria-hidden="true">
@@ -342,7 +336,7 @@ export default function SignupPage() {
                     <button
                       type="submit"
                       disabled={loading}
-                      className="group relative w-full py-3.5 rounded-xl text-[12px] font-bold uppercase tracking-[0.2em] font-mono bg-gradient-to-r bg-gray-900 text-white shadow-lg shadow-gray-900/20 hover:shadow-gray-900/35 hover:brightness-110 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] overflow-hidden"
+                      className="group relative w-full py-3.5 rounded-xl text-[12px] font-bold uppercase tracking-[0.2em] font-mono bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/35 hover:brightness-110 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] overflow-hidden"
                     >
                       <span className="absolute inset-y-0 -left-full w-1/2 bg-white/15 blur-md animate-shimmer" />
                       <span className="relative flex items-center justify-center gap-2.5">
@@ -365,9 +359,9 @@ export default function SignupPage() {
             </div>
 
             {/* Login prompt */}
-            <p className="mt-7 text-center text-[13px] text-gray-400">
+            <p className="mt-7 text-center text-[13px] text-white/30">
               Already have an account?{' '}
-              <Link href="/login" className="text-gray-900 hover:text-gray-900 font-semibold transition-colors">
+              <Link href="/login" className="text-emerald-400 hover:text-emerald-300 font-semibold transition-colors">
                 Sign in
               </Link>
             </p>
@@ -379,7 +373,7 @@ export default function SignupPage() {
                 { icon: ShieldCheck, label: 'RATE-LIMITED' },
                 { icon: Mail, label: 'AUDITED' },
               ].map((item) => (
-                <div key={item.label} className="flex items-center gap-1.5 text-gray-900/25">
+                <div key={item.label} className="flex items-center gap-1.5 text-white/15">
                   <item.icon size={10} />
                   <span className="text-[9px] font-mono font-bold tracking-wider">{item.label}</span>
                 </div>

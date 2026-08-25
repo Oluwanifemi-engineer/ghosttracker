@@ -1,23 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="120dp"
-    android:height="120dp"
-    android:viewportWidth="120"
-    android:viewportHeight="120">
-
-    <!-- Dark squircle background -->
-    <path
-        android:pathData="M12,0 L108,0 Q120,0 120,12 L120,108 Q120,120 108,120 L12,120 Q0,120 0,108 L0,12 Q0,0 12,0 Z"
-        android:fillColor="#0f0f1a"/>
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
 
     <!--
-        Magneetar fused m/M-halves mark (sharp peak, butt linecap)
-        Scaled from 512x512 to 120x120 viewport
-        Path: M 29,90 V 43 C 29,25 68,25 68,43 V 90 L 91,29 V 90
+        Magneetar fused m/M-halves mark — scaled to fit the inner 66dp safe zone.
+        Android adaptive icons use a 108dp canvas, but only the inner 66dp
+        (21dp margin from each edge) is guaranteed visible under all mask shapes.
+        The mark is centered: x from 21 to 87, y from 21 to 87.
     -->
     <path
-        android:pathData="M29,90 L29,43 C29,25 68,25 68,43 L68,90 L91,29 L91,90"
-        android:strokeWidth="12"
+        android:pathData="M30,84 L30,46 C30,30 54,30 54,46 L54,84 L78,24 L78,84"
+        android:strokeWidth="10"
         android:strokeColor="#FFFFFF"
         android:strokeLineCap="butt"
         android:strokeLineJoin="miter"

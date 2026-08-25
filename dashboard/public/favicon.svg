@@ -1,10 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
   <!--
-    Magneetar favicon — fused m/M-halves mark (sharp peak)
-    Scaled from 512x512 to 32x32 viewport
+    Magneetar favicon — fused m/M-halves mark
+    Optimized for 16×16 to 32×32 rendering: thicker stroke, tighter bounds.
   -->
   <rect width="32" height="32" rx="7" fill="#0f0f1a"/>
-  <path d="M 8,24 V 12 C 8,7 18,7 18,12 V 24 L 24,8 V 24"
-        stroke="#FFFFFF" stroke-width="3.2" fill="none"
-        stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="6"/>
+  <path d="M 8,25 V 13 C 8,7 17,7 17,13 V 25 L 23,8 V 25"
+        stroke="#FFFFFF" stroke-width="4" fill="none"
+        stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

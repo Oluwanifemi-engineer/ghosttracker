@@ -287,18 +287,18 @@ export default function DownloadPage() {
 
         {/* ═══ Hero Section ═══ */}
         <header className="mt-12 text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass-panel mb-6">
-            <Smartphone size={12} className="text-gray-900" />
-            <span className="text-[10px] font-mono font-bold tracking-[0.2em] text-gray-600">GET THE APP</span>
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/[0.08] bg-white/[0.03] mb-6">
+            <Smartphone size={12} className="text-white/40" />
+            <span className="text-[10px] font-mono font-bold tracking-[0.2em] text-white/40">GET THE APP</span>
           </div>
 
-          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-display font-extrabold tracking-tight leading-[1.05]">
+          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-display font-extrabold tracking-tight leading-[1.05] text-white">
             Protect your phone
             <br />
-            <span className="text-gray-400">with Magneetar.</span>
+            <span className="text-white/30">with Magneetar.</span>
           </h1>
 
-          <p className="mt-6 text-gray-400 leading-relaxed max-w-2xl mx-auto text-[16px]">
+          <p className="mt-6 text-white/40 leading-relaxed max-w-2xl mx-auto text-[16px]">
             One download. Complete protection. Real-time tracking, remote lock, evidence capture, and theft detection — all in one app.
           </p>
 
@@ -313,15 +313,15 @@ export default function DownloadPage() {
               { label: 'Free plan', value: '1 device' },
             ].map((stat) => (
               <div key={stat.label} className="text-center">
-                <div className="text-xl font-bold text-gray-900">{stat.value}</div>
-                <div className="text-[10px] font-mono text-gray-900/30 uppercase tracking-wider">{stat.label}</div>
+                <div className="text-xl font-bold text-white">{stat.value}</div>
+                <div className="text-[10px] font-mono text-white/30 uppercase tracking-wider">{stat.label}</div>
               </div>
             ))}
           </div>
         </header>
 
         {/* ═══ Download Section ═══ */}
-        <section className="mt-16 premium-card p-8 sm:p-10 relative">
+        <section className="mt-16 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-8 sm:p-10 relative">
           {loading && (
             <div className="space-y-4">
               <div className="flex items-center gap-4">
@@ -343,18 +343,18 @@ export default function DownloadPage() {
             </div>
           )}
           {/* Decorative gradient orb */}
-          <div className="absolute -top-32 -right-32 w-64 h-64 rounded-full bg-gradient-to-br from-[#FFFFFF]/20 to-[#06B6D4]/20 blur-[80px] pointer-events-none" />
+          <div className="absolute -top-32 -right-32 w-64 h-64 rounded-full bg-gradient-to-br from-emerald-500/20 to-teal-500/20 blur-[80px] pointer-events-none" />
 
           <div className="relative">
             <div className="flex items-center gap-4 mb-6">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#FFFFFF]/20 to-[#06B6D4]/20 border border-gray-200 flex items-center justify-center">
-                <ShieldCheck size={28} className="text-[#FFFFFF]" />
+              <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                <ShieldCheck size={28} className="text-emerald-400" />
               </div>
               <div>
-                <h2 className="text-xl sm:text-2xl font-display font-extrabold tracking-tight text-gray-900">
+                <h2 className="text-xl sm:text-2xl font-display font-extrabold tracking-tight text-white">
                   Download Magneetar
                 </h2>
-                <div className="text-[11px] font-mono text-gray-400 uppercase tracking-[0.15em] font-bold mt-0.5">
+                <div className="text-[11px] font-mono text-white/40 uppercase tracking-[0.15em] font-bold mt-0.5">
                   Android 8.0+ • {checksum ? formatBytes(checksum.size_bytes) : '...'} • v{checksum?.version || '...'}
                 </div>
               </div>
@@ -371,10 +371,10 @@ export default function DownloadPage() {
                 { icon: Users, text: 'Guardian Network recovery', color: 'text-gray-900' },
               ].map((f) => (
                 <div key={f.text} className="flex items-center gap-3 text-[13px] text-gray-600 group">
-                  <div className="w-8 h-8 rounded-lg bg-gray-50 border border-gray-100 flex items-center justify-center group-hover:border-[#06B6D4]/30 group-hover:bg-[#06B6D4]/10 transition-all duration-300">
-                    <f.icon size={14} className={f.color} />
+                  <div className="w-8 h-8 rounded-lg bg-white/[0.04] border border-white/[0.06] flex items-center justify-center group-hover:border-emerald-500/20 group-hover:bg-emerald-500/10 transition-all duration-300">
+                    <f.icon size={14} className="text-white/60" />
                   </div>
-                  <span className="group-hover:text-gray-800 transition-colors">{f.text}</span>
+                  <span className="text-white/50 group-hover:text-white/80 transition-colors">{f.text}</span>
                 </div>
               ))}
             </div>
@@ -384,7 +384,7 @@ export default function DownloadPage() {
               href={downloadUrl ?? '#'}
               aria-disabled={minting || !downloadUrl}
               onClick={handleDownload}
-              className={`btn-premium group inline-flex items-center justify-center gap-3 w-full sm:w-auto px-10 py-5 rounded-2xl text-[14px] font-bold uppercase tracking-wider text-gray-900 ${minting ? 'opacity-70 cursor-wait' : ''}`}
+              className={`group inline-flex items-center justify-center gap-3 w-full sm:w-auto px-10 py-5 rounded-2xl text-[14px] font-bold uppercase tracking-wider bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 hover:bg-emerald-400 hover:shadow-emerald-500/30 transition-all duration-200 ${minting ? 'opacity-70 cursor-wait' : ''}`}
             >
               <Download size={18} className={`transition-transform group-hover:translate-y-0.5 ${minting ? 'animate-bounce' : ''}`} />
               {minting ? 'Preparing download…' : 'Download Magneetar'}
@@ -398,21 +398,21 @@ export default function DownloadPage() {
             )}
 
             {/* Trust signals — every one verifiable on this page */}
-            <div className="mt-6 flex flex-wrap items-center gap-6 text-[11px] text-gray-900/30">
+            <div className="mt-6 flex flex-wrap items-center gap-6 text-[11px] text-white/30">
               {[
                 { icon: ShieldCheck, text: 'SHA-256 verified' },
                 { icon: Check, text: 'No ads, no tracking' },
                 { icon: Zap, text: 'Source released per version' },
               ].map((item) => (
                 <div key={item.text} className="flex items-center gap-2">
-                  <item.icon size={12} className="text-[#22C55E]/60" />
+                  <item.icon size={12} className="text-emerald-400/60" />
                   <span>{item.text}</span>
                 </div>
               ))}
             </div>
-            <p className="mt-4 text-[11px] text-gray-900/25">
+            <p className="mt-4 text-[11px] text-white/25">
               The source of this exact release is downloadable below —{' '}
-              <a href={SOURCE_TARBALL_URL} target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-500">
+              <a href={SOURCE_TARBALL_URL} target="_blank" rel="noopener noreferrer"                className="underline hover:text-white/60">
                 magneetar-v{checksum?.version || ''}-source.tar.gz
               </a>{' '}
               (SHA-256 verified in the Verify section).
@@ -422,7 +422,7 @@ export default function DownloadPage() {
         </section>
 
         {/* ═══ Premium Divider ═══ */}
-        <div className="divider-premium my-16" />
+        <div className="my-16 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
         {/* ═══ Install Steps ═══ */}
         <Reveal>
@@ -453,14 +453,14 @@ export default function DownloadPage() {
 
           <div className="grid sm:grid-cols-2 gap-4">
             {INSTALL_STEPS.map((step, i) => (
-              <div key={step.title} className="premium-card p-6 group cursor-default">
+              <div key={step.title} className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-6 group cursor-default">
                 <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 shrink-0 rounded-xl bg-gradient-to-br from-[#FFFFFF]/20 to-[#06B6D4]/20 border border-white/[0.08] flex items-center justify-center group-hover:border-[#FFFFFF]/30 transition-all duration-300">
-                    <step.icon size={18} className="text-gray-600 group-hover:text-gray-800 transition-colors" />
+                  <div className="w-10 h-10 shrink-0 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center group-hover:border-emerald-500/30 transition-all duration-300">
+                    <step.icon size={18} className="text-emerald-400/70 group-hover:text-emerald-400 transition-colors" />
                   </div>
                   <div>
-                    <h3 className="text-gray-900 font-bold text-[14px] tracking-tight">{step.title}</h3>
-                    <p className="mt-1.5 text-[13px] leading-relaxed text-gray-400">{step.body}</p>
+                    <h3 className="text-white font-bold text-[14px] tracking-tight">{step.title}</h3>
+                    <p className="mt-1.5 text-[13px] leading-relaxed text-white/40">{step.body}</p>
                   </div>
                 </div>
               </div>
@@ -471,26 +471,26 @@ export default function DownloadPage() {
         {/* ═══ OEM Battery Notes ═══ */}
         <Reveal delay={100} className="mt-20">
           <div className="text-center mb-10">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass-panel mb-4">
-              <BatteryCharging size={14} className="text-gray-900" />
-              <span className="text-[10px] font-mono font-bold tracking-[0.2em] text-gray-500">OPTIMIZE</span>
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/[0.08] bg-white/[0.03] mb-4">
+              <BatteryCharging size={14} className="text-white/40" />
+              <span className="text-[10px] font-mono font-bold tracking-[0.2em] text-white/40">OPTIMIZE</span>
             </div>
-            <h2 className="text-3xl sm:text-4xl font-display font-extrabold tracking-tight">
-              Keep protection <span className="text-gray-400">alive</span>
+            <h2 className="text-3xl sm:text-4xl font-display font-extrabold tracking-tight text-white">
+              Keep protection <span className="text-white/30">alive</span>
             </h2>
-            <p className="mt-3 text-gray-400 text-[15px] max-w-xl mx-auto">
+            <p className="mt-3 text-white/40 text-[15px] max-w-xl mx-auto">
               Some phone brands need extra settings to keep background apps running
             </p>
           </div>
 
           <div className="grid sm:grid-cols-2 gap-4">
             {OEM_NOTES.map((oem) => (
-              <div key={oem.brand} className="premium-card p-6">
-                <div className="text-gray-900 font-bold text-[15px] mb-3">{oem.brand}</div>
+              <div key={oem.brand} className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-6">
+                <div className="text-white font-bold text-[15px] mb-3">{oem.brand}</div>
                 <ul className="space-y-2.5">
                   {oem.steps.map((s) => (
                     <li key={s} className="flex gap-3 text-[13px] leading-relaxed text-gray-400">
-                      <ChevronRight size={14} className="text-gray-900 mt-0.5 shrink-0" />
+                      <ChevronRight size={14} className="text-white/40 mt-0.5 shrink-0" />
                       <span>{s}</span>
                     </li>
                   ))}
@@ -503,28 +503,28 @@ export default function DownloadPage() {
         {/* ═══ Install FAQ ═══ */}
         <Reveal delay={350} className="mt-20">
           <div className="text-center mb-10">
-            <h2 className="text-3xl sm:text-4xl font-display font-extrabold tracking-tight">
-              Having trouble <span className="text-gray-400">installing?</span>
+            <h2 className="text-3xl sm:text-4xl font-display font-extrabold tracking-tight text-white">
+              Having trouble <span className="text-white/30">installing?</span>
             </h2>
-            <p className="mt-3 text-gray-400 text-[15px]">Quick answers for the common hiccups</p>
+            <p className="mt-3 text-white/40 text-[15px]">Quick answers for the common hiccups</p>
           </div>
 
           <div className="max-w-3xl mx-auto space-y-3">
             {INSTALL_FAQ.map((item) => (
               <details
                 key={item.q}
-                className="group premium-card p-5 open:border-[#06B6D4]/25 open:bg-[#06B6D4]/[0.03] transition-all duration-300"
+                className="group rounded-2xl border border-white/[0.08] bg-white/[0.03] p-5 open:border-emerald-500/25 open:bg-emerald-500/[0.03] transition-all duration-300"
               >
                 <summary className="flex items-center justify-between gap-4 cursor-pointer select-none list-none">
-                  <span className="text-[14px] font-bold text-gray-800 group-hover:text-gray-900 transition-colors">
+                  <span className="text-[14px] font-bold text-white/80 group-hover:text-white transition-colors">
                     {item.q}
                   </span>
                   <ChevronDown
                     size={16}
-                    className="text-gray-900/30 shrink-0 transition-transform duration-300 group-open:rotate-180 group-open:text-gray-900"
+                    className="text-white/30 shrink-0 transition-transform duration-300 group-open:rotate-180 group-open:text-white"
                   />
                 </summary>
-                <p className="mt-3 text-[13px] leading-relaxed text-gray-400">
+                <p className="mt-3 text-[13px] leading-relaxed text-white/40">
                   {item.a}
                 </p>
               </details>
@@ -535,8 +535,8 @@ export default function DownloadPage() {
         {/* ═══ Features Section ═══ */}
         <Reveal delay={200} className="mt-20">
           <div className="text-center mb-10">
-            <h2 className="text-3xl sm:text-4xl font-display font-extrabold tracking-tight">
-              What Magneetar <span className="text-gray-400">gives you</span>
+            <h2 className="text-3xl sm:text-4xl font-display font-extrabold tracking-tight text-white">
+              What Magneetar <span className="text-white/30">gives you</span>
             </h2>
           </div>
 
@@ -546,12 +546,12 @@ export default function DownloadPage() {
               { icon: Camera, title: 'Evidence capture', body: 'Remote photo and audio capture with chain of custody for law enforcement.', color: '#FFFFFF' },
               { icon: ShieldCheck, title: 'Theft detection', body: 'AI-powered detection of movement, SIM swaps, and suspicious activity.', color: '#22C55E' },
             ].map((card) => (
-              <div key={card.title} className="premium-card p-7 group cursor-default">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-white/[0.05] to-white/[0.02] border border-white/[0.08] flex items-center justify-center mb-4 group-hover:border-white/[0.15] transition-all duration-300">
-                  <card.icon size={22} style={{ color: card.color }} />
+              <div key={card.title} className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-7 group cursor-default">
+                <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mb-4 group-hover:border-emerald-500/30 transition-all duration-300">
+                  <card.icon size={22} className="text-emerald-400/70" />
                 </div>
-                <div className="text-gray-900 font-bold text-[15px] mb-2">{card.title}</div>
-                <div className="text-[13px] leading-relaxed text-gray-400">{card.body}</div>
+                <div className="text-white font-bold text-[15px] mb-2">{card.title}</div>
+                <div className="text-[13px] leading-relaxed text-white/40">{card.body}</div>
               </div>
             ))}
           </div>
@@ -559,39 +559,39 @@ export default function DownloadPage() {
 
         {/* ═══ Verify Section ═══ */}
         <Reveal delay={300} className="mt-20 space-y-4">
-          <div className="glass-panel rounded-2xl p-6">
+          <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-6">
             <div className="flex items-center justify-between gap-4 flex-wrap">
               <div>
-                <div className="text-[10px] font-mono text-gray-900/30 tracking-widest font-bold mb-2">SHA-256 CHECKSUM — APK</div>
+                <div className="text-[10px] font-mono text-white/30 tracking-widest font-bold mb-2">SHA-256 CHECKSUM — APK</div>
                 {checksum ? (
-                  <code className="text-[13px] font-mono text-[#22D3EE]/70 break-all">{checksum.sha256}</code>
+                  <code className="text-[13px] font-mono text-emerald-400/70 break-all">{checksum.sha256}</code>
                 ) : (
-                  <span className="text-[13px] font-mono text-gray-900/20">Loading...</span>
+                  <span className="text-[13px] font-mono text-white/20">Loading...</span>
                 )}
               </div>
               <button
                 onClick={copyChecksum}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl glass-panel text-[12px] font-mono font-bold text-gray-500 hover:text-gray-900 transition-all duration-300"
+                className="flex items-center gap-2 px-4 py-2 rounded-xl border border-white/[0.08] bg-white/[0.03] text-[12px] font-mono font-bold text-white/40 hover:text-white transition-all duration-300"
               >
-                {copied ? <Check size={14} className="text-[#22C55E]" /> : <Copy size={14} />}
+                {copied ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
                 {copied ? 'Copied' : 'Copy'}
               </button>
             </div>
           </div>
 
-          <div className="glass-panel rounded-2xl p-6">
+          <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-6">
             <div className="flex items-start justify-between gap-4 flex-wrap">
               <div className="min-w-0">
-                <div className="text-[10px] font-mono text-gray-900/30 tracking-widest font-bold mb-2">SOURCE TARBALL — SHA-256 (open source, per release)</div>
+                <div className="text-[10px] font-mono text-white/30 tracking-widest font-bold mb-2">SOURCE TARBALL — SHA-256 (open source, per release)</div>
                 {sourceChecksum ? (
-                  <code className="text-[13px] font-mono text-[#22D3EE]/70 break-all">{sourceChecksum.sha256}</code>
+                  <code className="text-[13px] font-mono text-emerald-400/70 break-all">{sourceChecksum.sha256}</code>
                 ) : (
-                  <span className="text-[13px] font-mono text-gray-900/20">Loading...</span>
+                  <span className="text-[13px] font-mono text-white/20">Loading...</span>
                 )}
               </div>
               <button
                 onClick={copySourceChecksum}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl glass-panel text-[12px] font-mono font-bold text-gray-500 hover:text-gray-900 transition-all duration-300 shrink-0"
+                className="flex items-center gap-2 px-4 py-2 rounded-xl border border-white/[0.08] bg-white/[0.03] text-[12px] font-mono font-bold text-white/40 hover:text-white transition-all duration-300 shrink-0"
               >
                 {sourceCopied ? <Check size={14} className="text-[#22C55E]" /> : <Copy size={14} />}
                 {sourceCopied ? 'Copied' : 'Copy'}
@@ -600,13 +600,13 @@ export default function DownloadPage() {
                 href={SOURCE_TARBALL_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 px-4 py-2 rounded-xl glass-panel text-[12px] font-mono font-bold text-gray-500 hover:text-gray-900 transition-all duration-300 shrink-0"
+                className="flex items-center gap-2 px-4 py-2 rounded-xl border border-white/[0.08] bg-white/[0.03] text-[12px] font-mono font-bold text-white/40 hover:text-white transition-all duration-300 shrink-0"
               >
                 <Download size={14} />
                 Source (.tar.gz)
               </a>
             </div>
-            <p className="mt-3 text-[11px] text-gray-900/25 leading-relaxed">
+            <p className="mt-3 text-[11px] text-white/25 leading-relaxed">
               The git repository is private; the full source of this exact release ships as a
               tarball so every claim stays verifiable. Compare the hash of your downloaded
               tarball to the one above — they must match.
@@ -616,18 +616,18 @@ export default function DownloadPage() {
 
         {/* ═══ CTA Section ═══ */}
         <Reveal delay={400} className="mt-20 text-center">
-          <div className="premium-card p-12 relative overflow-hidden">
+          <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-12 relative overflow-hidden">
             {/* Decorative gradient */}
-            <div className="absolute inset-0 bg-gradient-to-br from-[#FFFFFF]/[0.08] via-transparent to-[#06B6D4]/[0.08] pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/[0.08] via-transparent to-teal-500/[0.08] pointer-events-none" />
 
             <div className="relative">
-              <h2 className="text-3xl sm:text-4xl font-display font-extrabold tracking-tight">
-                Ready to protect <span className="text-gray-400">your phone?</span>
+              <h2 className="text-3xl sm:text-4xl font-display font-extrabold tracking-tight text-white">
+                Ready to protect <span className="text-white/30">your phone?</span>
               </h2>
-              <p className="mt-4 text-gray-400 text-[15px] max-w-lg mx-auto">
+              <p className="mt-4 text-white/40 text-[15px] max-w-lg mx-auto">
                 Create your account in 30 seconds, then link your device during setup.
               </p>
-              <Link href="/signup" className="btn-premium mt-8 inline-flex items-center gap-3 px-10 py-5 rounded-2xl text-[14px] font-bold uppercase tracking-wider text-gray-900">
+              <Link href="/signup" className="mt-8 inline-flex items-center gap-3 px-10 py-5 rounded-2xl text-[14px] font-bold uppercase tracking-wider bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 hover:bg-emerald-400 transition-all duration-200">
                 Get started
                 <ArrowRight size={16} />
               </Link>
