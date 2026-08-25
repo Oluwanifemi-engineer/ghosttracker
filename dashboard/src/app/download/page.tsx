@@ -267,20 +267,20 @@ export default function DownloadPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-gray-900 overflow-x-hidden">
+    <div className="min-h-screen bg-[#0a0a0f] text-white overflow-x-hidden">
       {/* Ambient background */}
       <div className="absolute inset-0 landing-vignette pointer-events-none" />
       <div className="absolute inset-0 landing-grid opacity-30 pointer-events-none" />
 
       {/* Premium ambient orbs */}
       <div className="absolute -top-40 left-1/4 w-[500px] h-[500px] rounded-full bg-[#FFFFFF]/[0.07] blur-[150px] animate-aurora pointer-events-none" />
-      <div className="absolute top-1/3 -right-40 w-[600px] h-[600px] rounded-full bg-[#06B6D4]/[0.05] blur-[180px] animate-aurora pointer-events-none" style={{ animationDelay: '-8s' }} />
+      <div className="absolute top-1/3 -right-40 w-[600px] h-[600px] rounded-full bg-emerald-500/[0.05] blur-[180px] animate-aurora pointer-events-none" style={{ animationDelay: '-8s' }} />
       <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] rounded-full bg-[#FFFFFF]/[0.04] blur-[200px] pointer-events-none" />
 
       <LandingNav authed={authed} />
 
       <main className="relative max-w-5xl mx-auto px-6 sm:px-8 pt-20 pb-32">
-        <Link href="/" className="inline-flex items-center gap-2 text-[11px] font-mono font-bold tracking-wider text-gray-900/30 hover:text-gray-600 transition-all duration-300">
+        <Link href="/" className="inline-flex items-center gap-2 text-[11px] font-mono font-bold tracking-wider text-white/30 hover:text-white/60 transition-all duration-300">
           <ArrowLeft size={13} />
           BACK TO HOME
         </Link>
@@ -363,12 +363,12 @@ export default function DownloadPage() {
             {/* Feature grid */}
             <div className="grid sm:grid-cols-2 gap-4 mb-8">
               {[
-                { icon: Navigation, text: 'Real-time GPS tracking', color: 'text-gray-900' },
-                { icon: Lock, text: 'Remote lock & alarm', color: 'text-gray-900' },
-                { icon: Trash2, text: 'Remote wipe (factory reset)', color: 'text-gray-900' },
-                { icon: Camera, text: 'Photo & audio evidence capture', color: 'text-gray-900' },
-                { icon: Shield, text: 'Sentinel theft detection', color: 'text-gray-900' },
-                { icon: Users, text: 'Guardian Network recovery', color: 'text-gray-900' },
+                { icon: Navigation, text: 'Real-time GPS tracking', color: 'text-white' },
+                { icon: Lock, text: 'Remote lock & alarm', color: 'text-white' },
+                { icon: Trash2, text: 'Remote wipe (factory reset)', color: 'text-white' },
+                { icon: Camera, text: 'Photo & audio evidence capture', color: 'text-white' },
+                { icon: Shield, text: 'Sentinel theft detection', color: 'text-white' },
+                { icon: Users, text: 'Guardian Network recovery', color: 'text-white' },
               ].map((f) => (
                 <div key={f.text} className="flex items-center gap-3 text-[13px] text-gray-600 group">
                   <div className="w-8 h-8 rounded-lg bg-white/[0.04] border border-white/[0.06] flex items-center justify-center group-hover:border-emerald-500/20 group-hover:bg-emerald-500/10 transition-all duration-300">
@@ -428,16 +428,16 @@ export default function DownloadPage() {
         <Reveal>
           <div className="text-center mb-10">
             <h2 className="text-3xl sm:text-4xl font-display font-extrabold tracking-tight">
-              How to <span className="text-gray-400">install</span>
+              How to <span className="text-white/40">install</span>
             </h2>
-            <p className="mt-3 text-gray-400 text-[15px]">Get protected in under 5 minutes</p>
+            <p className="mt-3 text-white/40 text-[15px]">Get protected in under 5 minutes</p>
           </div>
 
-          <div className="mb-8 rounded-xl border border-[#06B6D4]/25 bg-[#06B6D4]/[0.06] p-5">
+          <div className="mb-8 rounded-xl border border-emerald-500/25 bg-emerald-500/[0.06] p-5">
             <div className="flex items-start gap-3">
-              <ShieldCheck size={18} className="text-gray-900 shrink-0 mt-0.5" />
+              <ShieldCheck size={18} className="text-emerald-400 shrink-0 mt-0.5" />
               <div>
-                <p className="text-gray-900 font-semibold text-[14px]">
+                <p className="text-white font-semibold text-[14px]">
                   Google Play install (recommended)
                 </p>
                 <p className="mt-1 text-[13px] leading-relaxed text-gray-500">
@@ -489,7 +489,7 @@ export default function DownloadPage() {
                 <div className="text-white font-bold text-[15px] mb-3">{oem.brand}</div>
                 <ul className="space-y-2.5">
                   {oem.steps.map((s) => (
-                    <li key={s} className="flex gap-3 text-[13px] leading-relaxed text-gray-400">
+                    <li key={s} className="flex gap-3 text-[13px] leading-relaxed text-white/40">
                       <ChevronRight size={14} className="text-white/40 mt-0.5 shrink-0" />
                       <span>{s}</span>
                     </li>
@@ -542,7 +542,7 @@ export default function DownloadPage() {
 
           <div className="grid sm:grid-cols-3 gap-4">
             {[
-              { icon: MapPin, title: 'Live tracking', body: 'Real-time GPS location with turn-by-turn navigation to your device.', color: '#06B6D4' },
+              { icon: MapPin, title: 'Live tracking', body: 'Real-time GPS location with turn-by-turn navigation to your device.', color: '#10b981' },
               { icon: Camera, title: 'Evidence capture', body: 'Remote photo and audio capture with chain of custody for law enforcement.', color: '#FFFFFF' },
               { icon: ShieldCheck, title: 'Theft detection', body: 'AI-powered detection of movement, SIM swaps, and suspicious activity.', color: '#22C55E' },
             ].map((card) => (

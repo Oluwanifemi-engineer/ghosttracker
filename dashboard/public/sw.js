@@ -17,7 +17,6 @@ const STATIC_ASSETS = [
   '/login',
   '/signup',
   '/favicon.svg',
-  '/logo.svg',
   '/m-logo.svg',
 ];
 

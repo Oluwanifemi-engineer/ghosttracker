@@ -10,7 +10,7 @@ const FOOTER_LINKS = [
     title: 'Product',
     links: [
       { label: 'Features', href: '#features' },
-      { label: 'How it works', href: '#how-it-works' },
+      { label: 'How it works', href: '#features' },
       { label: 'Why Africa', href: '#africa' },
       { label: 'Our story', href: '#our-story' },
       { label: 'Security', href: '#security' },

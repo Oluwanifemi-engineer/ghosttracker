@@ -6,17 +6,16 @@
     android:viewportHeight="108">
 
     <!--
-        Magneetar fused m/M-halves mark — scaled to fit the inner 66dp safe zone.
-        Android adaptive icons use a 108dp canvas, but only the inner 66dp
-        (21dp margin from each edge) is guaranteed visible under all mask shapes.
-        The mark is centered: x from 21 to 87, y from 21 to 87.
+        Magneetar fused m/M-halves mark — properly centered in 66dp safe zone.
+        Canvas: 108dp. Safe zone: inner circle r=33dp centered at (54,54).
+        Mark spans: x 38→70 (32dp), y 36→72 (36dp) — max distance from center
+        is ~23dp, well within 33dp safe zone even with 12dp stroke extending 6dp.
     -->
     <path
-        android:pathData="M30,84 L30,46 C30,30 54,30 54,46 L54,84 L78,24 L78,84"
-        android:strokeWidth="10"
+        android:pathData="M40,72 L40,50 C40,38 54,38 54,50 L54,72 L68,36 L68,72"
+        android:strokeWidth="12"
         android:strokeColor="#FFFFFF"
-        android:strokeLineCap="butt"
-        android:strokeLineJoin="miter"
-        android:strokeMiterLimit="6"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
         android:fillColor="#00000000"/>
 </vector>
