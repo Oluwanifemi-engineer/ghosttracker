@@ -18,13 +18,10 @@
                 android:endColor="#0000FF88" />
         </shape>
     </item>
-    <!-- Centered Magneetar logo (filled version) -->
+    <!-- Centered Magneetar logo (vector drawable) -->
     <item
         android:gravity="center"
         android:width="120dp"
-        android:height="120dp">
-        <bitmap
-            android:src="@drawable/magneetar_logo"
-            android:gravity="center" />
-    </item>
+        android:height="120dp"
+        android:drawable="@drawable/magneetar_logo" />
 </layer-list>
