@@ -997,10 +997,14 @@ async def apk_version_check(
     digest, size_bytes = await asyncio.to_thread(_get_apk_checksum, path)
 
     # Determine if update is available (semantic version comparison)
-    from packaging.version import Version
+    def _parse_ver(v: str):
+        try:
+            return tuple(int(x) for x in v.split(".")[:3])
+        except (ValueError, AttributeError):
+            return (0,)
 
     try:
-        update_available = current_version != "" and Version(APP_VERSION) > Version(current_version)
+        update_available = current_version != "" and _parse_ver(APP_VERSION) > _parse_ver(current_version)
     except Exception:
         # Fallback: string inequality (conservative — may show false positive)
         update_available = current_version != APP_VERSION and current_version != ""
