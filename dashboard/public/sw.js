@@ -8,7 +8,7 @@
  * freshness — the SW doesn't need to cache these at all.
  */
 
-const CACHE_VERSION = 'v5';
+const CACHE_VERSION = 'v6';
 const STATIC_CACHE = `magneetar-static-${CACHE_VERSION}`;
 const DYNAMIC_CACHE = `magneetar-dynamic-${CACHE_VERSION}`;
 
@@ -18,6 +18,7 @@ const STATIC_ASSETS = [
   '/signup',
   '/favicon.svg',
   '/m-logo.svg',
+  '/magneetar-mhalf.svg',
 ];
 
 self.addEventListener('install', (event) => {
