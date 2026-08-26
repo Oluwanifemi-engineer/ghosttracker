@@ -13,7 +13,9 @@ import android.os.Build
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.util.Log
 import androidx.core.app.NotificationCompat
+import androidx.work.*
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONObject
@@ -40,6 +42,11 @@ import java.util.concurrent.TimeUnit
  *   4. Stream /apk/download to cache (foreground progress notification).
  *   5. Reject unless size AND SHA-256 match step 2.
  *   6. PackageInstaller session → Android's own update confirmation.
+ *
+ * Background update check (WorkManager):
+ *   - Periodic check every 6 hours for new versions
+ *   - Silent check — only shows notification when update is available
+ *   - Respects battery optimization — won't check when battery is low
  */
 class AppUpdaterService : Service() {
 
@@ -53,6 +60,69 @@ class AppUpdaterService : Service() {
 
         /** How long to keep the service alive waiting for the install result. */
         private const val INSTALL_RESULT_TIMEOUT_MS = 5 * 60 * 1000L
+
+        /** WorkManager unique work name for background update checks. */
+        private const val UPDATE_CHECK_WORK_NAME = "magneetar_update_check"
+
+        /**
+         * Schedule periodic background update checks.
+         * Uses WorkManager for battery-friendly scheduling.
+         * Checks every 6 hours with 2-hour flex window.
+         */
+        fun schedulePeriodicUpdateCheck(context: Context) {
+            // Don't schedule if installed via Play Store — Play handles updates
+            if (AppUpdater.isInstalledViaPlayStore(context)) {
+                Log.d(TAG, "Play Store install — skipping background update check")
+                return
+            }
+
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .setRequiresBatteryNotLow(true)
+                .build()
+
+            val request = PeriodicWorkRequestBuilder<UpdateCheckWorker>(
+                6, TimeUnit.HOURS,
+                2, TimeUnit.HOURS // 2-hour flex window
+            )
+                .setConstraints(constraints)
+                .setBackoffCriteria(
+                    BackoffPolicy.EXPONENTIAL,
+                    30, TimeUnit.MINUTES
+                )
+                .addTag(UPDATE_CHECK_WORK_NAME)
+                .build()
+
+            WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+                UPDATE_CHECK_WORK_NAME,
+                ExistingPeriodicWorkPolicy.KEEP,
+                request
+            )
+
+            Log.d(TAG, "Periodic update check scheduled every 6 hours")
+        }
+
+        /** Cancel the periodic update check. */
+        fun cancelPeriodicUpdateCheck(context: Context) {
+            WorkManager.getInstance(context).cancelUniqueWork(UPDATE_CHECK_WORK_NAME)
+            Log.d(TAG, "Periodic update check cancelled")
+        }
+
+        /**
+         * Trigger an immediate one-time update check.
+         * Useful for manual "check for updates" actions.
+         */
+        fun triggerImmediateUpdateCheck(context: Context) {
+            if (AppUpdater.isInstalledViaPlayStore(context)) return
+
+            val request = OneTimeWorkRequestBuilder<UpdateCheckWorker>()
+                .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+                .addTag("immediate_update_check")
+                .build()
+
+            WorkManager.getInstance(context).enqueue(request)
+            Log.d(TAG, "Immediate update check triggered")
+        }
     }
 
     private val client = OkHttpClient.Builder()
@@ -114,6 +184,9 @@ class AppUpdaterService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         startForeground(NOTIF_ID, progress("Checking for update…"))
+
+        // Schedule periodic background checks if not already scheduled
+        schedulePeriodicUpdateCheck(this)
 
         if (!AppUpdater.canRequestInstalls(this)) {
             // Android 8+: the app itself needs the "Allow from this source"

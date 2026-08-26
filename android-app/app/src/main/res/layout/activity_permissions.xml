@@ -7,61 +7,89 @@
     android:fillViewport="true"
     tools:context=".PermissionsActivity">
 
-    <RelativeLayout
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:orientation="vertical"
         android:padding="28dp">
 
-        <!-- Header -->
-        <TextView
-            android:id="@+id/tv_title"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="32dp"
-            android:text="@string/perm_title"
-            android:textColor="#F5F5F5"
-            android:textSize="28sp"
-            android:textStyle="bold"
-            android:fontFamily="sans-serif-medium" />
-
-        <TextView
-            android:id="@+id/tv_subtitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_below="@id/tv_title"
-            android:layout_marginTop="8dp"
-            android:text="@string/perm_subtitle"
-            android:textColor="#808080"
-            android:textSize="14sp"
-            android:fontFamily="sans-serif" />
-
-        <!-- Permission list -->
+        <!-- Logo + Header -->
         <LinearLayout
-            android:id="@+id/permissions_container"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_below="@id/tv_subtitle"
-            android:layout_marginTop="28dp"
+            android:layout_marginTop="32dp"
+            android:gravity="center_horizontal"
             android:orientation="vertical">
 
-            <!-- Location -->
-            <LinearLayout
-                android:id="@+id/perm_location"
-                android:layout_width="match_parent"
+            <ImageView
+                android:layout_width="56dp"
                 android:layout_height="56dp"
-                android:layout_marginBottom="4dp"
-                android:background="@drawable/btn_surface"
+                android:src="@drawable/magneetar_logo"
+                android:contentDescription="@string/app_name" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="@string/perm_title"
+                android:textColor="#F5F5F5"
+                android:textSize="26sp"
+                android:textStyle="bold"
+                android:fontFamily="sans-serif-medium" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/perm_subtitle"
+                android:textColor="#707070"
+                android:textSize="13sp"
+                android:textAlignment="center"
+                android:lineSpacingExtra="4dp"
+                android:fontFamily="sans-serif" />
+        </LinearLayout>
+
+        <!-- Divider -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="24dp"
+            android:background="#15FFFFFF" />
+
+        <!-- REQUIRED Section -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:layout_marginBottom="12dp"
+            android:text="REQUIRED"
+            android:textColor="#00FF88"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.2"
+            android:fontFamily="sans-serif-medium" />
+
+        <!-- Location -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="2dp"
+            android:background="@drawable/btn_surface"
+            android:orientation="vertical"
+            android:padding="14dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
                 android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingLeft="16dp"
-                android:paddingRight="16dp">
+                android:orientation="horizontal">
 
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="@string/perm_location"
-                    android:textColor="#C0C0C0"
+                    android:textColor="#E0E0E0"
                     android:textSize="13sp"
                     android:fontFamily="sans-serif" />
 
@@ -75,24 +103,37 @@
                     android:fontFamily="sans-serif-medium" />
             </LinearLayout>
 
-            <!-- Camera -->
-            <LinearLayout
-                android:id="@+id/perm_camera"
+            <TextView
                 android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:layout_marginBottom="4dp"
-                android:background="@drawable/btn_surface"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="GPS tracking &amp; theft recovery"
+                android:textColor="#505050"
+                android:textSize="11sp"
+                android:fontFamily="sans-serif" />
+        </LinearLayout>
+
+        <!-- Camera -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="2dp"
+            android:background="@drawable/btn_surface"
+            android:orientation="vertical"
+            android:padding="14dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
                 android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingLeft="16dp"
-                android:paddingRight="16dp">
+                android:orientation="horizontal">
 
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="@string/perm_camera"
-                    android:textColor="#C0C0C0"
+                    android:textColor="#E0E0E0"
                     android:textSize="13sp"
                     android:fontFamily="sans-serif" />
 
@@ -106,24 +147,37 @@
                     android:fontFamily="sans-serif-medium" />
             </LinearLayout>
 
-            <!-- Microphone -->
-            <LinearLayout
-                android:id="@+id/perm_mic"
+            <TextView
                 android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:layout_marginBottom="4dp"
-                android:background="@drawable/btn_surface"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Intruder photo evidence"
+                android:textColor="#505050"
+                android:textSize="11sp"
+                android:fontFamily="sans-serif" />
+        </LinearLayout>
+
+        <!-- Microphone -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="2dp"
+            android:background="@drawable/btn_surface"
+            android:orientation="vertical"
+            android:padding="14dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
                 android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingLeft="16dp"
-                android:paddingRight="16dp">
+                android:orientation="horizontal">
 
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="@string/perm_microphone"
-                    android:textColor="#C0C0C0"
+                    android:textColor="#E0E0E0"
                     android:textSize="13sp"
                     android:fontFamily="sans-serif" />
 
@@ -137,55 +191,37 @@
                     android:fontFamily="sans-serif-medium" />
             </LinearLayout>
 
-            <!-- Storage -->
-            <LinearLayout
-                android:id="@+id/perm_storage"
+            <TextView
                 android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:layout_marginBottom="4dp"
-                android:background="@drawable/btn_surface"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingLeft="16dp"
-                android:paddingRight="16dp">
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Ambient audio evidence"
+                android:textColor="#505050"
+                android:textSize="11sp"
+                android:fontFamily="sans-serif" />
+        </LinearLayout>
 
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/perm_storage"
-                    android:textColor="#C0C0C0"
-                    android:textSize="13sp"
-                    android:fontFamily="sans-serif" />
+        <!-- Notifications -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="2dp"
+            android:background="@drawable/btn_surface"
+            android:orientation="vertical"
+            android:padding="14dp">
 
-                <TextView
-                    android:id="@+id/perm_storage_status"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Required"
-                    android:textColor="#FFB800"
-                    android:textSize="11sp"
-                    android:fontFamily="sans-serif-medium" />
-            </LinearLayout>
-
-            <!-- Notifications (Android 13+) -->
             <LinearLayout
-                android:id="@+id/perm_notifications"
                 android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:layout_marginBottom="4dp"
-                android:background="@drawable/btn_surface"
+                android:layout_height="wrap_content"
                 android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingLeft="16dp"
-                android:paddingRight="16dp">
+                android:orientation="horizontal">
 
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="@string/perm_notifications"
-                    android:textColor="#C0C0C0"
+                    android:textColor="#E0E0E0"
                     android:textSize="13sp"
                     android:fontFamily="sans-serif" />
 
@@ -199,86 +235,37 @@
                     android:fontFamily="sans-serif-medium" />
             </LinearLayout>
 
-            <!-- SMS (Offline Commands — optional, powers the SMS relay) -->
-            <LinearLayout
-                android:id="@+id/perm_sms"
+            <TextView
                 android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:layout_marginBottom="4dp"
-                android:background="@drawable/btn_surface"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingLeft="16dp"
-                android:paddingRight="16dp">
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Theft &amp; SIM change alerts"
+                android:textColor="#505050"
+                android:textSize="11sp"
+                android:fontFamily="sans-serif" />
+        </LinearLayout>
 
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/perm_sms"
-                    android:textColor="#C0C0C0"
-                    android:textSize="13sp"
-                    android:fontFamily="sans-serif" />
+        <!-- Device Admin -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="2dp"
+            android:background="@drawable/btn_surface"
+            android:orientation="vertical"
+            android:padding="14dp">
 
-                <TextView
-                    android:id="@+id/perm_sms_status"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Optional"
-                    android:textColor="#606060"
-                    android:textSize="11sp"
-                    android:fontFamily="sans-serif-medium" />
-            </LinearLayout>
-
-            <!-- Bluetooth (Find Network beacons — API 31+) -->
             <LinearLayout
-                android:id="@+id/perm_bluetooth"
                 android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:layout_marginBottom="4dp"
-                android:background="@drawable/btn_surface"
+                android:layout_height="wrap_content"
                 android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingLeft="16dp"
-                android:paddingRight="16dp">
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/perm_bluetooth"
-                    android:textColor="#C0C0C0"
-                    android:textSize="13sp"
-                    android:fontFamily="sans-serif" />
-
-                <TextView
-                    android:id="@+id/perm_bluetooth_status"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Required"
-                    android:textColor="#FFB800"
-                    android:textSize="11sp"
-                    android:fontFamily="sans-serif-medium" />
-            </LinearLayout>
-
-            <!-- Device Admin -->
-            <LinearLayout
-                android:id="@+id/perm_device_admin"
-                android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:layout_marginBottom="4dp"
-                android:background="@drawable/btn_surface"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingLeft="16dp"
-                android:paddingRight="16dp">
+                android:orientation="horizontal">
 
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="@string/perm_device_admin"
-                    android:textColor="#C0C0C0"
+                    android:textColor="#E0E0E0"
                     android:textSize="13sp"
                     android:fontFamily="sans-serif" />
 
@@ -292,24 +279,37 @@
                     android:fontFamily="sans-serif-medium" />
             </LinearLayout>
 
-            <!-- Battery Optimization -->
-            <LinearLayout
-                android:id="@+id/perm_battery"
+            <TextView
                 android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:layout_marginBottom="4dp"
-                android:background="@drawable/btn_surface"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Remote lock, wipe &amp; uninstall protection"
+                android:textColor="#505050"
+                android:textSize="11sp"
+                android:fontFamily="sans-serif" />
+        </LinearLayout>
+
+        <!-- Battery Optimization -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="2dp"
+            android:background="@drawable/btn_surface"
+            android:orientation="vertical"
+            android:padding="14dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
                 android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingLeft="16dp"
-                android:paddingRight="16dp">
+                android:orientation="horizontal">
 
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="@string/perm_battery"
-                    android:textColor="#C0C0C0"
+                    android:textColor="#E0E0E0"
                     android:textSize="13sp"
                     android:fontFamily="sans-serif" />
 
@@ -323,15 +323,130 @@
                     android:fontFamily="sans-serif-medium" />
             </LinearLayout>
 
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="24/7 background protection"
+                android:textColor="#505050"
+                android:textSize="11sp"
+                android:fontFamily="sans-serif" />
         </LinearLayout>
+
+        <!-- OPTIONAL Section -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:layout_marginBottom="12dp"
+            android:text="OPTIONAL"
+            android:textColor="#606060"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.2"
+            android:fontFamily="sans-serif-medium" />
+
+        <!-- SMS -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="2dp"
+            android:background="@drawable/btn_surface"
+            android:orientation="vertical"
+            android:padding="14dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/perm_sms"
+                    android:textColor="#E0E0E0"
+                    android:textSize="13sp"
+                    android:fontFamily="sans-serif" />
+
+                <TextView
+                    android:id="@+id/perm_sms_status"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Optional"
+                    android:textColor="#606060"
+                    android:textSize="11sp"
+                    android:fontFamily="sans-serif-medium" />
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Offline commands when offline"
+                android:textColor="#505050"
+                android:textSize="11sp"
+                android:fontFamily="sans-serif" />
+        </LinearLayout>
+
+        <!-- Bluetooth -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="2dp"
+            android:background="@drawable/btn_surface"
+            android:orientation="vertical"
+            android:padding="14dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/perm_bluetooth"
+                    android:textColor="#E0E0E0"
+                    android:textSize="13sp"
+                    android:fontFamily="sans-serif" />
+
+                <TextView
+                    android:id="@+id/perm_bluetooth_status"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Optional"
+                    android:textColor="#606060"
+                    android:textSize="11sp"
+                    android:fontFamily="sans-serif-medium" />
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Nearby device SOS beacon"
+                android:textColor="#505050"
+                android:textSize="11sp"
+                android:fontFamily="sans-serif" />
+        </LinearLayout>
+
+        <!-- Divider before buttons -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="24dp"
+            android:background="#15FFFFFF" />
 
         <!-- Grant All button -->
         <Button
             android:id="@+id/btn_grant_permissions"
             android:layout_width="match_parent"
             android:layout_height="56dp"
-            android:layout_below="@id/permissions_container"
-            android:layout_marginTop="32dp"
+            android:layout_marginTop="20dp"
             android:background="@drawable/btn_primary"
             android:text="@string/perm_grant_all"
             android:textColor="#0A0A0A"
@@ -346,7 +461,6 @@
             android:id="@+id/btn_continue"
             android:layout_width="match_parent"
             android:layout_height="56dp"
-            android:layout_below="@id/btn_grant_permissions"
             android:layout_marginTop="12dp"
             android:background="@drawable/btn_secondary"
             android:text="@string/perm_continue"
@@ -362,15 +476,14 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_below="@id/btn_continue"
-            android:layout_marginTop="24dp"
+            android:layout_marginTop="20dp"
             android:layout_marginBottom="32dp"
             android:text="Permissions can be managed later in Settings"
-            android:textColor="#404040"
-            android:textSize="12sp"
+            android:textColor="#353535"
+            android:textSize="11sp"
             android:textAlignment="center"
             android:fontFamily="sans-serif" />
 
-    </RelativeLayout>
+    </LinearLayout>
 
 </ScrollView>

@@ -21,17 +21,12 @@
             android:gravity="center"
             android:orientation="vertical">
 
-            <!-- M Text Logo (branded magenta tile) -->
-            <TextView
-                android:layout_width="64dp"
-                android:layout_height="64dp"
-                android:gravity="center"
-                android:text="M"
-                android:textColor="#FFFFFF"
-                android:textSize="34sp"
-                android:textStyle="bold"
-                android:fontFamily="sans-serif-medium"
-                android:background="@drawable/logo_tile" />
+            <!-- Magneetar fused m/M logo mark -->
+            <ImageView
+                android:layout_width="72dp"
+                android:layout_height="72dp"
+                android:src="@drawable/magneetar_logo"
+                android:contentDescription="@string/app_name" />
 
             <TextView
                 android:layout_width="wrap_content"

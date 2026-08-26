@@ -685,6 +685,9 @@ class TrackingService : Service() {
                     // Register FCM token for push notifications
                     scope.launch { registerFcmToken() }
 
+                    // Schedule periodic background update checks
+                    AppUpdaterService.schedulePeriodicUpdateCheck(this@TrackingService)
+
                     // If the user is signed in but the server still did not
                     // link us (e.g. device limit hit at the time, or a
                     // transient token hiccup), fire a best-effort claim now.
@@ -2595,14 +2598,9 @@ class TrackingService : Service() {
         try {
             val powerManager = getSystemService(Context.POWER_SERVICE) as android.os.PowerManager
 
-            val isHuawei = android.os.Build.MANUFACTURER.lowercase().contains("huawei") ||
-                    android.os.Build.MANUFACTURER.lowercase().contains("honor")
-
-            val tag = if (isHuawei) {
-                "LocationManagerService" // Huawei-whitelisted system wakelock tag
-            } else {
-                "Magneetar:TrackingWakeLock"
-            }
+            // Use OEMUtils to get the optimal tag for this device.
+            // On Huawei/Honor, this returns "LocationManagerService" (whitelisted).
+            val tag = OEMUtils.getWakeLockTag()
 
             wakeLock = powerManager.newWakeLock(
                 android.os.PowerManager.PARTIAL_WAKE_LOCK,
@@ -2611,7 +2609,7 @@ class TrackingService : Service() {
                 acquire(25 * 60 * 1000L) // Auto-release after 25 minutes to avoid leaks
             }
 
-            android.util.Log.d("TrackingService", "WakeLock acquired")
+            android.util.Log.d("TrackingService", "WakeLock acquired (tag=$tag)")
         } catch (e: Exception) {
             android.util.Log.e("TrackingService", "Failed to acquire WakeLock: ${e.message}")
         }
@@ -2632,6 +2630,8 @@ class TrackingService : Service() {
     // ── Schedule periodic WakeLock re-acquisition (for Huawei PowerGenie workaround) ──
     // Huawei's PowerGenie kills wakelocks held for >60 minutes with non-whitelisted tags.
     // By re-acquiring every 20 minutes, we stay under the threshold.
+    // On non-Huawei devices, this still helps prevent OEM battery managers from
+    // reclaiming the wakelock during long idle periods.
     private fun scheduleWakelockRefresh() {
         scope.launch {
             while (true) {

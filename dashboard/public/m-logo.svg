@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
-  <!-- Magneetar fused m/M-halves mark — white on dark, properly centered -->
+  <!-- Magneetar fused m/M-halves mark — white on dark, SHARP edges for the correct look -->
   <rect width="120" height="120" rx="28" fill="#0f0f1a"/>
   <path d="M 36,88 V 56 C 36,38 60,38 60,56 V 88 L 84,38 V 88"
         stroke="#FFFFFF" stroke-width="11" fill="none"
-        stroke-linecap="round" stroke-linejoin="round"/>
+        stroke-linecap="butt" stroke-linejoin="miter"/>
 </svg>

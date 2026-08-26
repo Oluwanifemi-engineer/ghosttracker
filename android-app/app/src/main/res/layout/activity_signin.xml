@@ -23,13 +23,24 @@
             android:contentDescription="Back"
             android:background="@drawable/btn_surface" />
 
+        <!-- Magneetar logo -->
+        <ImageView
+            android:id="@+id/iv_logo"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_below="@id/btn_back"
+            android:layout_marginTop="24dp"
+            android:layout_centerHorizontal="true"
+            android:src="@drawable/magneetar_logo"
+            android:contentDescription="@string/app_name" />
+
         <!-- Header -->
         <TextView
             android:id="@+id/tv_title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_below="@id/btn_back"
-            android:layout_marginTop="32dp"
+            android:layout_below="@id/iv_logo"
+            android:layout_marginTop="16dp"
             android:text="@string/signin_title"
             android:textColor="#F5F5F5"
             android:textSize="28sp"

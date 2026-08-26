@@ -6,11 +6,8 @@
     android:viewportHeight="108">
 
     <!--
-        Magneetar fused m/M-halves mark — white on transparent.
-        Matches dashboard/public/magentaetar-mhalf.svg proportions scaled to
-        108dp adaptive-icon canvas. Safe zone: inner circle r=33dp centered at (54,54).
-        Mark spans: x 32.4→75.6 (43.2dp), y 31.5→76.5 (45dp) — max distance
-        from center ~22.5dp, well within 33dp even with 10dp stroke extending 5dp.
+        Magneetar monochrome mark — for Android 13+ themed/monochrome icons.
+        The OS applies its own color palette; we provide only the shape.
     -->
     <path
         android:pathData="M32,77 L32,48 C32,32 54,32 54,48 L54,77 L76,32 L76,77"

@@ -17,6 +17,12 @@ import androidx.work.*
  * While WorkManager can't ensure real-time execution, it provides a
  * reliable fallback that even aggressive OEMs have difficulty blocking
  * (since WorkManager is part of Jetpack and has system-level reliability).
+ *
+ * OEM-specific scheduling:
+ *   - Transsion HiOS/XOS: 15-minute interval (more aggressive restarts)
+ *   - Xiaomi MIUI: 20-minute interval
+ *   - Huawei EMUI: 20-minute interval
+ *   - Samsung/Stock: 30-minute interval (standard)
  */
 class HealthCheckWorker(
     context: Context,
@@ -28,32 +34,60 @@ class HealthCheckWorker(
         private const val WORK_NAME = "magneetar_health_check"
 
         /**
-         * Schedule periodic health checks (every 30 minutes with 15 minute flex).
+         * OEM-specific health check intervals (minutes).
+         * Aggressive OEMs need shorter intervals to detect and recover from kills faster.
+         */
+        private const val HEALTH_CHECK_INTERVAL_AGGRESSIVE_MIN = 15L
+        private const val HEALTH_CHECK_INTERVAL_STANDARD_MIN = 30L
+        private const val HEALTH_CHECK_FLEX_MIN = 10L
+
+        private fun getHealthCheckInterval(): Pair<Long, Long> {
+            val manufacturer = android.os.Build.MANUFACTURER.lowercase()
+            return when {
+                // Most aggressive OEMs
+                manufacturer.contains("tecno") || manufacturer.contains("infinix") ||
+                    manufacturer.contains("itel") || manufacturer.contains("transsion") ->
+                    HEALTH_CHECK_INTERVAL_AGGRESSIVE_MIN to HEALTH_CHECK_FLEX_MIN
+                // Moderately aggressive
+                manufacturer.contains("xiaomi") || manufacturer.contains("redmi") ||
+                    manufacturer.contains("huawei") || manufacturer.contains("honor") ->
+                    20L to HEALTH_CHECK_FLEX_MIN
+                // Standard
+                else ->
+                    HEALTH_CHECK_INTERVAL_STANDARD_MIN to HEALTH_CHECK_FLEX_MIN
+            }
+        }
+
+        /**
+         * Schedule periodic health checks.
+         * Uses OEM-specific intervals for optimal recovery on aggressive devices.
          */
         fun schedule(context: Context) {
+            val (intervalMin, flexMin) = getHealthCheckInterval()
+
             val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.NOT_REQUIRED)
                 .build()
 
             val request = PeriodicWorkRequestBuilder<HealthCheckWorker>(
-                30, java.util.concurrent.TimeUnit.MINUTES,
-                15, java.util.concurrent.TimeUnit.MINUTES
+                intervalMin, java.util.concurrent.TimeUnit.MINUTES,
+                flexMin, java.util.concurrent.TimeUnit.MINUTES
             )
                 .setConstraints(constraints)
                 .setBackoffCriteria(
                     BackoffPolicy.EXPONENTIAL,
-                    5, java.util.concurrent.TimeUnit.MINUTES
+                    2, java.util.concurrent.TimeUnit.MINUTES
                 )
                 .addTag(WORK_NAME)
                 .build()
 
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(
                 WORK_NAME,
-                ExistingPeriodicWorkPolicy.KEEP,
+                ExistingPeriodicWorkPolicy.UPDATE, // UPDATE ensures interval changes take effect
                 request
             )
 
-            Log.d(TAG, "Health check worker scheduled every 30 minutes")
+            Log.d(TAG, "Health check worker scheduled every $intervalMin minutes")
         }
 
         /**
@@ -90,6 +124,10 @@ class HealthCheckWorker(
 
             // Re-schedule watchdog alarm as backup
             WatchdogReceiver.scheduleWatchdog(applicationContext)
+
+            // Request battery optimization exemption if not already granted
+            // This is a best-effort — the user may have denied it
+            OEMUtils.requestBatteryOptimizationExemption(applicationContext)
 
             Result.success()
         } catch (e: Exception) {

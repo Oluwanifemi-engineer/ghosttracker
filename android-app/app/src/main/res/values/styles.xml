@@ -10,6 +10,14 @@
         <item name="android:windowLightStatusBar">false</item>
     </style>
 
+    <!-- Splash theme: shows Magneetar logo instantly on cold start -->
+    <style name="SplashTheme" parent="Theme.AppCompat.NoActionBar">
+        <item name="android:windowBackground">@drawable/splash_background</item>
+        <item name="android:navigationBarColor">#000000</item>
+        <item name="android:statusBarColor">#000000</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+
     <!-- Translucent theme for splash/transparent activities -->
     <style name="AppTheme.Translucent" parent="AppTheme">
         <item name="android:windowIsTranslucent">true</item>

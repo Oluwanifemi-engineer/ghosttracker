@@ -17,13 +17,39 @@ import androidx.core.content.ContextCompat
  * This is a critical survival mechanism for Chinese OEMs that aggressively
  * kill background services. The AlarmManager alarm is one of the few
  * things that survives OEM task killers.
+ *
+ * OEM-specific watchdog behavior:
+ *   - Huawei PowerGenie: 5-minute interval (minimum effective)
+ *   - Xiaomi MIUI: 3-minute interval (more aggressive kills)
+ *   - Transsion HiOS/XOS: 3-minute interval (very aggressive)
+ *   - Samsung/Stock: 5-minute interval (standard)
  */
 class WatchdogReceiver : BroadcastReceiver() {
 
     companion object {
         private const val TAG = "MagneetarWatchdog"
         private const val REQUEST_CODE = 300
-        private const val WATCHDOG_INTERVAL_MS = 5 * 60 * 1000L // 5 minutes
+
+        /**
+         * OEM-specific watchdog intervals (milliseconds).
+         * Aggressive OEMs need shorter intervals because they kill services faster.
+         */
+        private const val WATCHDOG_INTERVAL_AGGRESSIVE_MS = 3 * 60 * 1000L // 3 minutes
+        private const val WATCHDOG_INTERVAL_STANDARD_MS = 5 * 60 * 1000L // 5 minutes
+
+        private fun getWatchdogInterval(): Long {
+            val manufacturer = Build.MANUFACTURER.lowercase()
+            return when {
+                // Most aggressive OEMs — check more frequently
+                manufacturer.contains("xiaomi") || manufacturer.contains("redmi") ||
+                    manufacturer.contains("huawei") || manufacturer.contains("honor") ||
+                    manufacturer.contains("tecno") || manufacturer.contains("infinix") ||
+                    manufacturer.contains("itel") || manufacturer.contains("transsion") ->
+                    WATCHDOG_INTERVAL_AGGRESSIVE_MS
+                // Standard interval for everyone else
+                else -> WATCHDOG_INTERVAL_STANDARD_MS
+            }
+        }
 
         /**
          * Schedule the watchdog alarm. Call this after the TrackingService starts.
@@ -37,15 +63,17 @@ class WatchdogReceiver : BroadcastReceiver() {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
 
+            val intervalMs = getWatchdogInterval()
+
             // Use inexact repeating to minimize battery impact
             alarmManager.setInexactRepeating(
                 AlarmManager.ELAPSED_REALTIME_WAKEUP,
-                SystemClock.elapsedRealtime() + WATCHDOG_INTERVAL_MS,
-                WATCHDOG_INTERVAL_MS,
+                SystemClock.elapsedRealtime() + intervalMs,
+                intervalMs,
                 pendingIntent
             )
 
-            Log.d(TAG, "Watchdog scheduled every ${WATCHDOG_INTERVAL_MS / 60000} minutes")
+            Log.d(TAG, "Watchdog scheduled every ${intervalMs / 60000} minutes")
         }
 
         /**
@@ -136,6 +164,9 @@ class WatchdogReceiver : BroadcastReceiver() {
             restartService(context)
         } else {
             Log.d(TAG, "TrackingService is running. All good.")
+            // Re-arm the watchdog even when alive — the inexact alarm
+            // may have drifted or been cleared by an OEM kill.
+            scheduleWatchdog(context)
         }
     }
 
@@ -144,17 +175,30 @@ class WatchdogReceiver : BroadcastReceiver() {
     }
 
     private fun restartService(context: Context) {
-        try {
-            val serviceIntent = Intent(context, TrackingService::class.java)
-            ContextCompat.startForegroundService(context, serviceIntent)
+        var attempt = 0
+        val maxRetries = if (OEMUtils.isChineseOEM()) 3 else 2
 
-            // Also start the persistence service for dual-service redundancy
-            val persistenceIntent = Intent(context, PersistenceService::class.java)
-            ContextCompat.startForegroundService(context, persistenceIntent)
+        fun tryRestart() {
+            attempt++
+            try {
+                val serviceIntent = Intent(context, TrackingService::class.java)
+                ContextCompat.startForegroundService(context, serviceIntent)
 
-            Log.i(TAG, "Services restarted successfully")
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to restart services: ${e.message}")
+                // Also start the persistence service for dual-service redundancy
+                val persistenceIntent = Intent(context, PersistenceService::class.java)
+                ContextCompat.startForegroundService(context, persistenceIntent)
+
+                Log.i(TAG, "Services restarted successfully (attempt $attempt/$maxRetries)")
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to restart services (attempt $attempt/$maxRetries): ${e.message}")
+                if (attempt < maxRetries) {
+                    val delay = if (OEMUtils.isChineseOEM()) 5_000L else 3_000L
+                    @Suppress("DEPRECATION")
+                    android.os.Handler().postDelayed({ tryRestart() }, delay)
+                }
+            }
         }
+
+        tryRestart()
     }
 }

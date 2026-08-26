@@ -21,7 +21,7 @@ from archive_monitor import archive_stale_devices_loop
 from auth import decode_token, hash_device_key, user_id_from_subject
 from config import settings
 from database import DB_PATH, check_rate_limit, ensure_initialized, get_db_context, log_error
-from fastapi import FastAPI, Header, HTTPException, Request, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Header, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from leader_lock import acquire_task_lock, release_task_lock
@@ -966,7 +966,53 @@ async def source_tarball_checksum():
     }
 
 
-# ─── Health & Config (kept in main.py — core infrastructure) ─────────────────
+# ─── APK Version Check (for background update checks) ─────────────────────
+
+
+@app.get("/apk/version")
+async def apk_version_check(
+    current_version: str = Query("", description="Currently installed version"),
+    build_type: str = Query("sideload", description="Build type: sideload or play"),
+):
+    """Check if a newer version is available.
+
+    Used by the Android app's background update checker (WorkManager).
+    Returns minimal info needed for the update decision:
+    - latest_version: the current release version
+    - update_available: true if current_version != latest_version
+    - download_url: URL to download the update (with ticket)
+    - sha256: checksum for verification
+    - size_bytes: APK size for progress display
+    - min_android_version: minimum supported Android SDK
+    - release_notes: brief changelog (optional)
+    """
+    path = _resolve_apk()
+    if path is None:
+        return {
+            "latest_version": APP_VERSION,
+            "update_available": False,
+            "error": "APK not found on server",
+        }
+
+    digest, size_bytes = await asyncio.to_thread(_get_apk_checksum, path)
+
+    # Determine if update is available
+    update_available = current_version != APP_VERSION and current_version != ""
+
+    # Generate a download URL (the app will need to fetch a ticket first)
+    download_url = "/apk/ticket"  # App fetches ticket from here
+
+    return {
+        "latest_version": APP_VERSION,
+        "update_available": update_available,
+        "download_url": download_url,
+        "sha256": digest,
+        "size_bytes": size_bytes,
+        "filename": f"Magneetar-v{APP_VERSION}-release.apk",
+        "build_type": build_type,
+        "min_android_version": 24,  # minSdk = 24 (Android 7.0)
+        "release_notes": "",  # Can be populated from CHANGELOG.md
+    }
 
 
 @app.get("/health", response_model=HealthResponse)
