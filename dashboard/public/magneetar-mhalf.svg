@@ -1,10 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <!--
-    MAGNEETAR — fused m/M-halves mark
-    Clean white on dark. SHARP edges for the correct look.
+    MAGNEETAR — fused m/M-halves mark (FILLED version)
+    White on dark. The correct logo shape.
   -->
   <rect width="512" height="512" rx="108" fill="#0f0f1a"/>
-  <path d="M 155,375 V 240 C 155,160 256,160 256,240 V 375 L 357,160 V 375"
-        stroke="#FFFFFF" stroke-width="48" fill="none"
-        stroke-linecap="butt" stroke-linejoin="miter"/>
+  <!-- Filled silhouette with flat-topped M peak — WHITE -->
+  <path d="M 98,386 V 160 C 98,100 315,100 315,160 V 386 L 314,100 H 415 V 386 Z" fill="#FFFFFF"/>
 </svg>

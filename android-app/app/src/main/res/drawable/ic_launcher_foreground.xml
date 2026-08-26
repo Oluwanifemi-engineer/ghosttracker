@@ -6,17 +6,11 @@
     android:viewportHeight="108">
 
     <!--
-        Magneetar fused m/M-halves mark — white on transparent.
-        Matches dashboard/public/magentaetar-mhalf.svg proportions scaled to
-        108dp adaptive-icon canvas. Safe zone: inner circle r=33dp centered at (54,54).
-        Mark spans: x 32.4→75.6 (43.2dp), y 31.5→76.5 (45dp) — max distance
-        from center ~22.5dp, well within 33dp even with 10dp stroke extending 5dp.
+        Magneetar fused m/M-halves mark — FILLED version, white on transparent.
+        Scaled from 512 to 108dp adaptive-icon canvas.
+        Safe zone: inner circle r=33dp centered at (54,54).
     -->
     <path
-        android:pathData="M32,77 L32,48 C32,32 54,32 54,48 L54,77 L76,32 L76,77"
-        android:strokeWidth="10"
-        android:strokeColor="#FFFFFF"
-        android:strokeLineCap="butt"
-        android:strokeLineJoin="miter"
-        android:fillColor="#00000000" />
+        android:pathData="M21,82 L21,34 C21,21 66,21 66,34 L66,82 L66,21 L87,21 L87,82 Z"
+        android:fillColor="#FFFFFF" />
 </vector>

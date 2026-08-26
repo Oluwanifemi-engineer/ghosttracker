@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-     must be a single-color silhouette (launcher mipmaps render as a solid
-     overlay in some OEM launchers) — the adaptive icon foreground is separate.
-     Magneetar fused m/M-halves mark — white on transparent.
+     Notification icon — FILLED version.
+     Magneetar fused m/M-halves mark — white on dark.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="120dp"
@@ -15,12 +14,8 @@
         android:pathData="M12,0 L108,0 Q120,0 120,12 L120,108 Q120,120 108,120 L12,120 Q0,120 0,108 L0,12 Q0,0 12,0 Z"
         android:fillColor="#0f0f1a"/>
 
-    <!-- Fused m/M-halves mark — SHARP caps/joins for the correct Magneetar look -->
+    <!-- Filled m/M mark — white solid shape -->
     <path
-        android:pathData="M30,90 L30,48 C30,28 60,28 60,48 L60,90 L90,28 L90,90"
-        android:strokeWidth="12"
-        android:strokeColor="#FFFFFF"
-        android:strokeLineCap="butt"
-        android:strokeLineJoin="miter"
-        android:fillColor="#00000000"/>
+        android:pathData="M23,91 L23,38 C23,24 74,24 74,38 L74,91 L74,24 L98,24 L98,91 Z"
+        android:fillColor="#FFFFFF"/>
 </vector>

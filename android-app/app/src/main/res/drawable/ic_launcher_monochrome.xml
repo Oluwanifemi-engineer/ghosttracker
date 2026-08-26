@@ -6,14 +6,11 @@
     android:viewportHeight="108">
 
     <!--
-        Magneetar monochrome mark — for Android 13+ themed/monochrome icons.
+        Magneetar monochrome mark — FILLED version.
+        For Android 13+ themed/monochrome icons.
         The OS applies its own color palette; we provide only the shape.
     -->
     <path
-        android:pathData="M32,77 L32,48 C32,32 54,32 54,48 L54,77 L76,32 L76,77"
-        android:strokeWidth="10"
-        android:strokeColor="#FFFFFF"
-        android:strokeLineCap="butt"
-        android:strokeLineJoin="miter"
-        android:fillColor="#00000000" />
+        android:pathData="M21,82 L21,34 C21,21 66,21 66,34 L66,82 L66,21 L87,21 L87,82 Z"
+        android:fillColor="#FFFFFF" />
 </vector>
