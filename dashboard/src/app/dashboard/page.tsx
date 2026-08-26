@@ -20,9 +20,10 @@ import { Tabs } from '@/components/ui/Tabs';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { TabId } from '@/types';
 import { cn, isOnline, deviceDisplayName, relativeTime } from '@/lib/utils';
+import { AnalyticsPanel } from '@/components/panels/AnalyticsPanel';
 import {
   Shield, Terminal, MapPin, Fence, Camera,
-  ClipboardList, Bug, ShieldCheck, Users,
+  ClipboardList, Bug, ShieldCheck, Users, BarChart3,
   ChevronLeft, ChevronRight, Menu, Radio, X
 } from 'lucide-react';
 
@@ -35,6 +36,7 @@ const PANEL_TABS = [
   { id: 'evidence' as TabId, label: 'Evidence', icon: ClipboardList },
   { id: 'guardian' as TabId, label: 'Guardian', icon: ShieldCheck },
   { id: 'family' as TabId, label: 'Family', icon: Users },
+  { id: 'analytics' as TabId, label: 'Analytics', icon: BarChart3 },
   { id: 'errors' as TabId, label: 'Errors', icon: Bug },
 ];
 
@@ -101,6 +103,7 @@ function TabContent({ tab }: { tab: TabId }) {
       {tab === 'evidence' && <EvidencePanel />}
       {tab === 'guardian' && <GuardianPanel />}
       {tab === 'family' && <div className="p-4"><FamilyCircle /></div>}
+      {tab === 'analytics' && <AnalyticsPanel />}
       {tab === 'errors' && <ErrorPanel />}
     </ErrorBoundary>
   );

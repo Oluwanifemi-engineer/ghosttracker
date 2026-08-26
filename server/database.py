@@ -715,6 +715,20 @@ def init_db(db_path: str = None):
         -- ─── Token Revocation Indexes ──────────────────────────────────────
         CREATE INDEX IF NOT EXISTS idx_revoked_tokens_jti ON revoked_tokens(jti);
 
+        -- ─── Analytics (MVP user metrics — docs/USER_ANALYTICS_SETUP.md) ────
+        -- Lightweight event tracking for active devices, command success rates,
+        -- and feature adoption. No external analytics service — privacy-first.
+        CREATE TABLE IF NOT EXISTS analytics_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            event_type TEXT NOT NULL,
+            device_id TEXT,
+            user_id TEXT,
+            metadata TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE INDEX IF NOT EXISTS idx_analytics_type_time ON analytics_events(event_type, created_at);
+        CREATE INDEX IF NOT EXISTS idx_analytics_device ON analytics_events(device_id, created_at);
+
         -- ─── Error Log ───────────────────────────────────────────────────────
         CREATE TABLE IF NOT EXISTS error_log (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1081,6 +1095,7 @@ def ensure_initialized() -> bool:
         "cell_location_cache",
         "password_reset_tokens",
         "email_verify_tokens",
+        "analytics_events",  # MVP user metrics (docs/USER_ANALYTICS_SETUP.md)
     }
     # ⚠️ Keep in sync with the CREATE TABLE devices columns in init_db() +
     # the guarded ALTER TABLE migrations below it. A stale list here makes

@@ -13,6 +13,7 @@ from functools import partial
 from typing import Optional
 
 from alerts import alert_engine
+from analytics import track
 from archive_monitor import unarchive_device
 from auth import (
     check_command_poll_rate_limit,
@@ -313,6 +314,7 @@ async def register_device(
 
     tokens = create_device_tokens(canonical_id)
     log_audit("device_registered", actor=canonical_id, details=reg.model)
+    track("device_registered", device_id=canonical_id, model=reg.model, owner=bool(owner_id))
 
     return {
         **tokens,
@@ -708,6 +710,7 @@ async def post_location(
 
     if score >= settings.THEFT_SCORE_THRESHOLD:
         sentinel.auto_activate_theft_mode(device_id, score)
+        track("theft_detected", device_id=device_id, score=score, threat_level=threat_level)
         await alert_engine.send_all(
             device_id,
             "theft_detected",
@@ -816,6 +819,7 @@ async def post_location(
     # provider/bearing/confidence), so the real-time feed always rendered
     # "±?m" even though the device reported the fused Kalman accuracy on
     # every ping.
+    track("location_ping", device_id=device_id, score=score, threat_level=threat_level)
     await broadcast_to_dashboards(
         {
             "type": "location",
@@ -1029,6 +1033,7 @@ async def ack_command(
         (ack.status, now, reason, command_id, device_id),
     )
     db.commit()
+    track("command_ack", device_id=device_id, command_id=command_id, status=ack.status)
 
     await broadcast_to_dashboards(
         {

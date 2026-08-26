@@ -10,6 +10,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 from uuid import uuid4
 
+from analytics import track
 from auth import (
     check_command_rate_limit,
     check_login_rate_limit,
@@ -466,6 +467,7 @@ async def claim_device_by_pairing(
 
     update_device_owner(req.device_id, user_id)
     log_audit("device_claimed_by_pairing", actor=auth, details=f"Device: {req.device_id}")
+    track("device_claimed", device_id=req.device_id, user_id=user_id)
 
     return {"status": "ok", "device_id": req.device_id, "owner_id": user_id}
 
@@ -1655,6 +1657,7 @@ async def generate_evidence_pdf(
         actor=auth,
         details=f"Case: {case_id}, Device: {device_id}",
     )
+    track("evidence_exported", device_id=device_id, case_id=case_id)
 
     return Response(
         content=pdf_bytes,
@@ -1866,3 +1869,40 @@ async def resolve_error(
     log_audit("error_resolved", actor=auth, details=f"Error #{error_id}: {notes}")
 
     return {"status": "ok", "message": f"Error #{error_id} marked as resolved"}
+
+
+# ─── Analytics (MVP Metrics) ─────────────────────────────────────────────────
+# Lightweight analytics endpoint using existing SQLite infrastructure.
+# No external analytics services — privacy-first.
+# See docs/USER_ANALYTICS_SETUP.md for full setup guide.
+
+
+@router.get("/api/dashboard/analytics")
+async def get_analytics(
+    db: sqlite3.Connection = Depends(get_db),
+    auth: str = Depends(require_dashboard_auth),
+):
+    """MVP analytics for the dashboard. Returns active device counts,
+    command success rates, and total metrics."""
+    # Active devices in the last 7 days
+    active_devices = db.execute(
+        """SELECT date(server_timestamp) as day, COUNT(DISTINCT device_id) as count
+           FROM locations WHERE server_timestamp > datetime('now', '-7 days')
+           GROUP BY date(server_timestamp) ORDER BY day"""
+    ).fetchall()
+
+    # Command success/failure rates
+    command_stats = db.execute("SELECT status, COUNT(*) as count FROM commands GROUP BY status").fetchall()
+
+    # Total devices
+    total_devices = db.execute("SELECT COUNT(*) as cnt FROM devices").fetchone()["cnt"]
+
+    # Total location pings
+    total_locations = db.execute("SELECT COUNT(*) as cnt FROM locations").fetchone()["cnt"]
+
+    return {
+        "active_devices_7d": [dict(r) for r in active_devices],
+        "command_stats": {r["status"]: r["count"] for r in command_stats},
+        "total_devices": total_devices,
+        "total_locations": total_locations,
+    }

@@ -413,6 +413,15 @@ class PostgresDatabase:
                         revoked_at TIMESTAMPTZ DEFAULT NOW(),
                         reason TEXT
                     );
+
+                    CREATE TABLE IF NOT EXISTS analytics_events (
+                        id BIGSERIAL PRIMARY KEY,
+                        event_type TEXT NOT NULL,
+                        device_id TEXT,
+                        user_id TEXT,
+                        metadata TEXT,
+                        created_at TIMESTAMPTZ DEFAULT NOW()
+                    );
                 """
                 )
 
