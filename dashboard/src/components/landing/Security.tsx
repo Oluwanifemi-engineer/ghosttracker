@@ -5,33 +5,33 @@ import { KeyRound, Lock, FileCheck2, Fingerprint, Globe } from 'lucide-react';
 const SECURITY_POINTS = [
   {
     icon: KeyRound,
-    title: 'Unique per-device keys',
+    title: 'Unique device keys',
     description:
-      'Every device generates its own 256-bit secret on first launch — generated at runtime, never compiled into the APK.',
+      'Every phone gets its own secret key on first launch — never shared, never hardcoded in the app.',
   },
   {
     icon: Lock,
-    title: 'Zero plaintext secrets',
+    title: 'No plaintext passwords',
     description:
-      'The server stores only SHA-256 hashes of device keys and bcrypt password hashes. A database breach cannot leak credentials.',
+      'The server stores only encrypted versions of your keys and passwords. A breach cannot steal your credentials.',
   },
   {
     icon: FileCheck2,
-    title: 'Chain of custody',
+    title: 'Tamper-proof evidence',
     description:
-      'Every piece of evidence is hashed and chained, producing forensic-grade SHA-256 reports admissible in recovery cases.',
+      'Every photo and recording is verified so it cannot be altered — evidence you can trust.',
   },
   {
     icon: Fingerprint,
-    title: 'Token revocation',
+    title: 'Instant session kill',
     description:
-      'JWT access and refresh tokens can be revoked instantly. Stolen sessions are invalidated server-side on detection.',
+      'If someone steals your session, you can revoke it instantly. Stolen logins are killed server-side.',
   },
   {
     icon: Globe,
-    title: 'Hardened transport',
+    title: 'Encrypted connection',
     description:
-      'Rate-limited endpoints, request timeouts, CORS hardening in production, and TLS in transit with AES-256-GCM.',
+      'All data travels over encrypted connections. Your location and commands are protected in transit.',
   },
 ];
 
@@ -55,8 +55,8 @@ export function Security() {
             <span className="bg-gradient-to-r from-gray-400 to-gray-500 bg-clip-text text-transparent">something precious.</span>
           </h2>
           <p className="mt-5 text-gray-400 leading-relaxed max-w-lg">
-            Because it does. Magneetar treats every device as a vault — with per-device secrets,
-            cryptographic evidence, and instant session revocation.
+            Because it does. Magneetar protects your device with unique keys,
+            tamper-proof evidence, and instant session revocation.
           </p>
 
           <div className="mt-8 space-y-4">
@@ -101,7 +101,7 @@ export function Security() {
               TOTP 2FA
             </div>
             <div className="absolute bottom-0 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-full border border-white/10 bg-[#0c1220] text-[10px] font-mono font-bold text-white/50 shadow-elevation-2">
-              SHA-256 CHAIN
+              TAMPER-PROOF
             </div>
           </div>
         </div>

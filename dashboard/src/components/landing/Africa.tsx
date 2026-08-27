@@ -31,13 +31,13 @@ const AFRICA_POINTS = [
     icon: BatteryCharging,
     title: 'Survives the phones people use',
     description:
-      'OEM-aware persistence engineered for Huawei, Xiaomi, Oppo, Vivo, and Realme — the battery killers that end most trackers.',
+      'Survives battery-saving modes on Huawei, Xiaomi, Oppo, Vivo, and Realme — phones that kill most tracking apps.'
   },
   {
     icon: FileCheck2,
     title: 'Evidence that holds up',
     description:
-      'SHA-256-chained photo, audio, and location evidence, packaged into PDF reports ready for law enforcement.',
+      'Tamper-proof photo, audio, and location evidence, packaged into PDF reports you can take to the police.'
   },
 ];
 

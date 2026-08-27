@@ -11,13 +11,13 @@ const VERIFIABLE_CLAIMS = [
   {
     metric: '3s',
     label: 'GPS update intervals',
-    detail: 'Kalman-filtered, road-snapped coordinates',
+    detail: 'Accurate, street-level coordinates',
     icon: Zap,
   },
   {
-    metric: 'SHA-256',
-    label: 'chain of custody',
-    detail: 'Every evidence piece is cryptographically sealed',
+    metric: 'Tamper-proof',
+    label: 'evidence records',
+    detail: 'Every photo and recording is verified and cannot be altered',
     icon: Lock,
   },
   {

@@ -28,14 +28,14 @@ const FEATURES = [
     icon: MapPin,
     title: 'Real-time Tracking',
     description:
-      'GPS + network location streamed live to your dashboard over WebSocket with 3-second telemetry intervals.',
+      'GPS + network location streamed live to your dashboard with 3-second updates.',
     accent: false,
   },
   {
     icon: Camera,
     title: 'Evidence Capture',
     description:
-      'Trigger front/rear camera photos and audio captures remotely, sealed with a SHA-256 chain of custody.',
+      'Trigger front/rear camera photos and audio captures remotely — every piece is tamper-proof.',
     accent: false,
   },
   {
@@ -75,16 +75,16 @@ const FEATURES = [
   },
   {
     icon: Eye,
-    title: 'OEM Persistence',
+    title: 'Works on any Android',
     description:
-      'Survives battery killers on Huawei, Xiaomi, Oppo, Vivo, and Realme — watchdog alarms, health checks, and wakelock management.',
+      'Survives battery-saving modes on Huawei, Xiaomi, Oppo, Vivo, and Realme — phones that kill most tracking apps.',
     accent: false,
   },
   {
     icon: FileText,
     title: 'Evidence Reports',
     description:
-      'Generate PDF evidence packages with location trail, command history, and cryptographic chain of custody.',
+      'Generate PDF evidence reports with location history, photos, and tamper-proof records.',
     accent: false,
   },
 ];
@@ -132,7 +132,7 @@ export function Features() {
           </h2>
           <p className="mt-4 text-gray-400 leading-relaxed max-w-lg mx-auto">
             Protect the devices you own and stay close to the people you love — from silent background
-            tracking to forensic-grade evidence.
+            tracking to evidence you can take to the police.
           </p>
         </div>
 

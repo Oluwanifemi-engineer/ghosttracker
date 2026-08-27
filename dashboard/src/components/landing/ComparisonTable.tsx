@@ -22,7 +22,7 @@ const FEATURES: Feature[] = [
   // Tracking
   { name: 'Real-time GPS tracking', magneetar: true, cerberus: true, prey: true, findMy: true, category: 'Tracking' },
   { name: '3-second location updates', magneetar: true, cerberus: false, prey: false, findMy: false, category: 'Tracking' },
-  { name: 'Kalman-filtered coordinates', magneetar: true, cerberus: false, prey: false, findMy: false, category: 'Tracking' },
+  { name: 'Accurate street-level coordinates', magneetar: true, cerberus: false, prey: false, findMy: false, category: 'Tracking' },
   { name: 'Road-snapped markers', magneetar: true, cerberus: false, prey: false, findMy: false, category: 'Tracking' },
   { name: 'Offline location queuing', magneetar: true, cerberus: false, prey: true, findMy: false, category: 'Tracking' },
   { name: 'Adaptive battery cadence', magneetar: true, cerberus: false, prey: false, findMy: false, category: 'Tracking' },
@@ -30,14 +30,14 @@ const FEATURES: Feature[] = [
   // Security
   { name: 'Theft detection (8 weighted signals)', magneetar: true, cerberus: false, prey: false, findMy: false, category: 'Security' },
   { name: 'Evidence capture (photos + audio)', magneetar: true, cerberus: true, prey: true, findMy: false, category: 'Security' },
-  { name: 'SHA-256 chain of custody', magneetar: true, cerberus: false, prey: false, findMy: false, category: 'Security' },
+  { name: 'Tamper-proof evidence records', magneetar: true, cerberus: false, prey: false, findMy: false, category: 'Security' },
   { name: 'Remote data wipe', magneetar: true, cerberus: true, prey: true, findMy: true, category: 'Security' },
   { name: 'Remote siren / alarm', magneetar: true, cerberus: true, prey: true, findMy: false, category: 'Security' },
   { name: 'SIM change detection', magneetar: true, cerberus: true, prey: false, findMy: false, category: 'Security' },
 
   // Privacy & Ownership
   { name: 'Self-hosted option', magneetar: true, cerberus: true, prey: false, findMy: false, category: 'Privacy' },
-  { name: 'AES-256-GCM encryption at rest', magneetar: true, cerberus: false, prey: false, findMy: false, category: 'Privacy' },
+  { name: 'Data encrypted on server', magneetar: true, cerberus: false, prey: false, findMy: false, category: 'Privacy' },
   { name: 'No data sold to third parties', magneetar: true, cerberus: true, prey: false, findMy: false, category: 'Privacy' },
   { name: 'Source available (BSL 1.1)', magneetar: true, cerberus: true, prey: false, findMy: false, category: 'Privacy' },
   { name: 'Built for Africa', magneetar: true, cerberus: false, prey: false, findMy: false, category: 'Privacy' },
