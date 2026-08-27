@@ -506,6 +506,21 @@ from routes.metrics import router as metrics_router  # noqa: E402
 
 app.include_router(metrics_router)
 
+# USSD menu for feature phones
+from routes.ussd import router as ussd_router  # noqa: E402
+
+app.include_router(ussd_router)
+
+# WhatsApp bot for device control
+from routes.whatsapp import router as whatsapp_router  # noqa: E402
+
+app.include_router(whatsapp_router)
+
+# BLE mesh for offline device finding
+from routes.mesh import router as mesh_router  # noqa: E402
+
+app.include_router(mesh_router)
+
 
 # ─── Request Timeout Middleware ───────────────────────────────────────────
 

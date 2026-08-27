@@ -750,6 +750,30 @@ def init_db(db_path: str = None):
 
         CREATE INDEX IF NOT EXISTS idx_error_log_timestamp ON error_log(timestamp);
         CREATE INDEX IF NOT EXISTS idx_error_log_resolved ON error_log(resolved);
+
+        -- BLE mesh: beacon registrations for offline device finding
+        CREATE TABLE IF NOT EXISTS mesh_beacons (
+            device_id TEXT PRIMARY KEY,
+            beacon_token TEXT NOT NULL,
+            active BOOLEAN DEFAULT 1,
+            registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+
+        -- BLE mesh: sighting reports from finder phones
+        CREATE TABLE IF NOT EXISTS mesh_sightings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            beacon_device_id TEXT NOT NULL,
+            finder_device_id TEXT NOT NULL,
+            lat REAL NOT NULL,
+            lng REAL NOT NULL,
+            accuracy REAL,
+            rssi INTEGER,
+            reported_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_mesh_sightings_beacon ON mesh_sightings(beacon_device_id, reported_at);
+        CREATE INDEX IF NOT EXISTS idx_mesh_sightings_finder ON mesh_sightings(finder_device_id, reported_at);
     """
     )
     conn.commit()
@@ -1096,6 +1120,8 @@ def ensure_initialized() -> bool:
         "password_reset_tokens",
         "email_verify_tokens",
         "analytics_events",  # MVP user metrics (docs/USER_ANALYTICS_SETUP.md)
+        "mesh_beacons",  # BLE mesh: beacon registrations
+        "mesh_sightings",  # BLE mesh: sighting reports
     }
     # ⚠️ Keep in sync with the CREATE TABLE devices columns in init_db() +
     # the guarded ALTER TABLE migrations below it. A stale list here makes

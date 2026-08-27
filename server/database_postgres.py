@@ -445,6 +445,32 @@ class PostgresDatabase:
                     CREATE INDEX IF NOT EXISTS idx_error_log_resolved ON error_log(resolved);
                     CREATE INDEX IF NOT EXISTS idx_password_reset_user ON password_reset_tokens(user_id);
                     CREATE INDEX IF NOT EXISTS idx_email_verify_user ON email_verify_tokens(user_id);
+
+                    -- BLE mesh: beacon registrations for offline device finding
+                    CREATE TABLE IF NOT EXISTS mesh_beacons (
+                        device_id TEXT PRIMARY KEY,
+                        beacon_token TEXT NOT NULL,
+                        active BOOLEAN DEFAULT TRUE,
+                        registered_at TIMESTAMPTZ DEFAULT NOW(),
+                        updated_at TIMESTAMPTZ DEFAULT NOW()
+                    );
+
+                    -- BLE mesh: sighting reports from finder phones
+                    CREATE TABLE IF NOT EXISTS mesh_sightings (
+                        id SERIAL PRIMARY KEY,
+                        beacon_device_id TEXT NOT NULL,
+                        finder_device_id TEXT NOT NULL,
+                        lat DOUBLE PRECISION NOT NULL,
+                        lng DOUBLE PRECISION NOT NULL,
+                        accuracy DOUBLE PRECISION,
+                        rssi INTEGER,
+                        reported_at TIMESTAMPTZ DEFAULT NOW()
+                    );
+
+                    CREATE INDEX IF NOT EXISTS idx_mesh_sightings_beacon
+                        ON mesh_sightings(beacon_device_id, reported_at);
+                    CREATE INDEX IF NOT EXISTS idx_mesh_sightings_finder
+                        ON mesh_sightings(finder_device_id, reported_at);
                 """
                 )
             except Exception as e:
