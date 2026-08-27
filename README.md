@@ -1,433 +1,138 @@
 # Magneetar
 
-> **Protect what you own. Stay close to who you love.**  
-> Military-grade anti-theft tracking and live location circles for Android — track, protect, and recover your devices while keeping family, coworkers, and teams in sync.
+> **Anti-theft tracking for Android.** When your phone is stolen, Magneetar keeps reporting its location, captures evidence, and lets you lock or alarm it remotely.
 
-![Status](https://img.shields.io/badge/status-production-green)
-![Tests](https://img.shields.io/badge/tests-621%20backend%20%2B%20214%20dashboard-brightgreen)
-![Coverage](docs/coverage-badge.svg)
+![Status](https://img.shields.io/badge/status-pilot-green)
+![Tests](https://img.shields.io/badge/tests-535%20backend%20%2B%20209%20dashboard-brightgreen)
 ![Python](https://img.shields.io/badge/python-3.12-blue)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.115-green)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.140-green)
 ![Kotlin](https://img.shields.io/badge/kotlin-Android-orange)
-![License](https://img.shields.io/badge/license-BSL--1.1-orange)
 
 ---
 
-## Architecture Overview
+## What it does
+
+| Feature | How it works |
+|---------|-------------|
+| **Real-time tracking** | Phone reports GPS location every 3 seconds |
+| **Theft detection** | Sentinel scores suspicious activity (SIM change, failed unlocks, device admin disabled) |
+| **Evidence capture** | Auto-photos and audio when theft is detected |
+| **Remote commands** | Lock, siren alarm, front-camera photo, audio recording, full wipe |
+| **SMS commands** | Commands arrive via SMS when phone is offline |
+| **Geofencing** | Safe zones with exit alerts and auto-actions |
+| **Push alerts** | Theft, SIM change, geofence exit → instant notification |
+| **Web dashboard** | See your devices on a live map from any browser |
+
+## Architecture
 
 ```
-┌──────────────┐     ┌──────────────────┐     ┌────────────────┐
-│   Android App │────▶│   Magneetar API  │────▶│     SQLite     │
-│  (Kotlin/Jet) │     │   (FastAPI/Py)   │     │  (WAL, single  │
-└──────┬───────┘     └────────┬─────────┘     │   data plane)  │
-       │                      │               └────────────────┘
-       │                      │
-       │  x-device-key        │  WebSocket
-       │  (unique per device) │  (real-time)
-       │                      │
-       ▼                      ▼
-┌──────────────┐     ┌──────────────────┐
-│  FCM Push    │     │   Next.js        │
-│  Notifications│     │   Dashboard      │
-└──────────────┘     └──────────────────┘
+Android App ──▶ Magneetar API ──▶ SQLite (WAL)
+  (Kotlin)       (FastAPI)        (Redis for WebSocket fan-out)
+                      │
+                      ▼
+                 Next.js Dashboard
 ```
 
-### Key Features
+- **Server:** Python 3.12, FastAPI, SQLite with WAL mode, Redis for multi-worker WebSocket
+- **Dashboard:** Next.js 14, TypeScript, Tailwind CSS, Leaflet maps
+- **Android:** Kotlin, Jetpack, Firebase Cloud Messaging, Camera2 API
 
-| Feature | Status | Description |
-|---------|--------|-------------|
-| **🔐 Device Key Auth** | ✅ Live | Each device generates its own 256-bit secret key — not shared, not in APK |
-| **🧠 Sentinel AI** | ✅ Live | Smart theft detection with false-positive prevention |
-| **📍 Real-time Tracking** | ✅ Live | GPS + network location with 3-second intervals |
-| **📸 Evidence Capture** | ✅ Live | Remote photo/audio capture with SHA-256 chain of custody |
-| **📡 Geofencing** | ✅ Live | Safe zones with exit alerts **+ per-zone auto-actions** (auto photo/audio capture or siren on exit) |
-| **🛰️ Location Export** | ✅ Live | Full history as CSV (law-enforcement handover, Excel-friendly) |
-| **🔒 Lost Mode** | ✅ Live | Remote full-screen recovery lock with one-tap call button |
-| **🔔 Push Notifications** | ✅ Live | FCM push alerts on theft, SIM change, geofence exit |
-| **📊 Dashboard** | ✅ Live | Next.js tactical command center |
-| **🔌 Offline Queue** | ✅ Live | Queues pings when offline, uploads when reconnected |
-| **🛡️ Phantom Mode** | ✅ Live | Hidden operation mode for stealth tracking |
-| **🚨 Remote Commands** | ✅ Live | Lock, wipe, alarm, capture photo/audio |
-| **📋 Evidence Reports** | ✅ Live | PDF evidence packages with cryptographic chain |
-| **🔄 Auto-Deploy** | ✅ Live | Docker Compose + Cloudflare Tunnel |
-| **📦 Error Tracking** | ✅ Live | Built-in error logger with dashboard viewer |
+## Quick start
 
----
+### For testers
 
-## Quick Start
+1. Download the APK (link sent by developer)
+2. Enable "Install from unknown sources"
+3. Open Magneetar → Sign Up → grant permissions
+4. Done — the app runs silently in the background
 
-### Prerequisites
-
-- Python 3.12+
-- Docker & Docker Compose (for production)
-- An Android device (for the app)
-- A Cloudflare account (for public access via Tunnel)
-
-### 1. Get the source & install
-
-The git repository is private (the commit diary is not exposed — OPSEC).
-Open source is honored **per release**: every tagged release ships its full
-source as a clean tarball + SHA-256 from the [download page](https://app.magneetar.me/download)
-(`/apk/source` on the API host). Build from that, or from an internal clone
-if you're a maintainer.
+### For developers
 
 ```bash
-curl -L https://api.magneetar.me/apk/source -o magneetar-source.tar.gz
-sha256sum magneetar-source.tar.gz   # must match the download page's hash
-tar -xzf magneetar-source.tar.gz
-cd magneetar-*-source
-bash scripts/generate-env.sh   # Generate secure secrets
-make setup                    # venv + server deps (incl. dev tooling) + npm ci
-make pre-commit-install       # install git hooks (black, isort, flake8, eslint)
+# Clone and setup
+git clone <repo-url> && cd magneetar
+bash scripts/generate-env.sh   # Generate secrets
+make setup                      # Install dependencies
+
+# Run locally
+make server      # API on :8000
+make dashboard   # Dashboard on :3000
+
+# Run tests
+make test        # 535 backend + 209 dashboard tests
+
+# Deploy (Docker)
+bash scripts/deploy-mvp.sh
 ```
 
-> `make setup` installs both `server/requirements.txt` (runtime) and
-> `server/requirements-dev.txt` (pinned lint/test tooling that matches the
-> pre-commit hook environment), then runs `npm ci` for the dashboard.
-> `make pre-commit-install` wires the quality-gate hooks into your git
-> workflow so every commit is checked automatically.
-
-### 2. Configure Environment
-
-Edit `server/.env`:
-
-```env
-# Required
-MT_API_KEY=your-secure-api-key-here     # MASTER key — dashboard admin ONLY, never in the APK
-MT_DEVICE_KEY=your-device-key-here      # LOW-PRIVILEGE key — the only key embedded in the APK
-
-# Alert Services (at least one for theft notifications)
-MT_ALERT_EMAIL=your@email.com      # Where alerts go
-MT_SENDGRID_API_KEY=...             # Optional: email alerts
-MT_FIREBASE_KEY=./firebase-key.json  # Optional: push notifications
-
-# Optional: PostgreSQL (defaults to SQLite)
-MT_DATABASE_URL=postgresql://user:pass@localhost:5432/magneetar
-```
-
-### 3. Start Development Server
-
-**Recommended — docker dev stack** (prod-parity runtime: same image, Python
-3.12, Redis-backed multi-worker WebSocket broadcast; isolated dev volumes):
-
-```bash
-make dev                    # or: scripts/dev-server.sh start
-# API at http://localhost:8000, redis for realtime broadcast
-
-scripts/dev-server.sh stop|restart|status|logs   # control the stack
-scripts/dev-server.sh reset                       # wipe dev data + rebuild fresh
-```
-
-Why docker for dev: the ad-hoc host-uvicorn setup drifted from production
-(host Python version, no Redis, root-owned processes, port confusion with the
-prod container). The dev stack runs the same image and env shape as
-production — what works locally is what ships.
-
-**Lightweight alternative** — host venv with auto-reload (no Redis, single
-worker):
-
-```bash
-make server
-# Server running at http://localhost:8000 (uvicorn --reload)
-```
-
-### 4. Start Dashboard (Development)
-
-```bash
-make dashboard
-# Dashboard at http://localhost:3000 (dev) — points at localhost:8000 by default
-```
-
-### 5. Run Tests & Quality Gates
-
-```bash
-make test          # backend pytest (full suite) + dashboard jest
-make validate      # full CI-equivalent gate: lint + typecheck + test + pre-commit
-make test-all      # everything — same as make test (alias kept for compatibility)
-```
-
-> **621 backend tests + 214 dashboard tests** should pass. `make validate` runs
-> every gate that CI enforces, so a green local `make validate` predicts a green
-> GitHub Actions run.
-
----
-
-## Production Deployment
-
-### Docker Compose (Recommended)
-
-```bash
-# One-command deploy
-bash scripts/deploy.sh
-
-# Or manually:
-docker compose up --build -d
-```
-
-This starts:
-- **Magneetar Server** — FastAPI with uvicorn (port 8002), SQLite on the
-  persisted `magneetar-data` volume (the single data plane — WAL mode,
-  online-backup via `scripts/backup-db.sh`)
-- **Magneetar Dashboard** — Next.js served via Nginx (port 3000)
-
-### Cloudflare Tunnel (Public Access)
-
-```bash
-# Configure tunnel (one-time)
-cloudflared tunnel create magneetar
-cloudflared tunnel route dns magneetar api.magneetar.me
-cloudflared tunnel route dns magneetar app.magneetar.me
-
-# Edit ~/.cloudflared/config.yml:
-# tunnel: <tunnel-id>
-# ingress:
-#   - hostname: api.magneetar.me
-#     service: http://localhost:8002
-#   - hostname: app.magneetar.me
-#     service: http://localhost:3000
-#   - service: http_status:404
-
-# Start tunnel
-cloudflared tunnel run magneetar
-```
-
-### Database Backups
-
-```bash
-# Create a backup
-bash scripts/backup-db.sh
-
-# List available backups
-bash scripts/backup-db.sh --list
-
-# Auto-backup via cron (daily at 3am)
-crontab -e
-0 3 * * * cd /path/to/magneetar && bash scripts/backup-db.sh
-```
-
----
-
-## Security Architecture
-
-### Three auth worlds (who authenticates how)
-
-| World | Credential | How it's presented | Scope |
-|---|---|---|---|
-| **Dashboard (web)** | Email/password (+2FA) | Login → JWT `type=dashboard` | The user's own account + shared devices |
-| **Consumer's phone (app)** | Device key `MT_DEVICE_KEY` (embedded in APK) | `x-api-key` on register → device JWT `type=device`, then `Authorization: Bearer` | Device routes only (location, commands, media) |
-| **Operator/admin** | Master key `MT_API_KEY` (server-side only) | `{ "api_key": … }` to `/api/auth/login` | Admin login + step-up |
-
-### Device Key Authentication
-
-Since **v1.4.0** the shared **low-privilege device key** (`MT_DEVICE_KEY`) is
-embedded in every APK as `BuildConfig.DEVICE_KEY`. The app presents it only
-once, at registration, to obtain a device JWT:
+## Project structure
 
 ```
-App boot → POST /api/device/register { x-api-key: <MT_DEVICE_KEY> }
-                  ↓
-Server verifies key, stores SHA-256 hash, issues device JWT (24h) + refresh (90d)
-                  ↓
-All subsequent calls: Authorization: Bearer <device-jwt>
+server/                  # Python FastAPI backend
+├── main.py              # App setup, middleware, WebSocket
+├── routes/devices.py    # Device API (register, location, commands)
+├── routes/dashboard.py  # Dashboard API (login, devices, evidence)
+├── routes/admin.py      # Admin stats (WebSocket only)
+├── routes/metrics.py    # Observability endpoints
+├── auth.py              # JWT + device key authentication
+├── database.py          # SQLite schema + helpers
+├── sentinel.py          # Theft detection scoring
+├── alerts.py            # SMS/WhatsApp/push alerts
+├── models.py            # Pydantic request/response models
+└── tests/               # 535 tests
+
+dashboard/               # Next.js web dashboard
+├── src/app/             # Pages (landing, login, dashboard)
+├── src/components/      # UI components
+├── src/lib/             # API client
+└── src/__tests__/       # 209 tests
+
+android-app/             # Android Kotlin app
+├── app/src/main/java/   # Services & activities
+└── app/build.gradle.kts # Build config
+
+scripts/                 # Deploy & utilities
+├── deploy-mvp.sh        # One-command Docker deploy
+├── backup-db.sh         # Database backup
+└── generate-env.sh      # Secret generation
 ```
 
-**Why this is secure:**
-- ✅ The key is **device-scope only** — `x-api-key` can never authenticate
-  dashboard or account routes (F-02, regression-tested in `test_api.py`), so
-  a public APK can't hand anyone the admin panel
-- ✅ Server stores **only SHA-256 hashes** — a DB breach can't leak keys
-- ✅ The master key (`MT_API_KEY`) is **never** embedded anywhere
-- ✅ A per-device unique key (`x-device-key`) is also accepted for
-  re-registration/recovery flows
+## API endpoints
 
-### Auth Methods for device routes (in priority order)
+**Device-facing (phone → server):**
+- `POST /api/device/register` — register device, get JWT
+- `POST /api/device/location` — telemetry ping
+- `POST /api/device/heartbeat` — heartbeat
+- `POST /api/device/media` — upload evidence
+- `GET /api/device/commands/{id}` — poll commands
+- `POST /api/device/commands/{id}/ack` — acknowledge command
 
-1. **JWT Bearer token** — from device registration session
-2. **x-device-key** — unique per-device secret (reinstall recovery)
-3. **x-api-key** — shared key: the low-privilege device key
-   (`MT_DEVICE_KEY`), the only key embedded in the APK
+**Dashboard-facing (web → server):**
+- `POST /api/auth/login` — dashboard login
+- `GET /api/dashboard/devices` — list devices with locations
+- `POST /api/dashboard/command` — issue remote command
+- `GET /api/dashboard/evidence/{id}` — evidence cases
+- `POST /api/dashboard/geofence` — create geofence
+- `GET /api/dashboard/locations/{id}/export/csv` — location export
 
-### Third-party integrations
+**System:**
+- `GET /health` — health check
+- `GET /metrics` — Prometheus metrics
+- `WS /ws/dashboard` — real-time updates
 
-Scoped per-account **developer API keys** (`mtk_…`) for external
-integrations — alerting scripts, resellers, custom dashboards. Keys are
-created in the dashboard (Settings → Developer API Keys) with a password
-step-up, carry explicit scopes (`devices:read`, `devices:write`,
-`alerts:read`, `media:read`), and are **intersected with your account's own
-RBAC rights** — a viewer-shared device stays read-only through a key too.
+## Security
 
-Two key types:
-- **Live** (`mtk_live_…`) — may carry write scopes (`devices:write`).
-- **Read-only** (`mtk_read_…`) — structurally cannot issue wipe/lock
-  commands: `devices:write` is rejected at creation AND stripped at every
-  request, so even a leaked read-only key stays read-only.
-
-```
-# List devices (scope: devices:read)
-curl -s https://api.magneetar.me/api/v1/devices \
-  -H "Authorization: Bearer mtk_live_…"
-
-# Issue a command (scope: devices:write, role admin/owner)
-curl -s -X POST https://api.magneetar.me/api/v1/devices/<id>/commands \
-  -H "Authorization: Bearer mtk_live_…" \
-  -d '{"command": "alarm"}'
-```
-
-Security properties: the server stores only a 12-char prefix + SHA-256 hash
-(the full key is shown once at creation), keys are per-key rate-limited, and
-`wipe` is deliberately unavailable through keys (it requires the dashboard
-step-up password). Every key-authenticated request increments a usage meter
-(`request_count`, visible in Settings → Developer API Keys), so a key that
-starts burning requests you didn't make is a leak you can see. Full spec:
-`docs/developer-api.md`.
-
----
-
-## API Overview
-
-| Endpoint | Auth | Description |
-|----------|------|-------------|
-| `GET /health` | None | Server health check |
-| `POST /api/device/register` | API Key | Register device, get tokens |
-| `POST /api/device/location` | JWT/Device Key | Send telemetry ping |
-| `POST /api/device/heartbeat` | JWT/Device Key | Send heartbeat |
-| `POST /api/device/media` | JWT/Device Key | Upload evidence media |
-| `POST /api/device/fcm-token` | Any | Register push token |
-| `POST /api/auth/login` | None | Dashboard login with API key |
-| `GET /api/dashboard/devices` | Dashboard | List all devices |
-| `POST /api/dashboard/command` | Dashboard | Issue remote command |
-| `GET /api/dashboard/errors` | Dashboard | View server errors |
-
-Full auto-generated OpenAPI docs are available **locally** in development:
-- **Swagger UI**: `http://localhost:8000/docs`
-- **ReDoc**: `http://localhost:8000/redoc`
-
-They are deliberately **disabled in production** (docs_url=None) to reduce the
-public attack surface; the live API is documented by this README and the
-endpoint tables above.
-
----
-
-## Android App Setup
-
-### Prerequisites
-- Android Studio (for development)
-- Android 8.0+ (API 24) device
-
-### Building
-
-```bash
-# The real google-services.json is gitignored (it identifies the live Firebase
-# project). A safe placeholder template ships as
-# android-app/app/google-services.json.example — copy it for a build that
-# compiles without Firebase push, or restore your real file (CI injects the
-# real one from the GOOGLE_SERVICES_JSON secret; your local real copy lives in
-# backups/google-services.json.real).
-cp android-app/app/google-services.json.example android-app/app/google-services.json
-
-cd android-app
-./gradlew assembleRelease
-
-# With custom server URL:
-# DEVICE_KEY = the server's MT_DEVICE_KEY (low-privilege). NEVER bake the
-# master MT_API_KEY into the APK — anyone who downloads the app could extract
-# it and get dashboard-admin.
-SERVER_URL=https://api.magneetar.me \
-DEVICE_KEY=your-device-key \
-./gradlew assembleRelease
-```
-
-### APK Build via GitHub Actions
-
-The CI pipeline automatically builds the APK on push to `main`:
-1. Go to your GitHub repo → Actions
-2. Select "Build Magneetar APK" workflow
-3. Click "Run workflow"
-
-Download the APK artifact and install on your device.
-
----
-
-## Technology Stack
-
-### Backend
-- **Python 3.12+** with **FastAPI**
-- **SQLite** (WAL) — the single data plane, backed up via `scripts/backup-db.sh`
-- **JWT** + **Device Key** authentication
-- **Cloudflare Tunnel** for secure public access
-- **Docker Compose** for orchestration
-- **Sentry SDK** (optional) for error monitoring
-
-### Frontend
-- **Next.js 14** with TypeScript
-- **Tailwind CSS** for styling
-- **Leaflet** for mapping
-- **Nginx** for production serving
-
-### Android
-- **Kotlin** with Jetpack/AndroidX
-- **Firebase Cloud Messaging** for push
-- **Camera2 API** for evidence capture
-- **Device Policy Manager** for admin features
-- **OkHttp** for networking
-
-### CI/CD
-- **GitHub Actions** — test, build, deploy
-- **Blocking flake8 lint gate** — full `.flake8` selection, pinned to match pre-commit
-- **Multi-stage Docker builds** — optimized images
-- **Health checks** on all services
-
-### Developer Tooling
-- **`Makefile`** — one-command gates (`make setup`, `make validate`, `make test`, …)
-- **`pre-commit`** — black, isort, flake8, eslint run on every commit
-- **`server/requirements-dev.txt`** — pinned lint/test tooling, single source of truth
-- **`make help`** — list every available target
-
----
-
-## Project Structure
-
-```
-magneetar/
-├── server/                  # Python FastAPI backend
-│   ├── main.py              # API routes & middleware
-│   ├── auth.py              # JWT + device key auth
-│   ├── database.py          # SQLite schema & helpers
-│   ├── sentinel.py          # Theft detection AI
-│   ├── alerts.py            # Push/SMS/Email alerts
-│   ├── models.py            # Pydantic models
-│   └── tests/               # 507 unit + E2E tests
-├── dashboard/               # Next.js web dashboard
-│   ├── src/app/             # Pages & layouts
-│   ├── src/components/      # UI components
-│   └── src/lib/             # API client & utils
-├── android-app/             # Android Kotlin app
-│   └── app/src/main/java/   # Services & activities
-├── scripts/                 # Deployment & utilities
-│   ├── deploy.sh            # Auto-deploy script
-│   ├── backup-db.sh         # Database backup
-│   ├── device_simulator.py  # Theft scenario tester
-│   └── test-e2e.sh          # E2E test runner
-├── docker-compose.yml       # Production stack
-└── docs/                    # Documentation
-```
-
----
+- **Device key auth:** Each device generates its own 256-bit secret key
+- **JWT tokens:** Short-lived access tokens, long-lived refresh tokens
+- **Encrypted at rest:** AES-256-GCM for location data and TOTP secrets
+- **Rate limiting:** Per-endpoint rate limits prevent abuse
+- **No tracking:** Photos only captured when theft is detected
 
 ## License
 
-**Business Source License 1.1 (source-available)** — see [LICENSE](LICENSE) for details.
-
-The code is publicly readable and may be used for personal, educational, and
-non-commercial purposes. Commercial use of the Licensed Work as a competing
-anti-theft / tracking / monitoring service is not permitted until the Change
-Date (**2030-08-01**), at which point the project converts to the Apache
-License 2.0.
-
----
+Business Source License 1.1 — source-available, non-commercial use allowed.
+Converts to Apache 2.0 on 2030-08-01.
 
 ## Author
 
-**Oluwanifemi Tinubu**  
-Electronic and Electrical Engineering Student  
-Magneetar — Track · Protect · Recover
+Oluwanifemi Tinubu — Electronic and Electrical Engineering, OAU

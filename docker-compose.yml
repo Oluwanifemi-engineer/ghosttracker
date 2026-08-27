@@ -1,18 +1,13 @@
 # ═══════════════════════════════════════════════════════════════════════════════
 # MAGNEETAR — Docker Compose
-# Production deployment with server + dashboard on a single data plane.
+# MVP deployment: server + dashboard + Redis on a single machine.
 # ═══════════════════════════════════════════════════════════════════════════════
 #
-# DATABASE DECISION (v1.3.1): the app's data plane is SQLite at
-# /app/data/magneetar.db (persisted volume), with WAL + the online-backup
-# script (scripts/backup-db.sh). Every route reads/writes SQLite via
-# database.py — PostgreSQL was a documented-optional path that held NO app
-# data, and its adapter schema had drifted (missing users/fcm_tokens/error_log
-# tables), so enabling MT_DATABASE_URL would break registration. It is removed
-# from this stack to keep one honest, well-tested persistence layer.
+# Data plane: SQLite at /app/data/magneetar.db (persisted volume).
+# Redis for multi-worker WebSocket fan-out (pub/sub broadcast).
+# Cloudflare Tunnel for public access.
 #
-# An optional PostgreSQL adapter (database_postgres.py) still exists in the
-# codebase for future scale-out; the server logs a clear warning if you opt in.
+# One-command deploy: bash scripts/deploy-mvp.sh
 
 services:
 
