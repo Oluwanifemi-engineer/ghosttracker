@@ -195,16 +195,7 @@ export function Sidebar() {
                   <span>Admin</span>
                 </Link>
               )}
-              <Link
-                href="/trust"
-                target="_blank"
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[8px] font-mono font-bold uppercase tracking-wider transition-all hover:bg-emerald-500/10 text-emerald-400/70 hover:text-emerald-300 border border-emerald-500/15 hover:border-emerald-500/30"
-                title="Trust Score"
-              >
-                <ShieldCheck size={9} />
-                <span>Trust</span>
-                <ExternalLink size={6} className="opacity-40" />
-              </Link>
+
             </div>
           </div>
 

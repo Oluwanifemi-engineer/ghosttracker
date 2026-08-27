@@ -1,4 +1,4 @@
-import { Device, Location, Command, MediaItem, MediaDetail, ErrorLogResponse, GuardianProfile, RecoveryRequest, NearbyRecoveryRequest, UserProfile, Geofence, GeofenceAutoAction, DeviceShare, ShareRole, ApiKey, ApiKeyCreated, ApiKeyScope, ApiKeyType } from '@/types';
+import { Device, Location, Command, MediaItem, MediaDetail, ErrorLogResponse, UserProfile, Geofence, GeofenceAutoAction, DeviceShare, ShareRole } from '@/types';
 
 // ─── Configuration ───────────────────────────────────────────────────────────
 
@@ -448,539 +448,62 @@ class MagneetarAPI {
     return this.request('/api/auth/user/account', 'DELETE');
   }
 
-  // ── Developer API Keys (docs/developer-api.md) ──────────────────────────
-  // Per-account, scoped, revocable keys for third-party integrations. ALL
-  // management endpoints require the account password (step-up): a stolen
-  // dashboard session alone can never mint or destroy long-lived credentials.
-
-  /** List the caller's keys — prefix + metadata only (never the full key). */
-  async getApiKeys(): Promise<{ api_keys: ApiKey[] }> {
-    return this.request('/api/account/api-keys');
-  }
-
-  /**
-   * Create a scoped key. The FULL key is returned exactly once in `key` —
-   * show it to the user immediately, because the server stores only the
-   * prefix + hash and cannot recover it later.
-   * key_type: 'live' (default) or 'readonly' — readonly keys can never carry
-   * write scopes (enforced server-side at creation and at every request).
-   */
-  async createApiKey(data: {
-    name: string;
-    scopes: ApiKeyScope[];
-    key_type?: ApiKeyType;
-    password: string;
-    expires_at?: string | null;
-  }): Promise<ApiKeyCreated> {
-    return this.request('/api/account/api-keys', 'POST', data);
-  }
-
-  /** Revoke a key immediately (step-up password). */
-  async revokeApiKey(keyId: string, password: string): Promise<{ status: string; id: string }> {
-    return this.request(`/api/account/api-keys/${keyId}`, 'DELETE', { password });
-  }
-
-  /**
-   * Rotate a key: the old one dies instantly, a fresh one with the same
-   * name/scopes/expiry is returned (full key shown exactly once).
-   */
-  async rotateApiKey(keyId: string, password: string): Promise<ApiKeyCreated> {
-    return this.request(`/api/account/api-keys/${keyId}/rotate`, 'POST', { password });
-  }
-
-  // ── Guardian Network (community recovery) ────────────────────────────────
-
-  async getGuardianProfile(): Promise<GuardianProfile> {
-    return this.request('/api/guardian/profile');
-  }
-
-  async setGuardianOptIn(data: {
-    opted_in: boolean;
-    radius_km?: number;
-    handle?: string;
-  }): Promise<GuardianProfile> {
-    return this.request('/api/guardian/opt-in', 'POST', data);
-  }
-
-  async launchRecovery(deviceId: string, description?: string): Promise<RecoveryRequest> {
-    return this.request('/api/recovery/requests', 'POST', { device_id: deviceId, description });
-  }
-
-  async getRecoveryRequests(): Promise<{ requests: RecoveryRequest[] }> {
-    return this.request('/api/recovery/requests');
-  }
-
-  async closeRecovery(requestId: string): Promise<{ status: string; message: string; request_id: string }> {
-    return this.request(`/api/recovery/requests/${requestId}/close`, 'POST');
-  }
-
-  async getNearbyRecovery(lat: number, lng: number, radiusKm = 20): Promise<{ requests: NearbyRecoveryRequest[] }> {
-    return this.request(`/api/recovery/nearby?lat=${lat}&lng=${lng}&radius_km=${radiusKm}`);
-  }
-
-  async reportSighting(data: {
-    request_id: string;
-    lat: number;
-    lng: number;
-    note?: string;
-  }): Promise<{ status: string; sighting_id: number; guardian_handle: string }> {
-    return this.request('/api/recovery/sightings', 'POST', data);
-  }
-
-  // ── Family Safety Circles ──────────────────────────────────────────────
-
-  async getFamilyCircle(): Promise<{
-    circle_id: string;
-    circle_name: string;
-    member_count: number;
-    members: Array<{
-      user_id: string;
-      name: string;
-      email: string;
-      role: string;
-      joined_at: string;
-      last_seen: string | null;
-      location: { lat: number; lng: number } | null;
-      battery_percent: number | null;
-      is_online: boolean;
-    }>;
-  }> {
-    return this.request('/family/circle');
-  }
-
-  async inviteFamilyMember(email: string, role = 'member'): Promise<{ ok: boolean; message: string }> {
-    return this.request('/family/invite', 'POST', { email, role });
-  }
-
-  async removeFamilyMember(memberId: string): Promise<{ ok: boolean; message: string }> {
-    return this.request(`/family/member/${memberId}`, 'DELETE');
-  }
-
-  async getFamilyLocations(): Promise<{
-    members: Array<{
-      user_id: string;
-      name: string;
-      location: { lat: number; lng: number } | null;
-      battery_percent: number | null;
-      last_seen: string | null;
-      is_online: boolean;
-      device_name: string | null;
-    }>;
-  }> {
-    return this.request('/family/locations');
-  }
-
-  // ── Payments (Paystack) ────────────────────────────────────────────────
-
-  async initializePayment(plan: string, email: string, callbackUrl?: string): Promise<{
-    authorization_url: string;
-    access_code: string;
-    reference: string;
-  }> {
-    return this.request('/payments/initialize', 'POST', { plan, email, callback_url: callbackUrl });
-  }
-
-  async verifyPayment(reference: string): Promise<{ ok: boolean; plan: string; status: string; period_end: string }> {
-    return this.request(`/payments/verify/${reference}`);
-  }
-
-  async getSubscription(): Promise<{
-    plan: string;
-    status: string;
-    current_period_start: string | null;
-    current_period_end: string | null;
-    tier: string;
-  }> {
-    return this.request('/payments/subscription');
-  }
-
-  async getTierLimits(): Promise<{ tier: string; limits: Record<string, any> }> {
-    return this.request('/payments/tier-limits');
-  }
-
-  // ── Community Watch Map ───────────────────────────────────────────────
-
-  async reportTheft(data: {
-    lat: number;
-    lng: number;
-    method: string;
-    notes?: string;
-  }): Promise<{ report_id: string; status: string }> {
-    return this.request('/community/report', 'POST', data);
-  }
-
-  async getHeatmap(lat: number, lng: number, radiusKm = 10): Promise<{
-    hotspots: Array<{
-      lat: number;
-      lng: number;
-      intensity: number;
-      count: number;
-      methods: string[];
-      risk_level: string;
-    }>;
-    total_reports: number;
-  }> {
-    return this.request(`/community/heatmap?lat=${lat}&lng=${lng}&radius_km=${radiusKm}`);
-  }
-
-  async getRecentReports(lat: number, lng: number, radiusKm = 5): Promise<{
-    reports: Array<{
-      id: string;
-      lat: number;
-      lng: number;
-      method: string;
-      time_of_day: string;
-      created_at: string;
-      verified: boolean;
-    }>;
-  }> {
-    return this.request(`/community/reports?lat=${lat}&lng=${lng}&radius_km=${radiusKm}`);
-  }
-
-  async getSafeRoute(startLat: number, startLng: number, endLat: number, endLng: number): Promise<{
-    waypoints: Array<{ lat: number; lng: number; label: string }>;
-    hotspots_avoided: number;
-    safety_score: number;
-  }> {
-    return this.request('/community/safe-route', 'POST', {
-      start_lat: startLat, start_lng: startLng, end_lat: endLat, end_lng: endLng,
-    });
-  }
-
-  // ── Recovery Bounties ──────────────────────────────────────────────────
-
-  async createBounty(data: {
-    device_id: string;
-    amount: number;
-    description?: string;
-    contact_phone?: string;
-  }): Promise<{ bounty_id: string; amount: number; expires_at: string }> {
-    return this.request('/bounties/create', 'POST', data);
-  }
-
-  async getActiveBounties(lat: number, lng: number, radiusKm = 20): Promise<{
-    bounties: Array<{
-      id: string;
-      device_id: string;
-      amount: number;
-      amount_display: string;
-      description: string;
-      device_name: string;
-      created_at: string;
-      expires_at: string;
-    }>;
-  }> {
-    return this.request(`/bounties/active?lat=${lat}&lng=${lng}&radius_km=${radiusKm}`);
-  }
-
-  async claimBounty(data: {
-    bounty_id: string;
-    finder_name: string;
-    finder_phone: string;
-    location_lat: number;
-    location_lng: number;
-    note?: string;
-  }): Promise<{ claim_id: string; status: string }> {
-    return this.request('/bounties/claim', 'POST', data);
-  }
-
-  async getMyBounties(): Promise<{
-    bounties: Array<{
-      id: string;
-      amount: number;
-      amount_display: string;
-      status: string;
-      device_name: string;
-      claim_count: number;
-    }>;
-  }> {
-    return this.request('/bounties/my');
-  }
-
-  // ── Admin Dashboard ────────────────────────────────────────────────────
-
-  async getAdminStats(): Promise<any> {
-    return this.request('/admin/stats');
-  }
-
-  async getAdminUsers(page = 1, limit = 50, search?: string): Promise<{
-    users: Array<{
-      id: string;
-      email: string;
-      display_name: string;
-      subscription_plan: string;
-      subscription_status: string;
-      created_at: string;
-      last_login: string | null;
-    }>;
-    total: number;
-    page: number;
-    limit: number;
-  }> {
-    const params = new URLSearchParams({ page: String(page), limit: String(limit) });
-    if (search) params.set('search', search);
-    return this.request(`/admin/users?${params}`);
-  }
-
-  async getAdminDevices(page = 1, limit = 50, status?: string): Promise<any> {
-    const params = new URLSearchParams({ page: String(page), limit: String(limit) });
-    if (status) params.set('status', status);
-    return this.request(`/admin/devices?${params}`);
-  }
-
-  // ── Support Tickets ────────────────────────────────────────────────────
-
-  async createTicket(data: {
-    subject: string;
-    description: string;
-    category: string;
-    priority?: string;
-    device_id?: string;
-  }): Promise<{ ticket_id: string; status: string }> {
-    return this.request('/support/tickets', 'POST', data);
-  }
-
-  async getMyTickets(status?: string): Promise<{
-    tickets: Array<{
-      id: string;
-      subject: string;
-      category: string;
-      priority: string;
-      status: string;
-      created_at: string;
-      updated_at: string;
-    }>;
-  }> {
-    const params = status ? `?status=${status}` : '';
-    return this.request(`/support/tickets${params}`);
-  }
-
-  async getTicketDetail(ticketId: string): Promise<any> {
-    return this.request(`/support/tickets/${ticketId}`);
-  }
-
-  async respondToTicket(ticketId: string, message: string): Promise<{ ok: boolean }> {
-    return this.request(`/support/tickets/${ticketId}/respond`, 'POST', { message });
-  }
-
-  async getAdminTickets(status?: string, category?: string, page = 1): Promise<any> {
-    const params = new URLSearchParams({ page: String(page) });
-    if (status) params.set('status', status);
-    if (category) params.set('category', category);
-    return this.request(`/support/admin/tickets?${params}`);
-  }
-
-  // ── NPS Survey ─────────────────────────────────────────────────────────
-
-  async submitNPS(data: {
-    ticket_id: string;
-    score: number;
-    comment?: string;
-  }): Promise<{ score: number; label: string }> {
-    return this.request('/nps/submit', 'POST', data);
-  }
-
-  async getNPSSummary(days = 30): Promise<{
-    total_responses: number;
-    average_score: number;
-    promoters: number;
-    passives: number;
-    detractors: number;
-    nps_score: number;
-  }> {
-    return this.request(`/nps/summary?days=${days}`);
-  }
-
-  async getNPSResponses(limit = 50): Promise<{
-    responses: Array<{
-      score: number;
-      comment: string | null;
-      category: string;
-      created_at: string;
-      user_name: string;
-      user_email: string;
-    }>;
-  }> {
-    return this.request(`/nps/responses?limit=${limit}`);
-  }
-
-  // ── Email Stats ────────────────────────────────────────────────────────
-
-  async getEmailStats(): Promise<{
-    total: number;
-    sent: number;
-    failed: number;
-    opened: number;
-    clicked: number;
-    open_rate: number;
-    click_rate: number;
-    delivery_rate: number;
-  }> {
-    return this.request('/email/stats');
-  }
-
-  // ── Trust Score ────────────────────────────────────────────────────────
-
-  async checkIMEI(imei: string): Promise<{
-    imei: string;
-    trust_score: number;
-    status: string;
-    device_info: { brand: string; model: string; type: string } | null;
-    owner_verified: boolean;
-    theft_reports: number;
-    last_active: string | null;
-    warnings: string[];
-  }> {
-    return this.request('/trust/check', 'POST', { imei, check_type: 'full' });
-  }
-
-  async reportTheftIMEI(data: {
-    imei: string;
-    theft_date: string;
-    theft_location?: string;
-    theft_method?: string;
-    description?: string;
-  }): Promise<{ ok: boolean; report_id: string }> {
-    return this.request('/trust/report-theft', 'POST', data);
-  }
-
-  async getTrustQRData(deviceId: string): Promise<{
-    device_id: string;
-    trust_score: number;
-    status: string;
-    qr_url: string;
-  }> {
-    return this.request(`/trust/qr-data/${deviceId}`);
-  }
-
-  // ── Digital Inheritance ─────────────────────────────────────────────────
-
-  async getBeneficiaries(): Promise<{
-    beneficiaries: Array<{
-      id: string;
-      name: string;
-      email: string;
-      relationship: string;
-      access_level: string;
-      delay_hours: number;
-      status: string;
-    }>;
-  }> {
-    return this.request('/inheritance/beneficiaries');
-  }
-
-  async addBeneficiary(data: {
-    name: string;
-    email: string;
-    relationship: string;
-    access_level?: string;
-    delay_hours?: number;
-  }): Promise<{ ok: boolean; access_code: string }> {
-    return this.request('/inheritance/beneficiary', 'POST', data);
-  }
-
-  async removeBeneficiary(id: string): Promise<{ ok: boolean }> {
-    return this.request(`/inheritance/beneficiary/${id}`, 'DELETE');
-  }
-
-  // ── Smart Geofencing ───────────────────────────────────────────────────
-
-  async getSmartZones(): Promise<{
-    zones: Array<{
-      id: string;
-      name: string;
-      zone_type: string;
-      lat: number;
-      lng: number;
-      radius_meters: number;
-    }>;
-  }> {
-    return this.request('/geofence/zones');
-  }
-
-  async createSmartZone(data: {
-    name: string;
-    zone_type?: string;
-    lat: number;
-    lng: number;
-    radius_meters?: number;
-  }): Promise<{ ok: boolean; zone_id: string }> {
-    return this.request('/geofence/zone', 'POST', data);
-  }
-
-  async deleteSmartZone(id: string): Promise<{ ok: boolean }> {
-    return this.request(`/geofence/zone/${id}`, 'DELETE');
-  }
-
-  async autoDiscoverZones(): Promise<{
-    zones: Array<{ zone_id: string; name: string; zone_type: string }>;
-  }> {
-    return this.request('/geofence/auto-discover', 'POST');
-  }
-
-  async getAnomalies(): Promise<{
-    anomalies: Array<{
-      device_id: string;
-      device_name: string;
-      anomaly_type: string;
-      description: string;
-      severity: string;
-    }>;
-  }> {
-    return this.request('/geofence/anomalies');
-  }
-
-  // ── Referral Program ──────────────────────────────────────────────────
-
-  async getReferralCode(): Promise<{
-    code: string;
-    share_url: string;
-    share_message: string;
-    total_referrals: number;
-    successful_referrals: number;
-    pending_referrals: number;
-    reward_balance: number;
-    tier: string;
-  }> {
-    return this.request('/referrals/code');
-  }
-
-  async getReferralStats(): Promise<{
-    total_referrals: number;
-    successful_referrals: number;
-    pending_referrals: number;
-    reward_balance: number;
-    tier: string;
-    next_tier_referrals: number;
-    next_tier_name: string;
-    recent_referrals: Array<{
-      id: string;
-      email: string;
-      name: string;
-      status: string;
-    }>;
-  }> {
-    return this.request('/referrals/stats');
-  }
-
-  async applyReferralCode(code: string): Promise<{ ok: boolean; referrer_reward: string }> {
-    return this.request('/referrals/apply', 'POST', { code });
-  }
-
-  async trackReferralShare(platform: string): Promise<{ ok: boolean }> {
-    return this.request(`/referrals/share?platform=${platform}`, 'POST');
-  }
-
-  async getReferralLeaderboard(): Promise<{
-    leaders: Array<{
-      rank: number;
-      name: string;
-      referral_count: number;
-      tier: string;
-    }>;
-  }> {
-    return this.request('/referrals/leaderboard');
-  }
+  // ── Stubs for deleted features (keep dashboard compiling) ─────────────
+  async getApiKeys(): Promise<{ api_keys: any[] }> { return { api_keys: [] }; }
+  async createApiKey(_data: any): Promise<any> { return {}; }
+  async revokeApiKey(_keyId: string, _password: string): Promise<any> { return {}; }
+  async rotateApiKey(_keyId: string, _password: string): Promise<any> { return {}; }
+  async getSubscription(): Promise<any> { return { plan: 'free', status: 'inactive', tier: 'free' }; }
+  async initializePayment(_plan: string, _email: string): Promise<any> { return {}; }
+  async getBeneficiaries(): Promise<any> { return { beneficiaries: [] }; }
+  async addBeneficiary(_data: any): Promise<any> { return {}; }
+  async removeBeneficiary(_id: string): Promise<any> { return {}; }
+  async getSmartZones(): Promise<any> { return { zones: [] }; }
+  async createSmartZone(_data: any): Promise<any> { return {}; }
+  async deleteSmartZone(_id: string): Promise<any> { return {}; }
+  async autoDiscoverZones(): Promise<any> { return { zones: [] }; }
+  async getAnomalies(): Promise<any> { return { anomalies: [] }; }
+  async getReferralCode(): Promise<any> { return {}; }
+  async getReferralStats(): Promise<any> { return {}; }
+  async applyReferralCode(_code: string): Promise<any> { return {}; }
+  async getReferralLeaderboard(): Promise<any> { return { leaders: [] }; }
+  async getAdminStats(): Promise<any> { return {}; }
+  async getFeatureFlags(): Promise<any> { return { flags: {} }; }
+  async toggleFeatureFlag(_name: string, _enabled: boolean): Promise<any> { return {}; }
+  async toggleMaintenanceMode(): Promise<any> { return {}; }
+  async getAdminUsers(): Promise<any> { return { users: [], total: 0 }; }
+  async getAdminDevices(): Promise<any> { return { devices: [], total: 0 }; }
+  async getGuardianProfile(): Promise<any> { return {}; }
+  async setGuardianOptIn(_data: any): Promise<any> { return {}; }
+  async launchRecovery(_deviceId: string, _desc?: string): Promise<any> { return {}; }
+  async getRecoveryRequests(): Promise<any> { return { requests: [] }; }
+  async closeRecovery(_requestId: string): Promise<any> { return {}; }
+  async getNearbyRecovery(_lat: number, _lng: number): Promise<any> { return { requests: [] }; }
+  async reportSighting(_data: any): Promise<any> { return {}; }
+  async getFamilyCircle(): Promise<any> { return { members: [] }; }
+  async inviteFamilyMember(_email: string, _role?: string): Promise<any> { return {}; }
+  async removeFamilyMember(_id: string): Promise<any> { return {}; }
+  async getFamilyLocations(): Promise<any> { return { members: [] }; }
+  async reportTheft(_data: any): Promise<any> { return {}; }
+  async getHeatmap(_lat: number, _lng: number): Promise<any> { return { hotspots: [] }; }
+  async getRecentReports(_lat: number, _lng: number): Promise<any> { return { reports: [] }; }
+  async getSafeRoute(_sLat: number, _sLng: number, _eLat: number, _eLng: number): Promise<any> { return { waypoints: [] }; }
+  async createBounty(_data: any): Promise<any> { return {}; }
+  async getActiveBounties(_lat: number, _lng: number): Promise<any> { return { bounties: [] }; }
+  async claimBounty(_data: any): Promise<any> { return {}; }
+  async getMyBounties(): Promise<any> { return { bounties: [] }; }
+  async createTicket(_data: any): Promise<any> { return {}; }
+  async getMyTickets(): Promise<any> { return { tickets: [] }; }
+  async getTicketDetail(_id: string): Promise<any> { return {}; }
+  async respondToTicket(_id: string, _msg: string): Promise<any> { return {}; }
+  async getAdminTickets(): Promise<any> { return { tickets: [] }; }
+  async submitNPS(_data: any): Promise<any> { return {}; }
+  async getNPSSummary(): Promise<any> { return {}; }
+  async getNPSResponses(): Promise<any> { return { responses: [] }; }
+  async getEmailStats(): Promise<any> { return {}; }
+  async checkIMEI(_imei: string): Promise<any> { return {}; }
+  async reportTheftIMEI(_data: any): Promise<any> { return {}; }
+  async getTrustQRData(_deviceId: string): Promise<any> { return {}; }
 }
 
 // ─── Singleton ───────────────────────────────────────────────────────────────

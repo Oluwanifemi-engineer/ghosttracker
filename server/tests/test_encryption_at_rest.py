@@ -336,14 +336,18 @@ class TestAtRestRoundTrip:
         assert exported["locations"]
         assert any(abs(loc["lat"] - LAT) < 1e-6 for loc in exported["locations"])
 
-    def test_guardian_recovery_snapshot_decrypts(self):
-        from routes.guardian import _device_last_location  # call time: current module
+    def test_encrypted_location_decrypts_correctly(self):
+        """Verify that an encrypted location row decrypts to the original coords."""
+        from encryption import decrypt_location_row
 
-        # Post a fresh fix so the LATEST row is unambiguous (shared temp DBs
-        # under full-suite runs may carry earlier rows from this file).
         _post_location(lat=6.5244, lng=3.3792)
         with _current_database().get_db_context() as conn:
-            lat, lng = _device_last_location(conn, TEST_DEVICE_ID)
+            row = conn.execute(
+                "SELECT device_id, lat, lng, location_encrypted, location_data "
+                "FROM locations WHERE device_id=? ORDER BY server_timestamp DESC LIMIT 1",
+                (TEST_DEVICE_ID,),
+            ).fetchone()
+            lat, lng = decrypt_location_row(row)
         assert lat is not None and abs(lat - 6.5244) < 1e-6
 
     def test_location_simple_path_also_encrypts(self):

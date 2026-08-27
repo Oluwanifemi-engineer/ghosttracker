@@ -150,7 +150,6 @@ describe('Sidebar Component', () => {
     });
     expect(screen.getByText('Dashboard')).toBeInTheDocument();
     expect(screen.getByText('Admin')).toBeInTheDocument();
-    expect(screen.getByText('Trust')).toBeInTheDocument();
   });
 
   it('hides Admin link for non-admin users', async () => {
@@ -168,7 +167,6 @@ describe('Sidebar Component', () => {
     });
     expect(screen.getByText('Dashboard')).toBeInTheDocument();
     expect(screen.queryByText('Admin')).not.toBeInTheDocument();
-    expect(screen.getByText('Trust')).toBeInTheDocument();
   });
 
   it('links to correct routes', async () => {
@@ -179,8 +177,7 @@ describe('Sidebar Component', () => {
     expect(dashboardLink).toHaveAttribute('href', '/dashboard');
     const adminLink = screen.getByText('Admin').closest('a');
     expect(adminLink).toHaveAttribute('href', '/admin');
-    const trustLink = screen.getByText('Trust').closest('a');
-    expect(trustLink).toHaveAttribute('href', '/trust');
+
   });
 
   it('selects a device when clicked', async () => {

@@ -48,13 +48,11 @@ const PLANS = [
     features: [
       '3 devices',
       '3-second real-time tracking',
-      'Family Safety Circles (5 members)',
       'Panic Button + SOS',
-      'Smart Geofencing',
+      'Geofencing',
       'Remote Lock + Evidence',
       'Device Health Monitor',
       '90-day location history',
-      'Recovery bounties',
     ],
   },
   {
@@ -90,32 +88,12 @@ export function SubscriptionPage() {
   }, []);
 
   const fetchSubscription = async () => {
-    try {
-      const api = getAPI();
-      const data = await api.getSubscription();
-      setSubscription(data);
-    } catch (e) {
-      // Default to free
-      setSubscription({ plan: 'free', status: 'inactive', tier: 'free', current_period_start: null, current_period_end: null });
-    } finally {
-      setLoading(false);
-    }
+    setSubscription({ plan: 'free', status: 'inactive', tier: 'free', current_period_start: null, current_period_end: null });
+    setLoading(false);
   };
 
-  const handleUpgrade = async (planId: string) => {
-    const plan = billingCycle === 'yearly' ? `${planId}_yearly` : `${planId}_monthly`;
-
-    try {
-      const api = getAPI();
-      const email = prompt('Enter your email for payment:');
-      if (!email) return;
-
-      const result = await api.initializePayment(plan, email);
-      // Redirect to Paystack checkout
-      window.open(result.authorization_url, '_blank');
-    } catch (e: any) {
-      alert(e?.message || 'Payment initialization failed');
-    }
+  const handleUpgrade = (planId: string) => {
+    window.location.href = 'mailto:sales@magneetar.me?subject=Upgrade to ' + planId;
   };
 
   if (loading) {

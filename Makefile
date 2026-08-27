@@ -123,6 +123,9 @@ docker-clean:   ## Remove Docker volumes and images
 deploy:         ## Deploy with Docker Compose (production)
 	git pull && docker compose build && docker compose up -d
 
+deploy-rolling: ## Deploy with rolling updates (zero-downtime)
+	bash scripts/deploy-rolling.sh
+
 generate-env:   ## Generate secure environment secrets
 	bash scripts/generate-env.sh
 
@@ -143,6 +146,20 @@ check: test lint  ## Run all checks (tests + lint)
 
 validate: lint typecheck test pre-commit  ## Full quality gate (CI-equivalent)
 	@echo "✅ All quality gates passed"
+
+# ── Health Monitoring ─────────────────────────────────────────────────────────
+
+health-check:   ## Run a one-shot health check
+	bash scripts/health-alert.sh
+
+health-monitor: ## Start continuous health monitoring (Ctrl+C to stop)
+	bash scripts/health-alert.sh --daemon
+
+health-status:  ## Show health monitor status
+	bash scripts/health-alert.sh --status
+
+health-install: ## Install health monitor cron job (every 2 min)
+	bash scripts/health-alert.sh --init-cron
 
 # ── Pre-commit ──────────────────────────────────────────────────────────────
 

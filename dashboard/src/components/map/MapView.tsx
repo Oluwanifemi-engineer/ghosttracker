@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import { useStore } from '@/store/useStore';
-import { CommunityHeatmap } from './CommunityHeatmap';
+
 import { cn, openGoogleMapsDirections, formatDistance, formatDuration, isOnline, relativeTime, formatTimestamp, locationTimestamp } from '@/lib/utils';
 import { getOSRMRoute, snapToRoad, NavigationRoute } from '@/services/navigation';
 import type { Location } from '@/types';
@@ -484,7 +484,7 @@ export function MapView() {
   const [userGeoDenied, setUserGeoDenied] = useState(false);
   const [navigating, setNavigating] = useState(false);
   const [showSatellite, setShowSatellite] = useState(false);
-  const [showHeatmap, setShowHeatmap] = useState(false);
+
   const [deviceAddress, setDeviceAddress] = useState<string | null>(null);
   const [userPinned, setUserPinned] = useState<[number, number] | null>(loadPinnedPosition);
   const [pinning, setPinning] = useState(false);
@@ -759,7 +759,7 @@ export function MapView() {
           )}
 
           {/* Community Heatmap */}
-          <CommunityHeatmap visible={showHeatmap} onToggle={() => setShowHeatmap(!showHeatmap)} />
+
 
           {/* Waypoints */}
           {navigationRoute && navigationRoute.steps.map((step: any, i: number) => (
@@ -861,21 +861,7 @@ export function MapView() {
             {showSatellite ? 'Map' : 'Sat'}
           </button>
 
-          {/* Heatmap */}
-          <button
-            onClick={() => setShowHeatmap(!showHeatmap)}
-            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[9px] font-mono font-bold uppercase tracking-wider transition-all ${
-              showHeatmap
-                ? 'bg-amber-500/15 text-amber-400/80 border border-amber-500/20'
-                : 'bg-[#111118]/95 backdrop-blur text-white/50 border border-white/[0.08] hover:bg-[#1a1a24] hover:text-white/70'
-            }`}
-            title={showHeatmap ? 'Hide heatmap' : 'Show heatmap'}
-          >
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 2C8 6 4 10 4 14a8 8 0 0 0 16 0c0-4-4-8-8-12z"/>
-            </svg>
-            Heat
-          </button>
+
 
           {/* Nav */}
           {effectiveUserPos && latestLocation && userNavigationUsable && (

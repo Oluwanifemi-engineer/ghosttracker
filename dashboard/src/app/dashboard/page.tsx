@@ -10,8 +10,7 @@ import { SentinelPanel } from '@/components/panels/SentinelPanel';
 import { EvidencePanel } from '@/components/panels/EvidencePanel';
 import { GeofencePanel } from '@/components/panels/GeofencePanel';
 import { ErrorPanel } from '@/components/panels/ErrorPanel';
-import { GuardianPanel } from '@/components/panels/GuardianPanel';
-import { FamilyCircle } from '@/components/family/FamilyCircle';
+
 import { FloatingActions } from '@/components/map/FloatingActions';
 import { DeviceDrawer } from '@/components/layout/DeviceDrawer';
 import { BottomSheet } from '@/components/ui/BottomSheet';
@@ -20,10 +19,10 @@ import { Tabs } from '@/components/ui/Tabs';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { TabId } from '@/types';
 import { cn, isOnline, deviceDisplayName, relativeTime } from '@/lib/utils';
-import { AnalyticsPanel } from '@/components/panels/AnalyticsPanel';
+
 import {
   Shield, Terminal, MapPin, Fence, Camera,
-  ClipboardList, Bug, ShieldCheck, Users, BarChart3,
+  ClipboardList, Bug,
   ChevronLeft, ChevronRight, Menu, Radio, X
 } from 'lucide-react';
 
@@ -34,9 +33,7 @@ const PANEL_TABS = [
   { id: 'zones' as TabId, label: 'Zones', icon: Fence },
   { id: 'media' as TabId, label: 'Media', icon: Camera },
   { id: 'evidence' as TabId, label: 'Evidence', icon: ClipboardList },
-  { id: 'guardian' as TabId, label: 'Guardian', icon: ShieldCheck },
-  { id: 'family' as TabId, label: 'Family', icon: Users },
-  { id: 'analytics' as TabId, label: 'Analytics', icon: BarChart3 },
+
   { id: 'errors' as TabId, label: 'Errors', icon: Bug },
 ];
 
@@ -101,9 +98,7 @@ function TabContent({ tab }: { tab: TabId }) {
       {tab === 'zones' && <GeofencePanel />}
       {tab === 'media' && <MediaGallery />}
       {tab === 'evidence' && <EvidencePanel />}
-      {tab === 'guardian' && <GuardianPanel />}
-      {tab === 'family' && <div className="p-4"><FamilyCircle /></div>}
-      {tab === 'analytics' && <AnalyticsPanel />}
+
       {tab === 'errors' && <ErrorPanel />}
     </ErrorBoundary>
   );

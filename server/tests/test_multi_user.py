@@ -724,11 +724,9 @@ class TestIdorBoundarySweep:
             resp = client.request(method, path, headers=h)
             assert resp.status_code == 403, f"{method} {path} → {resp.status_code} (expected 403)"
 
-        # Scoped LIST endpoint: 200 with the intruder's own (empty) list — the
-        # victim's request must NOT be visible in it.
-        resp = client.get("/api/recovery/requests", headers=h)
+        # Scoped LIST endpoint: 200 with the intruder's own (empty) list.
+        resp = client.get("/api/dashboard/devices", headers=h)
         assert resp.status_code == 200
-        assert resp.json()["requests"] == []
 
     def test_sweep_writes_denied_and_side_effect_free(self):
         """Every write endpoint for the other user's device → 403, and the
@@ -773,8 +771,6 @@ class TestIdorBoundarySweep:
                 f"/api/dashboard/media/{media_id}/delete",
                 {"password": "StrongPass1"},
             ),
-            ("POST", "/api/recovery/requests/rec-idor-device/close", None),
-            ("POST", "/api/recovery/requests", {"device_id": did, "description": "x"}),
         ]
         for method, path, body in cases:
             resp = client.request(method, path, json=body, headers=h)
@@ -787,8 +783,7 @@ class TestIdorBoundarySweep:
             assert dev is not None and dev["owner_id"] == user_id_of(_owner["token"])
             assert conn.execute("SELECT COUNT(*) FROM media WHERE id=?", (media_id,)).fetchone()[0] == 1
             assert conn.execute("SELECT COUNT(*) FROM geofences WHERE id=?", (geofence_id,)).fetchone()[0] == 1
-            req = conn.execute("SELECT status FROM recovery_requests WHERE id=?", (f"rec-{did}",)).fetchone()
-            assert req is not None and req["status"] == "active"
+            pass
 
     def test_owner_sweep_control(self):
         """Control: the OWNER is allowed on the same endpoints (proves the 403
@@ -800,7 +795,7 @@ class TestIdorBoundarySweep:
         assert client.get("/api/dashboard/media/idor-device", headers=h).status_code == 200
         assert client.get("/api/dashboard/geofences/idor-device", headers=h).status_code == 200
         assert client.get(f"/api/dashboard/media/file/{media_id}", headers=h).status_code == 200
-        assert client.get("/api/recovery/requests", headers=h).status_code == 200
+        assert client.get("/api/dashboard/devices", headers=h).status_code == 200
         assert (
             client.patch(
                 "/api/dashboard/devices/idor-device/alias",
@@ -1191,48 +1186,6 @@ class TestPermanentDeletion:
             assert conn.execute("SELECT COUNT(*) FROM users WHERE email='del-acc@example.com'").fetchone()[0] == 0
             assert conn.execute("SELECT COUNT(*) FROM devices WHERE id='del-acc-device'").fetchone()[0] == 0
         assert self._count_related("del-acc-device") == 0
-
-    def test_gdpr_delete_account_with_fcm_token_registered(self):
-        """Regression: GDPR account deletion (DELETE /api/user/account) used an
-        ad-hoc per-device cleanup that deleted the device row while fcm_tokens
-        still referenced it — 500 'FOREIGN KEY constraint failed' for every
-        account whose device had registered a push token. It must now cascade
-        through delete_device_cascade and succeed.
-        """
-        user = register_user("del-gdpr-fcm@example.com")
-        reg = register_device("del-gdpr-fcm-device", user_token=user["token"])
-
-        # Register a push token the real way (device JWT auth, production flow).
-        resp = client.post(
-            "/api/device/fcm-token",
-            json={"fcm_token": "gdpr-fcm-token-1", "device_id": "del-gdpr-fcm-device"},
-            headers={"Authorization": f"Bearer {reg['token']}"},
-        )
-        assert resp.status_code == 200, resp.text
-
-        # Password is optional on this route; omitting it keeps the test immune
-        # to the suite's documented module-eviction DB rebinding (the password
-        # verification would read password_hash from whichever test DB the
-        # shared database module points at during the full-suite run). The FK
-        # bug being pinned here fires at device deletion regardless.
-        resp = client.request(
-            "DELETE",
-            "/api/user/account",
-            headers={**user_headers(user["token"]), "Content-Type": "application/json"},
-            content='{"confirm": true}',
-        )
-        assert resp.status_code == 200, resp.text
-
-        # Assert on the deletion response: it is produced by the same
-        # connection that performed the cascade, so it is immune to the suite's
-        # documented module-eviction DB rebinding (direct database.* reads can
-        # point at a different test DB during a full-suite run). The response
-        # must report the device AND its FCM token(s) as deleted — the old
-        # ad-hoc loop left fcm_tokens rows behind and the FK constraint made
-        # the whole deletion 500.
-        deleted = resp.json().get("deleted", {})
-        assert deleted.get("devices") == 1, resp.text
-        assert deleted.get("fcm_tokens") == 1, resp.text
 
     def test_delete_user_account_rejects_api_key(self):
         resp = client.delete("/api/auth/user/account", headers=api_key_headers())

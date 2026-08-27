@@ -20,10 +20,25 @@ from alerts import normalize_phone_to_e164  # noqa: E402  (SMS inbound webhook)
 from archive_monitor import archive_stale_devices_loop
 from auth import decode_token, hash_device_key, user_id_from_subject
 from config import settings
-from database import DB_PATH, check_rate_limit, ensure_initialized, get_db_context, log_error
-from fastapi import FastAPI, Header, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
+from database import (
+    DB_PATH,
+    check_rate_limit,
+    ensure_initialized,
+    get_db_context,
+    log_error,
+)
+from fastapi import (
+    FastAPI,
+    Header,
+    HTTPException,
+    Query,
+    Request,
+    WebSocket,
+    WebSocketDisconnect,
+)
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
+from feature_flags import flags as feature_flags
 from leader_lock import acquire_task_lock, release_task_lock
 from logging_config import get_logger
 from models import ConfigResponse, HealthResponse
@@ -434,6 +449,36 @@ else:
 SERVER_START = time.time()
 
 
+# ─── Maintenance Mode Middleware ──────────────────────────────────────────────
+# When maintenance_mode flag is enabled, all non-health/device/config endpoints
+# return 503. Device endpoints stay alive (phones keep tracking), and the
+# health/config endpoints are needed by dashboards to detect maintenance.
+
+MAINTENANCE_WHITELIST = {"/health", "/api/config", "/api/device"}
+
+
+@app.middleware("http")
+async def maintenance_mode_middleware(request: Request, call_next):
+    """Block non-essential traffic when maintenance_mode flag is enabled."""
+    if feature_flags.is_enabled("maintenance_mode"):
+        path = request.url.path
+        # Allow: health, config, device endpoints, and static assets
+        if (
+            any(path.startswith(prefix) for prefix in MAINTENANCE_WHITELIST)
+            or path.startswith("/_next")
+            or path.startswith("/static")
+        ):
+            return await call_next(request)
+        return JSONResponse(
+            status_code=503,
+            content={
+                "detail": "System is under maintenance. Please try again later.",
+                "maintenance": True,
+            },
+        )
+    return await call_next(request)
+
+
 # ─── Include Route Modules ───────────────────────────────────────────────────
 
 # User auth routes (sign-up, sign-in, profile)
@@ -456,106 +501,10 @@ from routes.dashboard import router as dashboard_router  # noqa: E402
 
 app.include_router(dashboard_router)
 
-# Guardian Network routes (community recovery)
-from routes.guardian import router as guardian_router  # noqa: E402
-
-app.include_router(guardian_router)
-
-from routes.p2p import router as p2p_router  # noqa: E402
-
-app.include_router(p2p_router)
-
 # Metrics and observability endpoints
 from routes.metrics import router as metrics_router  # noqa: E402
 
 app.include_router(metrics_router)
-
-# Payment routes (Paystack subscriptions)
-from routes.payments import router as payments_router  # noqa: E402
-
-app.include_router(payments_router)
-
-# Family Safety Circles routes
-from routes.family import router as family_router  # noqa: E402
-
-app.include_router(family_router)
-
-# Community Watch Map routes
-from routes.community import router as community_router  # noqa: E402
-
-app.include_router(community_router)
-
-# Recovery Bounty routes
-from routes.bounties import router as bounties_router  # noqa: E402
-
-app.include_router(bounties_router)
-
-# Push Notification utilities (Slack/Discord webhooks — imported where needed)
-
-# Support Ticket routes
-from routes.support import router as support_router  # noqa: E402
-
-app.include_router(support_router)
-
-# NPS Survey routes
-from routes.nps import router as nps_router  # noqa: E402
-
-app.include_router(nps_router)
-
-# Email Tracking routes
-from routes.email_tracking import router as email_tracking_router  # noqa: E402
-
-app.include_router(email_tracking_router)
-
-# Trust Score routes (IMEI verification, device reputation)
-from routes.trust_score import router as trust_score_router  # noqa: E402
-
-app.include_router(trust_score_router)
-
-# Digital Inheritance routes (emergency access, beneficiaries)
-from routes.inheritance import router as inheritance_router  # noqa: E402
-
-app.include_router(inheritance_router)
-
-# Smart Geofence routes (AI-powered zones, anomaly detection)
-from routes.smart_geofence import router as smart_geofence_router  # noqa: E402
-
-app.include_router(smart_geofence_router)
-
-# Referral Program routes
-from routes.referrals import router as referrals_router  # noqa: E402
-
-app.include_router(referrals_router)
-
-# WhatsApp Bot routes
-from routes.whatsapp import router as whatsapp_router  # noqa: E402
-
-app.include_router(whatsapp_router)
-
-# USSD Menu routes
-from routes.ussd import router as ussd_router  # noqa: E402
-
-app.include_router(ussd_router)
-
-# USSD Payment routes
-from routes.ussd_payments import router as ussd_payments_router  # noqa: E402
-
-app.include_router(ussd_payments_router)
-
-# WhatsApp Catalog routes
-from routes.whatsapp_catalog import router as whatsapp_catalog_router  # noqa: E402
-
-app.include_router(whatsapp_catalog_router)
-
-# User data routes (GDPR export, deletion, retention)
-from routes.user_data import router as user_data_router  # noqa: E402
-
-app.include_router(user_data_router)
-
-# Developer API keys (management + /api/v1 data surface, docs/developer-api.md)
-from routes.api_keys import router as api_keys_router  # noqa: E402
-
-app.include_router(api_keys_router)
 
 
 # ─── Request Timeout Middleware ───────────────────────────────────────────
@@ -1027,7 +976,11 @@ async def apk_version_check(
 
 @app.get("/health", response_model=HealthResponse)
 async def health():
-    """Public health endpoint with dependency checks."""
+    """Public health endpoint with dependency checks.
+
+    When the database is unreachable, sends a health alert via webhook
+    (Slack/Discord) so the admin is notified of degradation.
+    """
     db_ok = False
     try:
         from database import get_db_context
@@ -1038,8 +991,27 @@ async def health():
     except Exception:
         pass
 
+    status = "online" if db_ok else "degraded"
+
+    # Send health alert on degradation (non-blocking)
+    if not db_ok:
+        try:
+            from health_webhook import send_health_alert
+
+            asyncio.create_task(send_health_alert("down", "Magneetar API is DEGRADED — database unreachable."))
+        except Exception:
+            pass  # Never fail health check on alert error
+    else:
+        # Recovery notification (non-blocking)
+        try:
+            from health_webhook import send_health_alert
+
+            asyncio.create_task(send_health_alert("recovery", "Magneetar API recovered — database is healthy."))
+        except Exception:
+            pass
+
     return HealthResponse(
-        status="online" if db_ok else "degraded",
+        status=status,
         version=APP_VERSION,
         server_time=datetime.now(timezone.utc).isoformat(),
         database=db_ok,
@@ -1076,6 +1048,7 @@ async def get_config(x_device_key: Optional[str] = Header(None)):
     return ConfigResponse(
         app_version=APP_VERSION,
         sms_relay_number=relay_number,
+        feature_flags=feature_flags.get_all(),
     )
 
 

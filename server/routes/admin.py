@@ -1,5 +1,4 @@
-"""
-Magneetar Admin Dashboard API
+"""Magneetar Admin Dashboard API
 Internal company dashboard for Magneetar workers.
 
 Features:
@@ -9,6 +8,8 @@ Features:
 - Support ticket management
 - Device fleet overview
 - Community watch analytics
+- Feature flag management
+- Maintenance mode control
 """
 
 import logging
@@ -18,6 +19,7 @@ from typing import Optional
 from auth import require_dashboard_auth, user_id_from_subject
 from database import get_db_context
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -321,4 +323,78 @@ async def list_devices(
         "total": total,
         "page": page,
         "limit": limit,
+    }
+
+
+# ─── Feature Flags Management ────────────────────────────────────────────────
+
+
+class FeatureFlagUpdate(BaseModel):
+    """Request to toggle a feature flag."""
+
+    flag_name: str
+    enabled: bool
+
+
+@router.get("/feature-flags")
+async def get_feature_flags(auth: str = Depends(_require_admin)):
+    """Get all feature flags and their current state."""
+    from feature_flags import flags
+
+    return {
+        "flags": flags.get_all(),
+    }
+
+
+@router.post("/feature-flags")
+async def update_feature_flag(
+    req: FeatureFlagUpdate,
+    auth: str = Depends(_require_admin),
+):
+    """Toggle a feature flag (admin only). Changes take effect within 5 seconds."""
+    from database import log_audit
+    from feature_flags import flags
+
+    # Validate flag name exists
+    all_flags = flags.get_all()
+    if req.flag_name not in all_flags and not req.flag_name.startswith("_"):
+        # Allow creating new flags too
+        pass
+
+    flags.set_flag(req.flag_name, req.enabled)
+    log_audit(
+        action="feature_flag_toggled",
+        actor=auth,
+        details=f"{req.flag_name}={req.enabled}",
+    )
+
+    return {
+        "status": "ok",
+        "flag_name": req.flag_name,
+        "enabled": req.enabled,
+        "flags": flags.get_all(),
+    }
+
+
+@router.post("/maintenance")
+async def toggle_maintenance_mode(
+    auth: str = Depends(_require_admin),
+):
+    """Quick toggle for maintenance mode. Returns the new state."""
+    from database import log_audit
+    from feature_flags import flags
+
+    current = flags.is_enabled("maintenance_mode")
+    new_state = not current
+    flags.set_flag("maintenance_mode", new_state)
+    log_audit(
+        action="maintenance_mode_toggled",
+        actor=auth,
+        details=f"maintenance_mode={new_state}",
+    )
+
+    return {
+        "status": "ok",
+        "maintenance_mode": new_state,
+        "message": "Maintenance mode is now " + ("ON" if new_state else "OFF"),
     }

@@ -54,6 +54,9 @@ services:
       # single-writer lock from the request path — lifts the ~370 req/s
       # sync-commit ceiling 5-10x). 0/absent = synchronous commits.
       - MT_WRITE_BATCH_MS=250
+      # Feature flags — toggle features at runtime via server/feature_flags.json
+      # or env vars: MT_FEATURE_MAINTENANCE_MODE=true, MT_FEATURE_BETA_P2P_PAIRING=false, etc.
+      - MT_FEATURE_MAINTENANCE_MODE=false
       # Postgres adapter (Phase 2b — SQL portability rewrites applied).
       # Uncomment to activate horizontal scale beyond ~1,000 devices.
       # When set, the storage facade routes all reads/writes to Postgres.
@@ -63,6 +66,9 @@ services:
       - magneetar-data:/app/data
       - magneetar-media:/app/media
       - ./server/static/apk:/app/static/apk
+      # Feature flags — editable at runtime, no redeploy needed.
+      # Edit server/feature_flags.json or set MT_FEATURE_<NAME> env vars.
+      - ./server/feature_flags.json:/app/feature_flags.json:ro
       # Firebase service-account JSON for FCM push alerts. server/.env sets
       # MT_FIREBASE_KEY=./firebase-key.json, which (WORKDIR=/app) resolves to
       # the container path /app/firebase-key.json — so the REAL gitignored

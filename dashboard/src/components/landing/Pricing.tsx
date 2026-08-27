@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { Check, Crown, Smartphone, Users, ShieldCheck, Building2, ArrowRight, ExternalLink } from 'lucide-react';
-import { usePayment } from '@/hooks/usePayment';
+
 
 const TIERS = [
   {
@@ -81,37 +81,15 @@ const TIERS = [
 ];
 
 export function Pricing({ authed }: { authed: boolean }) {
-  const { initPayment, loading, error } = usePayment();
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
-  const [userEmail, setUserEmail] = useState('');
-
-  useEffect(() => {
-    // Try to get user email from session for payment
-    if (authed) {
-      // The email is available after login — we'll use it for Paystack
-      const email = sessionStorage.getItem('mt_user_email') || '';
-      setUserEmail(email);
-    }
-  }, [authed]);
 
   const handleUpgrade = (tier: typeof TIERS[0]) => {
-    if (!tier.plan) return; // Free or Enterprise — no direct payment
-
+    if (!tier.plan) return;
     if (!authed) {
-      // Not logged in — redirect to signup
       window.location.href = '/signup';
       return;
     }
-
-    const plan = billingCycle === 'yearly' && tier.yearlyPlan ? tier.yearlyPlan : tier.plan;
-
-    if (!userEmail) {
-      // No email available — ask user to contact support
-      window.location.href = 'mailto:sales@magneetar.me?subject=Upgrade to ' + tier.name;
-      return;
-    }
-
-    initPayment(plan, userEmail);
+    window.location.href = 'mailto:sales@magneetar.me?subject=Upgrade to ' + tier.name;
   };
 
   return (
@@ -158,11 +136,7 @@ export function Pricing({ authed }: { authed: boolean }) {
           </div>
         </div>
 
-        {error && (
-          <div className="max-w-md mx-auto mb-6 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-mono text-center">
-            {error}
-          </div>
-        )}
+
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {TIERS.map((tier) => {
@@ -253,24 +227,14 @@ export function Pricing({ authed }: { authed: boolean }) {
                 ) : (
                   <button
                     onClick={() => handleUpgrade(tier)}
-                    disabled={loading}
                     className={`group mt-7 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-300 w-full ${
                       tier.bestValue
                         ? 'bg-emerald-500 text-white hover:bg-emerald-400 shadow-glow-md hover:shadow-glow-lg'
                         : 'border border-white/[0.08] text-gray-400 hover:bg-white/[0.04] hover:border-white/[0.15]'
-                    } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    }`}
                   >
-                    {loading ? (
-                      <span className="flex items-center gap-2">
-                        <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                        Processing…
-                      </span>
-                    ) : (
-                      <>
-                        {authed ? 'Upgrade Now' : 'Get Started'}
-                        <ArrowRight size={13} className="transition-transform group-hover:translate-x-0.5" />
-                      </>
-                    )}
+                    {authed ? 'Upgrade Now' : 'Get Started'}
+                    <ArrowRight size={13} className="transition-transform group-hover:translate-x-0.5" />
                   </button>
                 )}
               </div>

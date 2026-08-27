@@ -6,7 +6,7 @@ Request/response schemas for all API endpoints.
 import re
 from typing import List, Optional
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator
 
 # ─── Device Models ───────────────────────────────────────────────────────────
 
@@ -457,118 +457,6 @@ class RefreshRequest(BaseModel):
 # ─── Developer API Keys (docs/developer-api.md) ──────────────────────────────
 
 
-class ApiKeyCreateRequest(BaseModel):
-    """Create a scoped developer API key (step-up gated).
-
-    scopes defaults to read-only devices:read; a key is ALWAYS intersected
-    with the owning account's own rights (a viewer-shared device stays
-    read-only through the key too). expires_at (ISO-8601, optional) makes the
-    key self-destruct — NULL = never.
-    """
-
-    name: str = Field(..., min_length=1, max_length=100)
-    scopes: list[str] = Field(default_factory=lambda: ["devices:read"])
-    # 'live' (default) or 'readonly'. Readonly keys get the mtk_read_ prefix
-    # and can NEVER carry devices:write — enforced at validation AND again at
-    # auth time (get_api_key_actor), so a leaked readonly key is structurally
-    # incapable of issuing wipe/lock commands even if the row were tampered.
-    key_type: str = Field(default="live", max_length=16)
-    expires_at: Optional[str] = Field(None, max_length=40)
-    # Step-up: the account password is re-verified (rate-limited) so a stolen
-    # dashboard session alone cannot mint long-lived credentials.
-    password: str = Field(..., max_length=200)
-
-    @field_validator("name")
-    @classmethod
-    def validate_name(cls, v):
-        v = v.strip()
-        if not v:
-            raise ValueError("name cannot be blank")
-        return v
-
-    @field_validator("scopes")
-    @classmethod
-    def validate_scopes(cls, v):
-        from auth import VALID_API_KEY_SCOPES
-
-        if not v:
-            raise ValueError("At least one scope is required")
-        if not all(isinstance(s, str) for s in v):
-            raise ValueError("scopes must be strings")
-        unknown = set(v) - VALID_API_KEY_SCOPES
-        if unknown:
-            raise ValueError(f"Unknown scopes: {sorted(unknown)}")
-        # Dedupe, preserving order.
-        return list(dict.fromkeys(v))
-
-    @field_validator("key_type")
-    @classmethod
-    def validate_key_type(cls, v):
-        if v not in ("live", "readonly"):
-            raise ValueError("key_type must be 'live' or 'readonly'")
-        return v
-
-    @model_validator(mode="after")
-    def readonly_cannot_write(self):
-        # Structural guarantee (belt + braces with auth-time filtering): a
-        # readonly key is created without write scopes, and get_api_key_actor
-        # re-filters at every request — a leaked readonly key can never wipe
-        # or lock a device.
-        if self.key_type == "readonly" and "devices:write" in self.scopes:
-            raise ValueError("readonly keys cannot carry the devices:write scope")
-        return self
-
-    @field_validator("expires_at")
-    @classmethod
-    def validate_expires(cls, v):
-        from datetime import datetime, timezone
-
-        if v is None:
-            return v
-        try:
-            parsed = datetime.fromisoformat(v.replace("Z", "+00:00"))
-        except ValueError:
-            raise ValueError("expires_at must be an ISO-8601 timestamp (e.g. 2027-01-01T00:00:00Z)")
-        if parsed < datetime.now(timezone.utc):
-            raise ValueError("expires_at must be in the future")
-        return v
-
-
-class ApiKeyActionRequest(BaseModel):
-    """Revoke/rotate a key — step-up password re-authenticates the caller."""
-
-    password: str = Field(..., max_length=200)
-
-
-class ApiKeyCreateResponse(BaseModel):
-    id: str
-    name: str
-    # The FULL key — returned exactly once at creation, never stored.
-    key: str
-    key_prefix: str
-    scopes: list[str]
-    key_type: str = "live"
-    created_at: str
-    expires_at: Optional[str] = None
-
-
-class ApiKeyListItem(BaseModel):
-    """Listed keys expose prefix + metadata only — never the hash or the key.
-    key_type tells the owner live vs readonly at a glance; request_count is
-    the usage meter (incremented per key-authenticated request)."""
-
-    id: str
-    name: str
-    key_prefix: str
-    scopes: list[str]
-    key_type: str = "live"
-    request_count: int = 0
-    created_at: Optional[str] = None
-    last_used_at: Optional[str] = None
-    expires_at: Optional[str] = None
-    revoked_at: Optional[str] = None
-
-
 class PlanUpdateRequest(BaseModel):
     """Admin-only: set a user's plan tier (manual upgrade path until
     self-serve payments land)."""
@@ -676,80 +564,7 @@ class ShareRequest(BaseModel):
     def validate_role(cls, v):
         if v not in {"admin", "viewer", "device_only"}:
             raise ValueError("role must be one of: admin, viewer, device_only")
-        return v
-
-
-# ─── Guardian Network Models ──────────────────────────────────────────────────
-
-
-class GuardianOptIn(BaseModel):
-    """Opt in (or out) as a community guardian who helps recover stolen devices."""
-
-    opted_in: bool = True
-    radius_km: int = Field(20, ge=1, le=1000)
-    handle: Optional[str] = Field(None, max_length=40)
-
-
-class GuardianProfile(BaseModel):
-    user_id: str
-    opted_in: bool = False
-    radius_km: int = 20
-    handle: Optional[str] = None
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
-
-
-class RecoveryRequestCreate(BaseModel):
-    device_id: str
-    description: Optional[str] = Field(None, max_length=500)
-
-
-class RecoverySightingCreate(BaseModel):
-    # Exactly one of request_id / beacon_token is required: the dashboard
-    # flow reports by request_id, while Find Network guardians report the
-    # opaque beacon_token they picked up over BLE (the request id never goes
-    # on the air). The endpoint resolves either to the active request.
-    request_id: Optional[str] = None
-    beacon_token: Optional[str] = None
-    lat: float = Field(..., ge=-90, le=90)
-    lng: float = Field(..., ge=-180, le=180)
-    note: Optional[str] = Field(None, max_length=300)
-    # Offline Device Network (docs/offline-network-design.md §3.3): a relay
-    # mesh sighting is reported by a guardian that received the beacon
-    # DIRECTLY (hop_count 0, relayed false — the Phase-1 default) or through
-    # a chain of guardian relays (hop_count 1..MAX_HOP, relayed true).
-    # Optional so Phase-1 clients and dashboard flows keep working unchanged.
-    hop_count: Optional[int] = Field(None, ge=0, le=10)
-    relayed: Optional[bool] = None
-
-
-# ─── P2P Pairing Models (Offline Device Network §4) ─────────────────────────
-
-
-class P2pPairInitiate(BaseModel):
-    """Start pairing THIS device with another of the owner's devices.
-
-    Returns a single-use 8-hex pair_code (15 min TTL) the owner types into
-    the other device — the out-of-band bootstrap that proves a human is
-    pairing the right two devices. The code is stored hashed, never plaintext.
-    """
-
-    device_id: str = Field(..., min_length=3, max_length=64)
-
-
-class P2pPairConfirm(BaseModel):
-    """The second device completes the pairing with the code.
-
-    Mints the shared pair_secret (32 random bytes), stores it encrypted at
-    rest (AES-256-GCM keyed on the pair id), and returns it to the confirming
-    device. The first device pulls the same secret via GET /api/p2p/pair/status.
-    """
-
-    device_id: str = Field(..., min_length=3, max_length=64)
-    pair_code: str = Field(..., min_length=8, max_length=8)
-
-
-# ─── Alert Models ────────────────────────────────────────────────────────────
+        return v  # ─── Alert Models ────────────────────────────────────────────────────────────
 
 
 class Alert(BaseModel):
@@ -822,3 +637,6 @@ class ConfigResponse(BaseModel):
     # replayed from a different number. Empty when the server has no SMS
     # sender configured; the app then falls back to code-only verification.
     sms_relay_number: str = ""
+    # Feature flags — toggled at runtime without redeploy. The dashboard
+    # and Android app read these to show/hide UI or gate feature access.
+    feature_flags: dict = {}
