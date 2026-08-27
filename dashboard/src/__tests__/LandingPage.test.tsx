@@ -62,17 +62,13 @@ describe('Landing Page', () => {
     // SocialProof (replaced Testimonials)
     expect(screen.getByText('Verifiable by design.')).toBeInTheDocument();
     expect(screen.getByText('WHY MAGNEETAR')).toBeInTheDocument();
-    expect(screen.getAllByText('17').length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText('SHA-256').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('535').length).toBeGreaterThanOrEqual(1);
 
-    // Features grid
-    expect(screen.getAllByText('Sentinel AI').length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText('Family & Team Circles')).toBeInTheDocument();
-    expect(screen.getByText('Multi-Device Fleet')).toBeInTheDocument();
-    expect(screen.getByText('Guardian Network')).toBeInTheDocument();
-    expect(screen.getByText('Remote Evidence Capture')).toBeInTheDocument();
-    expect(screen.getByText('Phantom Mode')).toBeInTheDocument();
-    expect(screen.getByText('Forensic Reports')).toBeInTheDocument();
+    // Features grid — plain language, no jargon
+    expect(screen.getAllByText('Theft Detection').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Remote Commands').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Evidence Capture').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Evidence Reports').length).toBeGreaterThanOrEqual(1);
 
     // Built for Africa
     expect(screen.getByText('THE PROBLEM')).toBeInTheDocument();
@@ -91,10 +87,10 @@ describe('Landing Page', () => {
     // No placeholder copy
     expect(screen.queryByText(/real adoption numbers coming as users arrive/i)).not.toBeInTheDocument();
 
-    // Security
-    expect(screen.getByText('Unique per-device keys')).toBeInTheDocument();
-    expect(screen.getByText('Zero plaintext secrets')).toBeInTheDocument();
-    expect(screen.getByText('Token revocation')).toBeInTheDocument();
+    // Security — plain language
+    expect(screen.getByText('Unique device keys')).toBeInTheDocument();
+    expect(screen.getByText('No plaintext passwords')).toBeInTheDocument();
+    expect(screen.getByText('Instant session kill')).toBeInTheDocument();
 
     // Pricing
     expect(screen.getByText('PRICING')).toBeInTheDocument();
