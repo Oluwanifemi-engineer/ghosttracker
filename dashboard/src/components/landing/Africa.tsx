@@ -9,9 +9,9 @@ const AFRICA_STATS = [
     detail: 'Recorded across a single 12-month period',
   },
   {
-    value: '1.2s',
-    label: 'between phone thefts',
-    detail: 'One theft roughly every second — the most common crime',
+    value: '₦45,000+',
+    label: 'to attempt recovery',
+    detail: 'And even then, there are no guarantees',
   },
   {
     value: '11.7%',
