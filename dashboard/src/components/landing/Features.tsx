@@ -21,70 +21,70 @@ const FEATURES = [
     icon: Brain,
     title: 'Theft Detection',
     description:
-      'Weighted scoring across 8 signals — SIM change, failed unlocks, device admin disabled, location anomalies — with false-positive prevention.',
+      'Knows the difference between you and a thief. Spots SIM changes, failed unlocks, and suspicious movement — and alerts you instantly.',
     accent: true,
   },
   {
     icon: MapPin,
-    title: 'Real-time Tracking',
+    title: 'Live Tracking',
     description:
-      'GPS + network location streamed live to your dashboard with 3-second updates.',
+      'Watch your phone move on the map in real time. Updates every 3 seconds with accurate, street-level coordinates.',
     accent: false,
   },
   {
     icon: Camera,
-    title: 'Evidence Capture',
+    title: 'Photo & Audio Evidence',
     description:
-      'Trigger front/rear camera photos and audio captures remotely — every piece is tamper-proof.',
+      'Remotely trigger the camera and microphone to capture who has your phone — photos and recordings that cannot be altered.',
     accent: false,
   },
   {
     icon: Radar,
-    title: 'Geofencing',
+    title: 'Safe Zone Alerts',
     description:
-      'Define safe zones and receive instant exit alerts. Set auto-actions: capture photo, trigger siren, or alert only.',
+      'Set a safe zone around your home or office. Get alerted the moment your phone leaves — and set auto-actions like triggering the siren.',
     accent: false,
   },
   {
     icon: Zap,
-    title: 'Remote Commands',
+    title: 'One-Tap Remote Control',
     description:
-      'Lock the device, trigger a max-volume siren, capture evidence, or wipe data — all from the dashboard.',
+      'Lock the screen, blast the siren, capture evidence, or wipe your data — all from the dashboard with one tap.',
     accent: true,
   },
   {
     icon: BellRing,
-    title: 'Multi-Channel Alerts',
+    title: 'Alerts on Every Channel',
     description:
-      'SMS, WhatsApp, and push notifications — so you know the moment something is wrong, even on slow networks.',
+      'SMS, WhatsApp, and push notifications — so you know the moment something happens, even on slow networks.',
     accent: false,
   },
   {
     icon: Lock,
-    title: 'Device Admin',
+    title: 'Remote Lock & Wipe',
     description:
-      'Remote lock and wipe via Android Device Policy Manager, plus SIM-change detection that arms theft mode.',
+      'Lock your phone remotely with a custom message. If it is gone for good, wipe your data to protect your privacy.',
     accent: false,
   },
   {
     icon: Smartphone,
-    title: 'Offline Queue',
+    title: 'Works Offline',
     description:
-      'Location pings queue when offline and upload when reconnected — no data lost during network gaps.',
+      'When your phone has no internet, it saves location data and uploads it the moment it reconnects — nothing is lost.',
     accent: false,
   },
   {
     icon: Eye,
-    title: 'Works on any Android',
+    title: 'Works on Any Android',
     description:
-      'Survives battery-saving modes on Huawei, Xiaomi, Oppo, Vivo, and Realme — phones that kill most tracking apps.',
+      'Huawei, Xiaomi, Oppo, Vivo, Realme — phones that kill most tracking apps. Magneetar was built to survive them.',
     accent: false,
   },
   {
     icon: FileText,
-    title: 'Evidence Reports',
+    title: 'Police-Ready Reports',
     description:
-      'Generate PDF evidence reports with location history, photos, and tamper-proof records.',
+      'Generate a PDF with location history, photos, and timeline — evidence you can hand to the police.',
     accent: false,
   },
 ];
@@ -127,12 +127,11 @@ export function Features() {
             <span>CAPABILITIES</span>
           </div>
           <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
-            One command center for{' '}
-            <span className="bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">what matters</span>
+            Everything you need to{' '}
+            <span className="bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">protect your phone</span>
           </h2>
           <p className="mt-4 text-gray-400 leading-relaxed max-w-lg mx-auto">
-            Protect the devices you own and stay close to the people you love — from silent background
-            tracking to evidence you can take to the police.
+            From the moment it's stolen to the moment you recover it — Magneetar has your back.
           </p>
         </div>
 

@@ -109,7 +109,7 @@ export function Footer() {
 
         <div className="mt-12 pt-6 border-t border-white/[0.06] flex flex-col sm:flex-row items-center justify-between gap-3">
           <span className="text-[11px] font-mono text-gray-600">
-            © {new Date().getFullYear()} Magneetar · BSL 1.1 (source-available)
+            © {new Date().getFullYear()} Magneetar · Made in Lagos, Nigeria
           </span>
           <span className="text-[11px] font-mono text-gray-600 tracking-wider">
             v{version} · BUILT FOR RECOVERY &amp; CONNECTION

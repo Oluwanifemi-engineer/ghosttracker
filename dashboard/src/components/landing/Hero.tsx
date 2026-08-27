@@ -10,9 +10,9 @@ import { AnimatedCounter } from '@/components/ui/AnimatedCounter';
 
 const HERO_STATS: { value: number; label: string; prefix?: string; suffix?: string }[] = [
   { value: 3, label: 'second GPS updates', suffix: 's' },
-  { value: 256, label: 'chain-of-custody hashing', prefix: 'SHA-', suffix: '-bit' },
-  { value: 535, label: 'backend tests passing', suffix: '' },
-  { value: 8, label: 'theft signals detected', suffix: '' },
+  { value: 25, label: 'M+ phones stolen yearly in Nigeria', prefix: '', suffix: '' },
+  { value: 11, label: '% recovery rate without Magneetar', prefix: '', suffix: '%' },
+  { value: 0, label: 'naira to start protecting your phone', prefix: '₦', suffix: '' },
 ];
 
 /* ── Battery Arc SVG ──────────────────────────────────────────────────── */

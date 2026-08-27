@@ -10,45 +10,45 @@ import { ShieldCheck, Lock, Code, EyeOff, Users, Zap, Globe } from 'lucide-react
 const VERIFIABLE_CLAIMS = [
   {
     metric: '3s',
-    label: 'GPS update intervals',
-    detail: 'Accurate, street-level coordinates',
+    label: 'location updates',
+    detail: 'Accurate, street-level GPS coordinates',
     icon: Zap,
   },
   {
     metric: 'Tamper-proof',
-    label: 'evidence records',
-    detail: 'Every photo and recording is verified and cannot be altered',
+    label: 'evidence for police',
+    detail: 'Photos, audio, and location records that cannot be altered',
     icon: Lock,
   },
   {
-    metric: '535',
-    label: 'backend tests',
-    detail: 'Automated tests covering every endpoint',
+    metric: 'Works',
+    label: 'offline',
+    detail: 'Location pings queue when offline and sync when reconnected',
     icon: ShieldCheck,
   },
   {
-    metric: 'BSL',
-    label: 'source available',
-    detail: 'Audit the code yourself — non-commercial use allowed',
-    icon: Code,
+    metric: 'Zero',
+    label: 'data sold',
+    detail: 'We never sell, share, or monetize your location data',
+    icon: EyeOff,
   },
 ];
 
 const ARCHITECTURE_FACTS = [
   {
     icon: Globe,
-    title: 'Self-hostable',
-    description: 'Run Magneetar on your own infrastructure. Docker Compose + Cloudflare Tunnel, one command to deploy.',
+    title: 'Built for Africa',
+    description: 'Designed for Nigerian networks — works on MTN, Airtel, Glo, and 9mobile. Tuned for the phones people actually use.',
   },
   {
     icon: Users,
-    title: 'Device sharing',
-    description: 'Share devices with family or teammates. Role-based access: owner, admin, viewer.',
+    title: 'Share with family',
+    description: 'Protect your spouse, kids, or teammates from one account. See everyone on a single dashboard.',
   },
   {
     icon: EyeOff,
-    title: 'No data sales',
-    description: 'We don\'t sell, share, or monetize your location data. Your data stays on your server.',
+    title: 'Your data stays yours',
+    description: 'We don\'t sell, share, or monetize your location data. Your information stays on secure servers.',
   },
 ];
 
@@ -63,10 +63,10 @@ export function SocialProof() {
             <span className="text-[10px] font-mono font-bold tracking-[0.2em] text-emerald-400/80">WHY MAGNEETAR</span>
           </div>
           <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white mb-4">
-            Verifiable by design.
+            Why people trust Magneetar.
           </h2>
           <p className="text-gray-400 text-base max-w-lg mx-auto">
-            Every claim on this page is auditable. Open the source code, check the API, verify the claims yourself.
+            Built for the moment your phone disappears. Here's what makes Magneetar different.
           </p>
         </div>
 
@@ -97,13 +97,11 @@ export function SocialProof() {
           ))}
         </div>
 
-        {/* Audit link */}
+        {/* Trust note */}
         <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3 text-[11px] font-mono text-gray-600">
-          <span>EVERY CLAIM IS AUDITABLE</span>
+          <span>BUILT IN NIGERIA · FOR NIGERIA</span>
           <span className="w-1 h-1 rounded-full bg-emerald-500/30" />
-          <a href="https://github.com/Oluwanifemi-engineer/magneetar" target="_blank" rel="noopener noreferrer" className="text-emerald-400/60 hover:text-emerald-400 transition-colors underline underline-offset-2">
-            VIEW SOURCE CODE
-          </a>
+          <span className="text-emerald-400/60">FREE TO START · NO CREDIT CARD</span>
         </div>
       </div>
     </section>

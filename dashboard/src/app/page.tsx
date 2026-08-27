@@ -10,6 +10,7 @@ import { Features } from '@/components/landing/Features';
 import { Africa } from '@/components/landing/Africa';
 import { Security } from '@/components/landing/Security';
 import { Pricing } from '@/components/landing/Pricing';
+import { OurStory } from '@/components/landing/OurStory';
 import { CTA } from '@/components/landing/CTA';
 import { Footer } from '@/components/landing/Footer';
 import { Reveal } from '@/hooks/useScrollReveal';
@@ -39,16 +40,19 @@ export default function HomePage() {
         {/* 4. Social proof — verifiable claims, not fictional testimonials */}
         <Reveal><SocialProof /></Reveal>
 
-        {/* 5. Features — the 12 capabilities */}
-        <Reveal><Features /></Reveal>
-
-        {/* 6. Built for Africa — the problem + our approach */}
+        {/* 5. Built for Africa — the problem */}
         <Reveal><Africa /></Reveal>
 
-        {/* 7. Security — how it's protected */}
+        {/* 6. Our Story — why this was built */}
+        <Reveal><OurStory /></Reveal>
+
+        {/* 7. Features — what it does */}
+        <Reveal><Features /></Reveal>
+
+        {/* 8. Security — how it's protected */}
         <Reveal><Security /></Reveal>
 
-        {/* 8. Pricing → CTA → Footer */}
+        {/* 9. Pricing → CTA → Footer */}
         <Reveal><Pricing authed={authed} /></Reveal>
         <Reveal><CTA authed={authed} /></Reveal>
       </main>

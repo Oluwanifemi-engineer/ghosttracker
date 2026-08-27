@@ -5,33 +5,33 @@ import { KeyRound, Lock, FileCheck2, Fingerprint, Globe } from 'lucide-react';
 const SECURITY_POINTS = [
   {
     icon: KeyRound,
-    title: 'Unique device keys',
+    title: 'Your phone has its own lock',
     description:
-      'Every phone gets its own secret key on first launch — never shared, never hardcoded in the app.',
+      'Every phone gets a unique key when you install the app — even if someone copies the app, they cannot access your data.',
   },
   {
     icon: Lock,
-    title: 'No plaintext passwords',
+    title: 'Your password is protected',
     description:
-      'The server stores only encrypted versions of your keys and passwords. A breach cannot steal your credentials.',
+      'We never store your actual password. Even if our servers were hacked, your credentials would be safe.',
   },
   {
     icon: FileCheck2,
-    title: 'Tamper-proof evidence',
+    title: 'Evidence that holds up',
     description:
-      'Every photo and recording is verified so it cannot be altered — evidence you can trust.',
+      'Every photo and recording is sealed so it cannot be altered — evidence you can take to the police.',
   },
   {
     icon: Fingerprint,
-    title: 'Instant session kill',
+    title: 'Lost your login? Kill it instantly',
     description:
-      'If someone steals your session, you can revoke it instantly. Stolen logins are killed server-side.',
+      'If someone gets into your account, you can shut them out immediately from any device.',
   },
   {
     icon: Globe,
-    title: 'Encrypted connection',
+    title: 'Everything is encrypted',
     description:
-      'All data travels over encrypted connections. Your location and commands are protected in transit.',
+      'Your location, commands, and evidence are all encrypted — scrambled so only you can read them.',
   },
 ];
 
@@ -50,13 +50,12 @@ export function Security() {
             <span className="text-[10px] font-mono font-bold tracking-[0.2em] text-emerald-400/80">SECURITY</span>
           </div>
           <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white leading-tight">
-            Built like it protects
+            Your phone. Your data.
             <br />
-            <span className="bg-gradient-to-r from-gray-400 to-gray-500 bg-clip-text text-transparent">something precious.</span>
+            <span className="bg-gradient-to-r from-gray-400 to-gray-500 bg-clip-text text-transparent">Protected at every step.</span>
           </h2>
           <p className="mt-5 text-gray-400 leading-relaxed max-w-lg">
-            Because it does. Magneetar protects your device with unique keys,
-            tamper-proof evidence, and instant session revocation.
+            Magneetar protects your location, evidence, and account with multiple layers of security — so even if something goes wrong, your data stays safe.
           </p>
 
           <div className="mt-8 space-y-4">
@@ -98,10 +97,10 @@ export function Security() {
 
             {/* Status chips */}
             <div className="absolute -top-2 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-full border border-emerald-500/20 bg-[#0c1220] text-[10px] font-mono font-bold text-emerald-400/80 shadow-elevation-2">
-              TOTP 2FA
+              2FA PROTECTED
             </div>
             <div className="absolute bottom-0 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-full border border-white/10 bg-[#0c1220] text-[10px] font-mono font-bold text-white/50 shadow-elevation-2">
-              TAMPER-PROOF
+              ENCRYPTED
             </div>
           </div>
         </div>

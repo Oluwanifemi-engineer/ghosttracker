@@ -55,20 +55,19 @@ describe('Landing Page', () => {
     expect(screen.getByText('What you actually get.')).toBeInTheDocument();
     expect(screen.getByText('Command Center')).toBeInTheDocument();
 
-    // ComparisonTable
+    // ComparisonTable / Why Magneetar
     expect(screen.getByText('Not just another tracker.')).toBeInTheDocument();
-    expect(screen.getByText('HOW WE COMPARE')).toBeInTheDocument();
+    expect(screen.getAllByText('WHY MAGNEETAR').length).toBeGreaterThanOrEqual(1);
 
-    // SocialProof (replaced Testimonials)
-    expect(screen.getByText('Verifiable by design.')).toBeInTheDocument();
-    expect(screen.getByText('WHY MAGNEETAR')).toBeInTheDocument();
-    expect(screen.getAllByText('535').length).toBeGreaterThanOrEqual(1);
+    // SocialProof
+    expect(screen.getByText('Why people trust Magneetar.')).toBeInTheDocument();
+    expect(screen.getAllByText('3s').length).toBeGreaterThanOrEqual(1);
 
     // Features grid — plain language, no jargon
     expect(screen.getAllByText('Theft Detection').length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText('Remote Commands').length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText('Evidence Capture').length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText('Evidence Reports').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('One-Tap Remote Control').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Photo & Audio Evidence').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Police-Ready Reports').length).toBeGreaterThanOrEqual(1);
 
     // Built for Africa
     expect(screen.getByText('THE PROBLEM')).toBeInTheDocument();
@@ -88,9 +87,9 @@ describe('Landing Page', () => {
     expect(screen.queryByText(/real adoption numbers coming as users arrive/i)).not.toBeInTheDocument();
 
     // Security — plain language
-    expect(screen.getByText('Unique device keys')).toBeInTheDocument();
-    expect(screen.getByText('No plaintext passwords')).toBeInTheDocument();
-    expect(screen.getByText('Instant session kill')).toBeInTheDocument();
+    expect(screen.getByText('Your phone has its own lock')).toBeInTheDocument();
+    expect(screen.getByText('Your password is protected')).toBeInTheDocument();
+    expect(screen.getByText('Lost your login? Kill it instantly')).toBeInTheDocument();
 
     // Pricing
     expect(screen.getByText('PRICING')).toBeInTheDocument();
