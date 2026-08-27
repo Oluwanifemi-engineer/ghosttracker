@@ -53,9 +53,8 @@ export function Footer() {
               </div>
             </div>
             <p className="mt-5 text-[13px] leading-relaxed text-gray-500 max-w-sm">
-              Military-grade anti-theft tracking and live location circles for Android. Stealth
-              monitoring, intelligent detection, and forensic-grade evidence — protecting what matters
-              most, and keeping who matters close.
+              Anti-theft tracking for Android. When your phone is stolen, it keeps reporting its
+              location, captures evidence, and lets you lock it remotely. Built for Africa.
             </p>
             <div className="mt-6 flex items-center gap-3">
               <a

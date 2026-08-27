@@ -9,12 +9,6 @@ import { ShieldCheck, Lock, Code, EyeOff, Users, Zap, Globe } from 'lucide-react
 
 const VERIFIABLE_CLAIMS = [
   {
-    metric: '17',
-    label: 'features competitors lack',
-    detail: 'Compared to Cerberus, Prey, and Find My Device',
-    icon: ShieldCheck,
-  },
-  {
     metric: '3s',
     label: 'GPS update intervals',
     detail: 'Kalman-filtered, road-snapped coordinates',
@@ -27,9 +21,15 @@ const VERIFIABLE_CLAIMS = [
     icon: Lock,
   },
   {
-    metric: '100%',
-    label: 'source code available',
-    detail: 'BSL 1.1 license — audit the code yourself',
+    metric: '535',
+    label: 'backend tests',
+    detail: 'Automated tests covering every endpoint',
+    icon: ShieldCheck,
+  },
+  {
+    metric: 'BSL',
+    label: 'source available',
+    detail: 'Audit the code yourself — non-commercial use allowed',
     icon: Code,
   },
 ];
@@ -38,17 +38,17 @@ const ARCHITECTURE_FACTS = [
   {
     icon: Globe,
     title: 'Self-hostable',
-    description: 'Run Magneetar on your own infrastructure. Your data, your server, your rules.',
+    description: 'Run Magneetar on your own infrastructure. Docker Compose + Cloudflare Tunnel, one command to deploy.',
   },
   {
     icon: Users,
-    title: 'Family & team circles',
-    description: 'Share live locations with family, coworkers, and trusted groups under one account.',
+    title: 'Device sharing',
+    description: 'Share devices with family or teammates. Role-based access: owner, admin, viewer.',
   },
   {
     icon: EyeOff,
-    title: 'Zero data sales',
-    description: 'We don\'t sell, share, or monetize your location data. Period. Check the privacy policy.',
+    title: 'No data sales',
+    description: 'We don\'t sell, share, or monetize your location data. Your data stays on your server.',
   },
 ];
 

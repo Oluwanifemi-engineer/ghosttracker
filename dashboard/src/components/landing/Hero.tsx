@@ -9,10 +9,10 @@ import { MagneticButton } from '@/components/ui/MagneticButton';
 import { AnimatedCounter } from '@/components/ui/AnimatedCounter';
 
 const HERO_STATS: { value: number; label: string; prefix?: string; suffix?: string }[] = [
-  { value: 17, label: 'features vs competitors', suffix: '' },
   { value: 3, label: 'second GPS updates', suffix: 's' },
   { value: 256, label: 'chain-of-custody hashing', prefix: 'SHA-', suffix: '-bit' },
-  { value: 24, label: 'seven monitoring', suffix: '/7' },
+  { value: 535, label: 'backend tests passing', suffix: '' },
+  { value: 8, label: 'theft signals detected', suffix: '' },
 ];
 
 /* ── Battery Arc SVG ──────────────────────────────────────────────────── */
@@ -106,8 +106,8 @@ export function Hero({ authed }: { authed: boolean }) {
             </h1>
 
             <p className="mt-6 text-lg text-gray-400 leading-relaxed max-w-xl">
-              Military-grade anti-theft tracking and live location circles for Android — built for
-              Africa, where only 11.7% of stolen phones are ever recovered.
+              Anti-theft tracking for Android — when your phone is stolen, it keeps reporting its
+              location, captures evidence, and lets you lock it remotely. Built for Africa.
             </p>
 
             {/* CTAs */}

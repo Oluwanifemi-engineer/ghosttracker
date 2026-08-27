@@ -19,65 +19,44 @@ import { TiltCard } from '@/components/ui/TiltCard';
 const FEATURES = [
   {
     icon: Brain,
-    title: 'Sentinel AI',
+    title: 'Theft Detection',
     description:
-      'Intelligent theft detection with false-positive prevention — scores movement, battery drops, and SIM changes in real time.',
+      'Weighted scoring across 8 signals — SIM change, failed unlocks, device admin disabled, location anomalies — with false-positive prevention.',
     accent: true,
   },
   {
     icon: MapPin,
     title: 'Real-time Tracking',
     description:
-      'GPS + network location streamed live to your command center over WebSocket with 3-second telemetry intervals.',
-    accent: false,
-  },
-  {
-    icon: Users,
-    title: 'Family & Team Circles',
-    description:
-      'Keep in touch with the people who matter — share live locations with family, coworkers, and trusted circles.',
+      'GPS + network location streamed live to your dashboard over WebSocket with 3-second telemetry intervals.',
     accent: false,
   },
   {
     icon: Camera,
-    title: 'Remote Evidence Capture',
+    title: 'Evidence Capture',
     description:
-      'Trigger front/rear camera photos and 20-second audio captures remotely, sealed with a SHA-256 chain of custody.',
+      'Trigger front/rear camera photos and audio captures remotely, sealed with a SHA-256 chain of custody.',
     accent: false,
   },
   {
     icon: Radar,
     title: 'Geofencing',
     description:
-      'Define safe zones and receive instant exit alerts. Perfect for campuses, homes, and vehicle perimeters.',
+      'Define safe zones and receive instant exit alerts. Set auto-actions: capture photo, trigger siren, or alert only.',
     accent: false,
   },
   {
     icon: Zap,
     title: 'Remote Commands',
     description:
-      'Lock the device, trigger a max-volume siren, wipe data, or enter Phantom Mode — all with one click.',
+      'Lock the device, trigger a max-volume siren, capture evidence, or wipe data — all from the dashboard.',
     accent: true,
   },
   {
-    icon: ShieldCheck,
-    title: 'Phantom Mode',
-    description:
-      'Hidden operation for stealth tracking. The app runs invisibly with multi-layer background persistence.',
-    accent: false,
-  },
-  {
-    icon: Smartphone,
-    title: 'Multi-Device Fleet',
-    description:
-      'One account, many devices. Register every phone, tablet, or vehicle tracker under a single email.',
-    accent: false,
-  },
-  {
     icon: BellRing,
-    title: 'Guardian Network',
+    title: 'Multi-Channel Alerts',
     description:
-      'Community-powered recovery — trusted guardians opt in, get blurred nearby scans, and report sightings.',
+      'SMS, WhatsApp, and push notifications — so you know the moment something is wrong, even on slow networks.',
     accent: false,
   },
   {
@@ -88,17 +67,24 @@ const FEATURES = [
     accent: false,
   },
   {
-    icon: Eye,
-    title: 'Stealth Persistence',
+    icon: Smartphone,
+    title: 'Offline Queue',
     description:
-      'OEM-aware survival layers for Huawei, Xiaomi, Oppo, and Vivo — watchdog alarms, health checks, and wakelock management.',
+      'Location pings queue when offline and upload when reconnected — no data lost during network gaps.',
+    accent: false,
+  },
+  {
+    icon: Eye,
+    title: 'OEM Persistence',
+    description:
+      'Survives battery killers on Huawei, Xiaomi, Oppo, Vivo, and Realme — watchdog alarms, health checks, and wakelock management.',
     accent: false,
   },
   {
     icon: FileText,
-    title: 'Forensic Reports',
+    title: 'Evidence Reports',
     description:
-      'Generate PDF evidence packages with cryptographic chain of custody, ready for law enforcement.',
+      'Generate PDF evidence packages with location trail, command history, and cryptographic chain of custody.',
     accent: false,
   },
 ];

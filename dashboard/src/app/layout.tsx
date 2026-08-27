@@ -20,7 +20,7 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: 'MAGNEETAR — Protect What You Own. Stay Close to Who You Love.',
   description:
-    'Military-grade anti-theft tracking and live location circles for Android, built for Africa. Sentinel AI theft detection, real-time tracking, remote evidence capture, family & team circles, community recovery bounties, and a tactical command center — because only 11.7% of stolen phones are ever recovered.',
+    'Anti-theft tracking for Android. When your phone is stolen, it keeps reporting its location, captures evidence, and lets you lock it remotely. Built for Africa.',
   keywords: [
     'anti-theft',
     'device tracking',
@@ -30,16 +30,15 @@ export const metadata: Metadata = {
     'phone theft Nigeria',
     'anti theft app Africa',
     'track stolen phone Nigeria',
-    'find my family',
-    'share location with family',
-    'location sharing app',
-    'keep in touch with family and coworkers',
+    'phone tracking app',
+    'stolen phone recovery',
+    'anti theft Android',
     'Magneetar',
   ],
   openGraph: {
     title: 'MAGNEETAR — Protect What You Own. Stay Close to Who You Love.',
     description:
-      'Built for Africa. Where phone theft is the most common crime — and only 11.7% of stolen phones are recovered — Magneetar changes that number while keeping families and teams connected.',
+      'Anti-theft tracking for Android. When your phone is stolen, it keeps reporting its location, captures evidence, and lets you lock it remotely.',
     type: 'website',
   },
   icons: {

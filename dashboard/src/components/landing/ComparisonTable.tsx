@@ -28,7 +28,7 @@ const FEATURES: Feature[] = [
   { name: 'Adaptive battery cadence', magneetar: true, cerberus: false, prey: false, findMy: false, category: 'Tracking' },
 
   // Security
-  { name: 'Theft detection AI (8 signals)', magneetar: true, cerberus: false, prey: false, findMy: false, category: 'Security' },
+  { name: 'Theft detection (8 weighted signals)', magneetar: true, cerberus: false, prey: false, findMy: false, category: 'Security' },
   { name: 'Evidence capture (photos + audio)', magneetar: true, cerberus: true, prey: true, findMy: false, category: 'Security' },
   { name: 'SHA-256 chain of custody', magneetar: true, cerberus: false, prey: false, findMy: false, category: 'Security' },
   { name: 'Remote data wipe', magneetar: true, cerberus: true, prey: true, findMy: true, category: 'Security' },
@@ -37,16 +37,16 @@ const FEATURES: Feature[] = [
 
   // Privacy & Ownership
   { name: 'Self-hosted option', magneetar: true, cerberus: true, prey: false, findMy: false, category: 'Privacy' },
-  { name: 'Zero-knowledge encryption', magneetar: true, cerberus: false, prey: false, findMy: false, category: 'Privacy' },
+  { name: 'AES-256-GCM encryption at rest', magneetar: true, cerberus: false, prey: false, findMy: false, category: 'Privacy' },
   { name: 'No data sold to third parties', magneetar: true, cerberus: true, prey: false, findMy: false, category: 'Privacy' },
-  { name: 'Open source', magneetar: true, cerberus: true, prey: false, findMy: false, category: 'Privacy' },
+  { name: 'Source available (BSL 1.1)', magneetar: true, cerberus: true, prey: false, findMy: false, category: 'Privacy' },
   { name: 'Built for Africa', magneetar: true, cerberus: false, prey: false, findMy: false, category: 'Privacy' },
 
   // Platform
   { name: 'Android', magneetar: true, cerberus: true, prey: true, findMy: true, category: 'Platform' },
   { name: 'iOS', magneetar: 'Coming', cerberus: false, prey: true, findMy: true, category: 'Platform' },
   { name: 'Web dashboard', magneetar: true, cerberus: true, prey: true, findMy: false, category: 'Platform' },
-  { name: 'Offline location queuing (works without signal)', magneetar: true, cerberus: false, prey: true, findMy: false, category: 'Platform' },
+
 ];
 
 function CellValue({ value }: { value: boolean | string }) {
