@@ -60,8 +60,8 @@ const ONBOARDING_STEPS: OnboardingStep[] = [
   {
     id: 2,
     icon: Shield,
-    title: 'Activate Sentinel AI',
-    description: 'Sentinel AI learns your phone patterns and detects theft automatically. It runs silently in the background.',
+    title: 'Activate theft detection',
+    description: 'Theft detection learns your phone patterns and spots theft automatically. It runs silently in the background.',
     highlight: 'Zero battery impact',
     color: 'blue',
   },

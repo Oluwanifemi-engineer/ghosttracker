@@ -18,14 +18,14 @@ const SCREENSHOTS = [
   },
   {
     id: 'sentinel',
-    label: 'Sentinel AI',
-    description: 'Real-time theft detection scoring across 8 weighted signals',
+    label: 'Theft Detection',
+    description: 'Automatic theft scoring across 8 signals',
     render: () => <SentinelScreenshot />,
   },
   {
     id: 'evidence',
     label: 'Evidence Capture',
-    description: 'SHA-256 sealed photos and audio with chain of custody',
+    description: 'Tamper-proof photos and audio you can take to the police',
     render: () => <EvidenceScreenshot />,
   },
   {
@@ -100,7 +100,7 @@ function DashboardScreenshot() {
 
         {/* Right panel */}
         <div className="w-40 bg-[#080c14] border-l border-white/[0.06] p-2.5">
-          <div className="text-[8px] font-mono text-gray-500 mb-2 tracking-wider">SENTINEL</div>
+          <div className="text-[8px] font-mono text-gray-500 mb-2 tracking-wider">DETECTION</div>
           <div className="bg-white/[0.03] rounded-lg p-2 border border-white/[0.06]">
             <div className="flex items-center justify-between mb-1">
               <span className="text-[9px] font-mono text-gray-400">Score</span>
@@ -141,7 +141,7 @@ function SentinelScreenshot() {
     <div className="bg-[#0c1220] rounded-xl overflow-hidden border border-white/[0.08] shadow-elevation-4 p-5">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <div className="text-[10px] font-mono text-gray-500 tracking-wider">SENTINEL AI</div>
+          <div className="text-[10px] font-mono text-gray-500 tracking-wider">DETECTION</div>
           <div className="text-2xl font-extrabold text-white mt-1 font-mono tabular-nums">Threat Score: <span className="text-emerald-400">12</span></div>
         </div>
         <div className="px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
@@ -189,7 +189,7 @@ function EvidenceScreenshot() {
           <div className="text-sm font-bold text-white mt-1">Galaxy S24 — Chain of Custody</div>
         </div>
         <div className="px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-          <span className="text-[10px] font-mono font-bold text-emerald-400">SHA-256 VERIFIED</span>
+          <span className="text-[10px] font-mono font-bold text-emerald-400">VERIFIED</span>
         </div>
       </div>
 
@@ -340,7 +340,7 @@ export function ProductShowcase() {
 
             {/* Trust badges */}
             <div className="flex items-center gap-4 pt-4 border-t border-white/[0.06] mt-3">
-              {['SHA-256 signed', 'E2E encrypted', 'Open source'].map((label) => (
+              {['Tamper-proof', 'Encrypted', 'Open source'].map((label) => (
                 <span key={label} className="text-[9px] font-mono text-gray-600">{label}</span>
               ))}
             </div>

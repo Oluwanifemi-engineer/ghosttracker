@@ -28,7 +28,7 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { id: 'sentinel', label: 'Sentinel', icon: Shield, shortLabel: 'Safe' },
+  { id: 'sentinel', label: 'Safe', icon: Shield, shortLabel: 'Safe' },
   { id: 'commands', label: 'Commands', icon: Terminal, shortLabel: 'Cmd' },
   { id: 'location', label: 'Location', icon: MapPin, shortLabel: 'Loc' },
   { id: 'media', label: 'Media', icon: Camera, shortLabel: 'Media' },

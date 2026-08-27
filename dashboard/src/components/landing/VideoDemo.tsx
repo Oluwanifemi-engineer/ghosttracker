@@ -18,13 +18,13 @@ const DEMO_STEPS = [
   {
     icon: MapPin,
     title: 'Real-time Tracking',
-    detail: '3-second GPS updates with Kalman filter',
+    detail: '3-second GPS updates with accurate coordinates',
     marker: 'tracking',
     color: 'from-emerald-500 to-teal-600',
   },
   {
     icon: Shield,
-    title: 'Sentinel AI',
+    title: 'Theft Detection',
     detail: '8-signal weighted theft scoring',
     marker: 'sentinel',
     color: 'from-amber-500 to-orange-600',
@@ -32,7 +32,7 @@ const DEMO_STEPS = [
   {
     icon: Camera,
     title: 'Evidence Capture',
-    detail: 'SHA-256 sealed photo + audio bursts',
+    detail: 'Tamper-proof photo + audio captures',
     marker: 'evidence',
     color: 'from-blue-500 to-indigo-600',
   },
@@ -147,7 +147,7 @@ function DemoMockup({ activeStep }: { activeStep: number }) {
             </div>
           ))}
 
-          <div className="mt-4 text-[9px] font-mono text-gray-500 mb-2">SENTINEL</div>
+          <div className="mt-4 text-[9px] font-mono text-gray-500 mb-2">DETECTION</div>
           <div className="p-2 rounded-lg bg-white/5 border border-white/10">
             <div className="flex items-center justify-between mb-1">
               <span className="text-[10px] font-mono text-gray-400">Score</span>
@@ -350,7 +350,7 @@ export function VideoDemo() {
 
             {/* Trust badges */}
             <div className="flex items-center gap-4 pt-4 border-t border-gray-800 mt-2">
-              {['SHA-256 signed', 'E2E encrypted', 'Open source'].map((label) => (
+              {['Tamper-proof', 'Encrypted', 'Open source'].map((label) => (
                 <span key={label} className="text-[9px] font-mono text-gray-600">{label}</span>
               ))}
             </div>

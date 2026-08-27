@@ -25,7 +25,7 @@ const TESTIMONIALS = [
 
 const TRUST_SIGNALS = [
   { value: '256-bit', label: 'Encryption', icon: Lock },
-  { value: 'SHA-256', label: 'Chain of custody', icon: ShieldCheck },
+  { value: 'Tamper-proof', label: 'Evidence integrity', icon: ShieldCheck },
   { value: 'Open', label: 'Source code', icon: Code },
   { value: 'Zero', label: 'Data sold', icon: EyeOff },
 ];

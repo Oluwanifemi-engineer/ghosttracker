@@ -15,11 +15,11 @@ const TIERS = [
     tagline: 'Protect your main phone.',
     plan: null,
     features: [
-      'Full theft detection (Sentinel AI)',
+      'Full theft detection',
       'Live tracking + route to device',
       'Evidence capture (photo & audio)',
       'Family & team circles',
-      'Guardian Network access',
+      'Device sharing with others',
     ],
     cta: { label: 'Get Started Free', href: '/signup', primary: true },
   },

@@ -8,15 +8,15 @@ const TOUR_STEPS = [
     id: 'tracking',
     icon: MapPin,
     title: 'Real-time Tracking',
-    description: 'Watch your device move on the live map with 3-second GPS updates. Kalman-filtered coordinates, road-snapped markers, and accuracy circles.',
+    description: 'Watch your device move on the live map with 3-second GPS updates. Accurate street-level coordinates.',
     color: 'from-emerald-500 to-teal-600',
     stat: '3s updates',
   },
   {
     id: 'sentinel',
     icon: Shield,
-    title: 'Sentinel AI Detection',
-    description: 'Weighted theft scoring across 8 signals: SIM change, failed unlocks, location off, airplane mode, geofence exit, and more.',
+    title: 'Theft Detection',
+    description: 'Automatic theft scoring across 8 signals: SIM change, failed unlocks, location off, airplane mode, geofence exit, and more.',
     color: 'from-amber-500 to-orange-600',
     stat: '8 signals',
   },
@@ -24,9 +24,9 @@ const TOUR_STEPS = [
     id: 'evidence',
     icon: Camera,
     title: 'Evidence Capture',
-    description: 'Remote photo bursts and audio recording sealed with SHA-256 chain of custody — forensic-grade evidence for recovery.',
+    description: 'Remote photo bursts and audio recording — tamper-proof evidence you can take to the police.',
     color: 'from-blue-500 to-indigo-600',
-    stat: 'SHA-256 chain',
+    stat: 'Tamper-proof',
   },
   {
     id: 'commands',
@@ -40,7 +40,7 @@ const TOUR_STEPS = [
     id: 'offline',
     icon: Zap,
     title: 'Offline Resilience',
-    description: 'Pings queue when offline and sync on reconnect. The Guardian Network uses BLE mesh to find devices without internet.',
+    description: 'Pings queue when offline and sync on reconnect — no data lost during network gaps.',
     color: 'from-violet-500 to-purple-600',
     stat: 'Zero gaps',
   },
@@ -102,7 +102,7 @@ function DashboardMockup({ activeStep }: { activeStep: number }) {
             </div>
           ))}
 
-          <div className="mt-4 text-[9px] font-mono text-gray-500 mb-2">SENTINEL</div>
+          <div className="mt-4 text-[9px] font-mono text-gray-500 mb-2">DETECTION</div>
           <div className="p-2 rounded-lg bg-white/5 border border-white/10">
             {(() => {
               const score = activeStep === 1 ? 72 : activeStep === 2 ? 85 : activeStep === 3 ? 45 : 0;

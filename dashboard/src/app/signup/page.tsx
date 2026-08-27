@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 
 const PERKS = [
   'Track unlimited smart devices under one email',
-  'Sentinel AI theft detection with instant alerts',
+  'Theft detection with instant alerts',
   'Remote lock, wipe, siren & evidence capture',
   'Forensic-grade PDF reports for recovery',
 ];

@@ -24,15 +24,15 @@ type LoginMode = 'account' | 'apikey';
 
 const BRAND_POINTS = [
   { icon: Radar, title: 'Live real-time tracking', text: 'WebSocket streaming to your command center' },
-  { icon: Camera, title: 'Remote evidence capture', text: 'Photo & audio with SHA-256 chain of custody' },
-  { icon: ShieldCheck, title: 'Sentinel AI detection', text: 'Theft scoring with false-positive prevention' },
+  { icon: Camera, title: 'Remote evidence capture', text: 'Photo & audio you can take to the police' },
+  { icon: ShieldCheck, title: 'Theft detection', text: 'Automatic theft scoring with false-positive prevention' },
   { icon: MapPin, title: 'Geofencing & alerts', text: 'Instant exit alerts via SMS, WhatsApp & push' },
 ];
 
 const TICKER_LINES = [
   'PING #4821 · 38 km/h · battery 84%',
   'HEARTBEAT OK · wifi · 12s ago',
-  'EVIDENCE SEALED · SHA-256 CHAIN',
+  'EVIDENCE SEALED · TAMPER-PROOF',
   'GEOFENCE OK · SAFE ZONE ACTIVE',
   'SIM UNCHANGED · THEFT MODE ARMED',
 ];

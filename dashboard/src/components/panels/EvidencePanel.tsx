@@ -83,7 +83,7 @@ export function EvidencePanel() {
 
             {evidence.sha256_chain && (
               <div className="text-[10px] font-mono text-white/20 break-all">
-                <span className="text-white/35 font-bold">SHA-256 Chain: </span>
+                <span className="text-white/35 font-bold">Integrity Chain: </span>
                 {evidence.sha256_chain.slice(0, 32)}...
               </div>
             )}
@@ -114,7 +114,7 @@ export function EvidencePanel() {
 
       <p className="text-[10px] font-mono text-white/20 leading-relaxed">
         One-click PDF for police or insurers: device info, location trail, command
-        timeline, SHA-256-chained photos & audio, and alert history.
+        timeline, tamper-proof photos & audio, and alert history.
       </p>
     </div>
   );
