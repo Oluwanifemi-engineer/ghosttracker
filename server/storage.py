@@ -414,9 +414,16 @@ def _normalize_value(value: Any) -> Any:
 
 
 class _DictRow(dict):
-    """dict with sqlite3.Row-style attribute access (``row.col``). Routes in
-    this codebase index with brackets, but keeping attribute access preserves
-    the full sqlite3.Row contract so no future route breaks on the pg path."""
+    """dict with sqlite3.Row-style attribute access (``row.col``) AND
+    integer indexing (``row[0]``). Routes in this codebase use both:
+    ``fetchone()[0]`` for scalar aggregates and ``row['col']`` for named
+    columns. SQLite's ``sqlite3.Row`` supports both; this class matches."""
+
+    def __getitem__(self, key):
+        if isinstance(key, int):
+            # Integer index → positional access (matches sqlite3.Row)
+            return list(self.values())[key]
+        return super().__getitem__(key)
 
     def __getattr__(self, name):
         try:
