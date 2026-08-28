@@ -43,8 +43,9 @@ COPY . .
 # Make sure scripts in .local are usable
 ENV PATH=/root/.local/bin:$PATH
 
-# Port — Railway sets $PORT dynamically; default 8000 for local Docker Compose.
-ENV PORT=8000
+# Port — Railway sets $PORT dynamically (usually 8080).
+# Do NOT set a default here — it overrides Railway's assignment.
+# Local Docker Compose sets PORT=8000 via docker-compose.yml.
 
 # Ensure data and media directories exist (Railway free tier has no persistent
 # volumes — the DB lives in the ephemeral container filesystem and is lost on

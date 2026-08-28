@@ -31,6 +31,7 @@ services:
     env_file:
       - ./server/.env
     environment:
+      - PORT=8000
       - MT_ENVIRONMENT=production
       # SQLite must live on the persisted volume (/app/data), NOT the container
       # layer (/app). A relative path resolves against WORKDIR=/app, so every
