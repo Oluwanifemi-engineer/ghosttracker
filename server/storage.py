@@ -33,10 +33,66 @@ clauses, ``LIKE`` vs ``ILIKE``. Those are Phase 2b route-SQL fixes.
 import asyncio
 import re
 import threading
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from typing import Any, List, Optional, Tuple
 
 from config import settings
+
+# ─── Interval string parsing (for PostgreSQL ::interval params) ───────────────
+# asyncpg cannot parse strings like '-10 minutes' as interval params — it
+# expects Python timedelta objects. This map converts common SQLite-style
+# modifier strings to timedelta values.
+_INTERVAL_RE = re.compile(
+    r"^([+-]?\d+)\s+(seconds?|minutes?|hours?|days?|weeks?|months?|years?)$",
+    re.IGNORECASE,
+)
+_INTERVAL_MULTIPLIERS = {
+    "second": 1,
+    "seconds": 1,
+    "minute": 60,
+    "minutes": 60,
+    "hour": 3600,
+    "hours": 3600,
+    "day": 86400,
+    "days": 86400,
+    "week": 604800,
+    "weeks": 604800,
+}
+
+
+def _parse_interval_to_timedelta(s: str) -> timedelta | None:
+    """Parse a modifier string like '-10 minutes' to a timedelta.
+
+    Returns None for values that cannot be parsed (they pass through unchanged
+    and asyncpg will surface the original error).
+    """
+    m = _INTERVAL_RE.match(s.strip())
+    if not m:
+        return None
+    amount = int(m.group(1))
+    unit = m.group(2).lower()
+    multiplier = _INTERVAL_MULTIPLIERS.get(unit)
+    if multiplier is None:
+        return None
+    return timedelta(seconds=amount * multiplier)
+
+
+def _coerce_interval_params(params: tuple) -> tuple:
+    """Convert interval-like string params to timedelta objects.
+
+    The SQL rewriter transforms ``datetime('now', ?)`` to
+    ``NOW() + (?::interval)``. When the param is a string like
+    ``'-10 minutes'`` asyncpg throws because str has no .days attribute.
+    Converting to timedelta lets asyncpg bind it properly.
+    """
+    coerced = list(params)
+    for i, v in enumerate(coerced):
+        if isinstance(v, str):
+            td = _parse_interval_to_timedelta(v)
+            if td is not None:
+                coerced[i] = td
+    return tuple(coerced)
+
 
 # Boolean columns per table (mirrors the schema in database.py / the pg
 # adapter). SQLite accepts 0/1 ints for BOOLEAN columns, but asyncpg requires
@@ -584,6 +640,9 @@ class PgStore:
         # easily discoverable.
         params = _coerce_bool_params(sql, params)
         params = _coerce_timestamp_params(sql, params)
+        # Coerce interval-like strings (e.g. '-10 minutes') to timedelta
+        # objects so asyncpg can bind them for ::interval casts.
+        params = _coerce_interval_params(params)
         # global heuristic: convert any ISO-like timestamp strings to datetime
         coerced = list(params)
         for i, v in enumerate(coerced):

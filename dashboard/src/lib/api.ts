@@ -2,7 +2,7 @@ import { Device, Location, Command, MediaItem, MediaDetail, ErrorLogResponse, Us
 
 // ─── Configuration ───────────────────────────────────────────────────────────
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.magneetar.me';
 
 // ─── API Client ──────────────────────────────────────────────────────────────
 

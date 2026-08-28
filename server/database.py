@@ -877,7 +877,9 @@ def check_rate_limit(identifier: str, action: str, max_requests: int, window_min
     Returns True if request is allowed, False if rate limited.
     """
     with get_db_context() as conn:
-        # Clean old entries
+        # Use the unified datetime('now', ?) syntax — PgStore's SQL rewriter
+        # converts it to NOW() + (?::interval) and _coerce_interval_params
+        # converts the string param to a timedelta object for asyncpg.
         conn.execute(
             "DELETE FROM rate_limits WHERE timestamp < datetime('now', ?)",
             (f"-{window_minutes} minutes",),
