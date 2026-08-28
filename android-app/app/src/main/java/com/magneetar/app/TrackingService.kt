@@ -433,6 +433,15 @@ class TrackingService : Service() {
                 }
             }
         }
+        // FCM Command Push: when the FCM handler receives a command data
+        // message, it starts this service with TRIGGER_ALARM action to
+        // execute the alarm directly. The alarm logic lives here because
+        // TrackingService is already a foreground service with audio focus.
+        if (intent?.action == "com.magneetar.app.TRIGGER_ALARM") {
+            scope.launch {
+                triggerAlarm()
+            }
+        }
         return START_STICKY
     }
 

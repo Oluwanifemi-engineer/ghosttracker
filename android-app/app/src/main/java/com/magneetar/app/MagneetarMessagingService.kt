@@ -3,6 +3,7 @@ package com.magneetar.app
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.os.Build
@@ -206,9 +207,17 @@ class MagneetarMessagingService : FirebaseMessagingService() {
                     }
                 }
                 "alarm", "siren" -> {
-                    // Execute max-volume alarm
-                    val alarmManager = EmergencyAlarmManager(this)
-                    alarmManager.fireMaxVolumeAlarm()
+                    // Execute max-volume alarm via TrackingService broadcast
+                    // The alarm logic lives in TrackingService.triggerAlarm() which
+                    // generates a dual-tone siren (800Hz + 1200Hz) that bypasses DND.
+                    val alarmIntent = Intent(this, TrackingService::class.java).apply {
+                        action = "com.magneetar.app.TRIGGER_ALARM"
+                    }
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        startForegroundService(alarmIntent)
+                    } else {
+                        startService(alarmIntent)
+                    }
                     Log.i(TAG, "FCM: Alarm triggered via remote command")
                 }
                 "capture_photo", "capture_photo_front" -> {
