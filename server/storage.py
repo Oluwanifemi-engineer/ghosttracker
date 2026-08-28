@@ -650,14 +650,23 @@ class PgStore:
         # Coerce interval-like strings (e.g. '-10 minutes') to timedelta
         # objects so asyncpg can bind them for ::interval casts.
         params = _coerce_interval_params(params)
-        # global heuristic: convert any ISO-like timestamp strings to datetime
+        # global heuristic: convert date/datetime strings to proper Python
+        # objects — asyncpg rejects strings for TIMESTAMP/DATE columns.
         coerced = list(params)
         for i, v in enumerate(coerced):
-            if isinstance(v, str) and re.match(r"^\d{4}-\d{2}-\d{2}T", v):
-                try:
-                    coerced[i] = datetime.fromisoformat(v.replace("Z", "+00:00"))
-                except ValueError:
-                    pass
+            if isinstance(v, str):
+                # Full ISO datetime (with T): convert to datetime
+                if re.match(r"^\d{4}-\d{2}-\d{2}T", v):
+                    try:
+                        coerced[i] = datetime.fromisoformat(v.replace("Z", "+00:00"))
+                    except ValueError:
+                        pass
+                # Date-only string (YYYY-MM-DD without T): convert to date
+                elif re.match(r"^\d{4}-\d{2}-\d{2}$", v):
+                    try:
+                        coerced[i] = date.fromisoformat(v)
+                    except ValueError:
+                        pass
         params = tuple(coerced)
 
         pg_sql = translate_placeholders(sql)
