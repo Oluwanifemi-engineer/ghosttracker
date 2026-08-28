@@ -1345,3 +1345,47 @@ async def register_fcm_token(
     )
 
     return {"status": "ok", "message": "FCM token registered", "device_id": device_id}
+
+
+# ─── Recovery Beacon (BLE mesh) ────────────────────────────────────────────
+# The Android SosBeaconBroadcaster polls this endpoint to get a beacon token.
+# When recovery is active, the server returns the token so the phone can
+# broadcast it over BLE. When recovery is inactive, the token is null and
+# the broadcaster stops advertising.
+
+
+@router.get("/api/device/recovery/beacon")
+async def get_recovery_bacon(
+    device_id: str = Depends(get_current_device_or_key),
+):
+    """Get the BLE beacon token for recovery mode.
+
+    Called by SosBeaconBroadcaster every 5 minutes. Returns the beacon_token
+    from the active recovery request, or null if recovery is not active.
+    The token is used to derive a BLE service UUID that nearby guardian phones
+    can detect.
+    """
+    db = get_db()
+
+    # Check for an active recovery request for this device
+    request_row = db.execute(
+        "SELECT beacon_token FROM recovery_requests "
+        "WHERE device_id=? AND status='active' AND beacon_token IS NOT NULL "
+        "ORDER BY created_at DESC LIMIT 1",
+        (device_id,),
+    ).fetchone()
+
+    if request_row and request_row["beacon_token"]:
+        return {"beacon_token": request_row["beacon_token"]}
+
+    # Also check mesh_beacons table (registered via /api/mesh/beacon/register)
+    beacon_row = db.execute(
+        "SELECT beacon_token FROM mesh_beacons " "WHERE device_id=? AND active=1",
+        (device_id,),
+    ).fetchone()
+
+    if beacon_row and beacon_row["beacon_token"]:
+        return {"beacon_token": beacon_row["beacon_token"]}
+
+    # No active recovery — broadcaster should stop advertising
+    return {"beacon_token": None}

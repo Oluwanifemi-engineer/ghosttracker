@@ -78,7 +78,7 @@ class PermissionsActivity : AppCompatActivity() {
      * drag them back here on every launch.
      */
     private fun onSkipClick() {
-        if (!isDeviceAdmin()) {
+        if (isDeviceAdminAvailable() && !isDeviceAdmin()) {
             androidx.appcompat.app.AlertDialog.Builder(this)
                 .setTitle("Device Admin Required")
                 .setMessage(
@@ -218,8 +218,10 @@ class PermissionsActivity : AppCompatActivity() {
         val bgLocationOk = hasBackgroundLocation()
         val allPermsOk = runtimeOk && bgLocationOk
         val accessibilityOk = isAccessibilityServiceEnabled()
+        val adminAvailable = isDeviceAdminAvailable()
+        val adminOk = !adminAvailable || isDeviceAdmin()
 
-        if (allPermsOk && isDeviceAdmin() && isBatteryOk() && accessibilityOk) {
+        if (allPermsOk && adminOk && isBatteryOk() && accessibilityOk) {
             // All done
             btnAction.text = "ALL GRANTED"
             btnAction.isEnabled = false
@@ -239,7 +241,7 @@ class PermissionsActivity : AppCompatActivity() {
             btnAction.text = "ALLOW BACKGROUND LOCATION"
             btnAction.isEnabled = true
             btnAction.alpha = 1f
-        } else if (!isDeviceAdmin()) {
+        } else if (adminAvailable && !isDeviceAdmin()) {
             btnAction.text = "ACTIVATE DEVICE ADMIN"
             btnAction.isEnabled = true
             btnAction.alpha = 1f
@@ -254,7 +256,7 @@ class PermissionsActivity : AppCompatActivity() {
         }
 
         // "Skip extras" button — appears after runtime permissions are granted
-        if (allPermsOk && (!isDeviceAdmin() || !accessibilityOk || !isBatteryOk())) {
+        if (allPermsOk && (adminAvailable && !isDeviceAdmin() || !accessibilityOk || !isBatteryOk())) {
             btnSkip.text = "SKIP EXTRAS & CONTINUE"
             btnSkip.visibility = android.view.View.VISIBLE
             btnSkip.alpha = 1f
@@ -345,8 +347,8 @@ class PermissionsActivity : AppCompatActivity() {
             return
         }
 
-        // Step 3: Device Admin (required for uninstall protection + lock/wipe)
-        if (!isDeviceAdmin()) {
+        // Step 3: Device Admin (optional in Play Store build — stripped from manifest)
+        if (isDeviceAdminAvailable() && !isDeviceAdmin()) {
             val intent = Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN).apply {
                 putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, adminComponent)
                 putExtra(
@@ -359,7 +361,7 @@ class PermissionsActivity : AppCompatActivity() {
             return
         }
 
-        // Step 4: Accessibility Service (uninstall protection)
+        // Step 4: Accessibility Service (uninstall protection — stripped in Play build)
         if (!isAccessibilityServiceEnabled()) {
             promptEnableAccessibility()
             return
@@ -571,7 +573,21 @@ class PermissionsActivity : AppCompatActivity() {
                 PackageManager.PERMISSION_GRANTED
     }
 
+    /**
+     * True when the app is registered as a device admin in the manifest.
+     * The Play Store build strips the AdminReceiver from the manifest, so
+     * isAdminActive() returns false and activateDeviceAdmin() silently fails.
+     * This check detects that case so the onboarding flow can skip admin
+     * activation instead of dead-ending on a failed intent.
+     */
+    private fun isDeviceAdminAvailable(): Boolean {
+        return try {
+            packageManager.getReceiverInfo(adminComponent, 0) != null
+        } catch (e: Exception) { false }
+    }
+
     private fun isDeviceAdmin(): Boolean {
+        if (!isDeviceAdminAvailable()) return false
         return try { devicePolicyManager.isAdminActive(adminComponent) } catch (e: Exception) { false }
     }
 
@@ -585,8 +601,10 @@ class PermissionsActivity : AppCompatActivity() {
 
     private fun checkAllDone(): Boolean {
         // Core permissions required (SMS is optional, never blocks onboarding)
+        // Device Admin is optional in the Play Store build (stripped from manifest)
+        val adminOk = !isDeviceAdminAvailable() || isDeviceAdmin()
         return hasLocation() && hasCamera() && hasMic() && hasNotifications() &&
-               hasBackgroundLocation() && isDeviceAdmin() && isBatteryOk()
+               hasBackgroundLocation() && adminOk && isBatteryOk()
     }
 
     private fun activateDeviceAdmin() {

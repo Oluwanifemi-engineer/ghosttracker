@@ -1,6 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- ─── Play Store flavor overlay ────────────────────────────────────────────
-     Strips permissions and services that trigger Play Protect blocking.
+     Strips permissions, services, and receivers that trigger Play Protect
+     blocking or Play Console review rejection.
+
+     Play Store policy prohibits:
+     - SMS permissions (unless default SMS handler or core SMS app)
+     - Accessibility services (unless verified accessibility tool)
+     - Device Admin receivers (unless enterprise MDM)
+     - Overlay permission (SYSTEM_ALERT_WINDOW) for non-accessibility apps
+     - Silent package install (REQUEST_INSTALL_PACKAGES)
 ─────────────────────────────────────────────────────────────────────────── -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
@@ -19,10 +27,25 @@
         android:name="android.hardware.telephony"
         tools:node="remove" />
 
+    <!-- Overlay permission (Play Store rejects for non-accessibility apps) -->
+    <uses-permission
+        android:name="android.permission.SYSTEM_ALERT_WINDOW"
+        tools:node="remove" />
+
+    <!-- Silent package install (sideload-only feature) -->
+    <uses-permission
+        android:name="android.permission.REQUEST_INSTALL_PACKAGES"
+        tools:node="remove" />
+
     <application>
         <!-- Accessibility Service (Play Store rejects non-accessibility usage) -->
         <service
             android:name="com.magneetar.app.UninstallGuardService"
+            tools:node="remove" />
+
+        <!-- Device Admin Receiver (Play Store rejects unless enterprise MDM) -->
+        <receiver
+            android:name="com.magneetar.app.AdminReceiver"
             tools:node="remove" />
     </application>
 

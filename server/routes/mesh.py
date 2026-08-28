@@ -21,7 +21,7 @@ Privacy:
 from datetime import datetime, timezone
 from typing import Optional
 
-from auth import get_current_device_or_key
+from auth import get_current_device_or_key, get_current_user
 from database import get_db
 from fastapi import APIRouter, Depends, HTTPException
 from logging_config import get_logger
@@ -30,6 +30,13 @@ from websocket_manager import broadcast_to_dashboards
 
 logger = get_logger("magneetar")
 router = APIRouter()
+
+
+# ─── Recovery Sighting Alias ─────────────────────────────────────────────────
+# The Android GuardianBeaconScanner sends to /api/recovery/sightings with
+# user auth (Bearer token). Route it to the same handler as /api/mesh/sighting.
+# This alias exists for backward compatibility — the canonical path is
+# /api/mesh/sighting (device auth via x-device-key).
 
 
 # ─── Beacon Registration ────────────────────────────────────────────────────
@@ -96,12 +103,14 @@ async def deactivate_beacon(
 
 
 class SightingReport(BaseModel):
-    beacon_device_id: str  # The stolen device we detected
+    beacon_device_id: Optional[str] = None  # The stolen device we detected (new format)
     beacon_token: str  # Must match the registered token
     lat: float
     lng: float
     accuracy: Optional[float] = None  # Horizontal accuracy in meters
     rssi: Optional[int] = None  # BLE signal strength
+    hop_count: Optional[int] = 0  # BLE mesh hop count
+    relayed: Optional[bool] = False  # Was this beacon relayed through another phone?
 
 
 @router.post("/api/mesh/sighting")
@@ -129,8 +138,11 @@ async def report_sighting(
     if beacon["beacon_token"] != report.beacon_token:
         raise HTTPException(status_code=403, detail="Invalid beacon token")
 
+    # Resolve beacon_device_id from the token if not provided (Android sends token only)
+    beacon_device_id = report.beacon_device_id or beacon["device_id"]
+
     # Don't let a device report itself
-    if finder_device_id == report.beacon_device_id:
+    if finder_device_id == beacon_device_id:
         raise HTTPException(status_code=400, detail="Cannot report own device")
 
     # Rate limit: max 1 sighting per finder per beacon per 5 minutes
@@ -138,24 +150,26 @@ async def report_sighting(
         "SELECT 1 FROM mesh_sightings "
         "WHERE beacon_device_id=? AND finder_device_id=? "
         "AND datetime(reported_at) > datetime('now', '-5 minutes') LIMIT 1",
-        (report.beacon_device_id, finder_device_id),
+        (beacon_device_id, finder_device_id),
     ).fetchone()
 
     if recent:
         return {"status": "ok", "message": "Sighting already reported recently"}
 
-    # Store sighting
+    # Store sighting (with relay metadata if present)
     db.execute(
         "INSERT INTO mesh_sightings "
-        "(beacon_device_id, finder_device_id, lat, lng, accuracy, rssi, reported_at) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?)",
+        "(beacon_device_id, finder_device_id, lat, lng, accuracy, rssi, hop_count, relayed, reported_at) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (
-            report.beacon_device_id,
+            beacon_device_id,
             finder_device_id,
             report.lat,
             report.lng,
             report.accuracy,
             report.rssi,
+            report.hop_count or 0,
+            report.relayed or False,
             now,
         ),
     )
@@ -163,7 +177,7 @@ async def report_sighting(
     # Update device location with the sighting (approximate, from finder)
     db.execute(
         "UPDATE devices SET last_seen=?, last_lat=?, last_lng=? WHERE id=?",
-        (now, report.lat, report.lng, report.beacon_device_id),
+        (now, report.lat, report.lng, beacon_device_id),
     )
 
     db.commit()
@@ -173,10 +187,12 @@ async def report_sighting(
         {
             "type": "mesh_sighting",
             "data": {
-                "device_id": report.beacon_device_id,
+                "device_id": beacon_device_id,
                 "lat": report.lat,
                 "lng": report.lng,
                 "finder": finder_device_id,
+                "hop_count": report.hop_count or 0,
+                "relayed": report.relayed or False,
                 "timestamp": now,
             },
         }
@@ -186,10 +202,11 @@ async def report_sighting(
         "BLE sighting reported",
         extra={
             "extra_data": {
-                "beacon": report.beacon_device_id,
+                "beacon": beacon_device_id,
                 "finder": finder_device_id,
                 "lat": report.lat,
                 "lng": report.lng,
+                "hop": report.hop_count or 0,
             }
         },
     )
@@ -227,3 +244,122 @@ async def get_sightings(
         "device_id": device_id,
         "sightings": [dict(s) for s in sightings],
     }
+
+
+# ─── Recovery Sighting Alias (user auth) ────────────────────────────────────
+# The Android GuardianBeaconScanner sends to /api/recovery/sightings with
+# a user Bearer token. This alias authenticates via user JWT, resolves the
+# user's device, and delegates to the sighting logic.
+
+
+@router.post("/api/recovery/sightings")
+async def report_sighting_via_recovery(
+    report: SightingReport,
+    user_id: str = Depends(get_current_user),
+):
+    """Alias for /api/mesh/sighting — accepts user JWT auth.
+
+    The Android GuardianBeaconScanner sends user auth (Bearer token),
+    not device auth. This endpoint resolves the user's device and
+    forwards to the same sighting logic.
+    """
+    db = get_db()
+    now = datetime.now(timezone.utc).isoformat()
+
+    # Find the user's first registered device (guardian scans from their own phone)
+    device = db.execute(
+        "SELECT id FROM devices WHERE owner_id=? ORDER BY created_at DESC LIMIT 1",
+        (user_id,),
+    ).fetchone()
+    if not device:
+        raise HTTPException(status_code=404, detail="No device registered for this user")
+
+    finder_device_id = device["id"]
+
+    # Validate beacon exists and is active
+    beacon = db.execute(
+        "SELECT device_id, beacon_token FROM mesh_beacons " "WHERE active=1",
+    ).fetchall()
+
+    # Find the matching beacon by token
+    matched_beacon = None
+    for b in beacon:
+        if b["beacon_token"] == report.beacon_token:
+            matched_beacon = b
+            break
+
+    if not matched_beacon:
+        raise HTTPException(status_code=404, detail="No active beacon for this token")
+
+    beacon_device_id = report.beacon_device_id or matched_beacon["device_id"]
+
+    # Don't let a device report itself
+    if finder_device_id == beacon_device_id:
+        raise HTTPException(status_code=400, detail="Cannot report own device")
+
+    # Rate limit: max 1 sighting per finder per beacon per 5 minutes
+    recent = db.execute(
+        "SELECT 1 FROM mesh_sightings "
+        "WHERE beacon_device_id=? AND finder_device_id=? "
+        "AND datetime(reported_at) > datetime('now', '-5 minutes') LIMIT 1",
+        (beacon_device_id, finder_device_id),
+    ).fetchone()
+
+    if recent:
+        return {"status": "ok", "message": "Sighting already reported recently"}
+
+    # Store sighting
+    db.execute(
+        "INSERT INTO mesh_sightings "
+        "(beacon_device_id, finder_device_id, lat, lng, accuracy, rssi, hop_count, relayed, reported_at) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (
+            beacon_device_id,
+            finder_device_id,
+            report.lat,
+            report.lng,
+            report.accuracy,
+            report.rssi,
+            report.hop_count or 0,
+            report.relayed or False,
+            now,
+        ),
+    )
+
+    # Update device location with the sighting
+    db.execute(
+        "UPDATE devices SET last_seen=?, last_lat=?, last_lng=? WHERE id=?",
+        (now, report.lat, report.lng, beacon_device_id),
+    )
+
+    db.commit()
+
+    # Notify the owner via WebSocket
+    await broadcast_to_dashboards(
+        {
+            "type": "mesh_sighting",
+            "data": {
+                "device_id": beacon_device_id,
+                "lat": report.lat,
+                "lng": report.lng,
+                "finder": finder_device_id,
+                "hop_count": report.hop_count or 0,
+                "relayed": report.relayed or False,
+                "timestamp": now,
+            },
+        }
+    )
+
+    logger.info(
+        "BLE sighting reported (recovery alias)",
+        extra={
+            "extra_data": {
+                "beacon": beacon_device_id,
+                "finder": finder_device_id,
+                "lat": report.lat,
+                "lng": report.lng,
+            }
+        },
+    )
+
+    return {"status": "ok", "message": "Sighting recorded"}
