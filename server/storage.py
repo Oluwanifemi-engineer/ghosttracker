@@ -263,11 +263,9 @@ def _rewrite_datetime_calls(sql: str) -> str:
 def _rewrite_julianday_calls(sql: str) -> str:
     """Map SQLite julianday(x) -> EXTRACT(EPOCH FROM (x)) / 86400.0.
 
-    This preserves differences between two julianday() calls because the
-    Julian offset cancels; it's a pragmatic transform to avoid UndefinedFunction
-    errors while keeping day-difference semantics.
+    Handles julianday('now') and julianday('now', modifier) by delegating
+    to the same NOW()+INTERVAL pattern used for datetime.
     """
-    # simple textual replacement: julianday(...) -> (EXTRACT(EPOCH FROM (...)) / 86400.0)
     out = []
     idx = 0
     while True:
@@ -289,7 +287,23 @@ def _rewrite_julianday_calls(sql: str) -> str:
             out.append(sql[pos:])
             break
         inner = sql[pos + len("julianday(") : i - 1]
-        repl = f"(EXTRACT(EPOCH FROM ({inner})) / 86400.0)"
+        inner_strip = inner.strip()
+        # Handle julianday('now') and julianday('now', modifier) — same
+        # logic as _rewrite_datetime_calls but wrapped in EXTRACT(EPOCH).
+        if inner_strip.startswith("'now'"):
+            if "," in inner_strip:
+                _, modifier = inner_strip.split(",", 1)
+                modifier = modifier.strip()
+                if modifier == "?":
+                    now_expr = "NOW() + (?::interval)"
+                else:
+                    modifier = modifier.strip("'")
+                    now_expr = f"NOW() + INTERVAL '{modifier}'"
+            else:
+                now_expr = "NOW()"
+            repl = f"(EXTRACT(EPOCH FROM ({now_expr})) / 86400.0)"
+        else:
+            repl = f"(EXTRACT(EPOCH FROM ({inner})) / 86400.0)"
         out.append(repl)
         idx = i
     return "".join(out)
