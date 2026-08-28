@@ -10,7 +10,7 @@ FROM node:20-alpine AS builder
 # build time). The version is the landing page's fallback badge — the runtime
 # /health fetch shows the LIVE version, so this only matters before that fetch
 # resolves or when the API is unreachable.
-ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_API_URL=https://api.magneetar.me
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ARG NEXT_PUBLIC_APP_VERSION
 ENV NEXT_PUBLIC_APP_VERSION=$NEXT_PUBLIC_APP_VERSION
