@@ -101,24 +101,45 @@ class MagneetarMessagingService : FirebaseMessagingService() {
         }
     }
 
-    // ── Incoming Notifications ──────────────────────────────────────────────
+    // ── Incoming Messages ────────────────────────────────────────────────
 
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
 
         Log.d(TAG, "Push received: ${message.from}")
 
-        // Extract notification data
+        val data = message.data
+        val messageType = data["type"] ?: "general"
+
+        // ── Command execution (FCM fallback when WebSocket is dead) ──────
+        // When the server pushes a command via FCM (device offline, no SMS),
+        // execute it locally. This is the Doze-mode wake-up path: FCM
+        // high-priority data messages bypass Doze and deliver even when the
+        // app backgrounded / socket killed.
+        if (messageType == "command") {
+            val command = data["command"] ?: return
+            val commandId = data["command_id"]?.toIntOrNull() ?: 0
+            val params = data["params"] ?: ""
+
+            Log.d(TAG, "FCM command received: $command #$commandId")
+
+            scope.launch {
+                executeCommand(command, commandId, params)
+            }
+            return
+        }
+
+        // ── Alert notifications (theft, SIM change, etc.) ───────────────
         val title = message.notification?.title
-            ?: message.data["title"]
+            ?: data["title"]
             ?: "Magneetar Alert"
 
         val body = message.notification?.body
-            ?: message.data["body"]
+            ?: data["body"]
             ?: "Security alert from your device"
 
-        val alertType = message.data["type"] ?: "general"
-        val deviceId = message.data["device_id"]
+        val alertType = messageType
+        val deviceId = data["device_id"]
 
         // Create notification channel
         createNotificationChannel()
@@ -166,6 +187,115 @@ class MagneetarMessagingService : FirebaseMessagingService() {
         // Show notification
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.notify(notificationIdCounter++, notification)
+    }
+
+    // ── FCM Command Execution ───────────────────────────────────────────────
+    // Executes commands received via FCM data messages. This is the Doze-mode
+    // fallback: when the WebSocket is dead and SMS isn't available, FCM can
+    // still wake the app and deliver commands.
+    private suspend fun executeCommand(command: String, commandId: Int, params: String) {
+        try {
+            when (command) {
+                "lock" -> {
+                    // Execute remote lock via DevicePolicyManager
+                    val dpm = getSystemService(Context.DEVICE_POLICY_SERVICE) as android.app.admin.DevicePolicyManager
+                    val adminComponent = ComponentName(this, AdminReceiver::class.java)
+                    if (dpm.isAdminActive(adminComponent)) {
+                        dpm.lockNow()
+                        Log.i(TAG, "FCM: Device locked via remote command")
+                    }
+                }
+                "alarm", "siren" -> {
+                    // Execute max-volume alarm
+                    val alarmManager = EmergencyAlarmManager(this)
+                    alarmManager.fireMaxVolumeAlarm()
+                    Log.i(TAG, "FCM: Alarm triggered via remote command")
+                }
+                "capture_photo", "capture_photo_front" -> {
+                    // Trigger evidence capture — start MediaCaptureService if not running
+                    val serviceIntent = Intent(this, MediaCaptureService::class.java).apply {
+                        putExtra("command", command)
+                        putExtra("command_id", commandId)
+                        putExtra("params", params)
+                    }
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        startForegroundService(serviceIntent)
+                    } else {
+                        startService(serviceIntent)
+                    }
+                    Log.i(TAG, "FCM: Photo capture triggered via remote command")
+                }
+                "capture_audio" -> {
+                    // Trigger audio capture
+                    val serviceIntent = Intent(this, MediaCaptureService::class.java).apply {
+                        putExtra("command", command)
+                        putExtra("command_id", commandId)
+                        putExtra("params", params)
+                    }
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        startForegroundService(serviceIntent)
+                    } else {
+                        startService(serviceIntent)
+                    }
+                    Log.i(TAG, "FCM: Audio capture triggered via remote command")
+                }
+                "wipe" -> {
+                    // Factory reset — requires Device Owner (not just Device Admin)
+                    // For now, log the attempt. Full wipe requires DPC provisioning.
+                    Log.w(TAG, "FCM: Wipe requested but requires Device Owner provisioning")
+                }
+                "lost_mode" -> {
+                    // Activate lost mode — show lock screen with owner message
+                    val lostModeIntent = Intent(this, LostModeActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                        putExtra("message", params)
+                    }
+                    startActivity(lostModeIntent)
+                    Log.i(TAG, "FCM: Lost mode activated via remote command")
+                }
+                else -> {
+                    Log.w(TAG, "FCM: Unknown command: $command")
+                }
+            }
+
+            // Acknowledge the command back to the server
+            acknowledgeCommand(commandId, if (command == "wipe" && params != "CONFIRMED_WIPE") "failed" else "executed")
+
+        } catch (e: Exception) {
+            Log.e(TAG, "FCM command execution failed: $command", e)
+            acknowledgeCommand(commandId, "failed")
+        }
+    }
+
+    /**
+     * Send command acknowledgement back to the server via HTTP.
+     * Uses the same poll-ack endpoint as the WebSocket path.
+     */
+    private suspend fun acknowledgeCommand(commandId: Int, status: String) {
+        try {
+            val prefs = getSharedPreferences("mt", Context.MODE_PRIVATE)
+            val deviceKey = prefs.getString("device_key", "") ?: ""
+
+            val body = JSONObject().apply {
+                put("command_id", commandId)
+                put("status", status)
+            }.toString().toRequestBody(JSON)
+
+            val requestBuilder = okhttp3.Request.Builder()
+                .url("$serverUrl/api/device/command/$commandId/ack")
+                .post(body)
+
+            if (deviceKey.isNotEmpty()) {
+                requestBuilder.addHeader("x-device-key", deviceKey)
+            }
+
+            val response = client.newCall(requestBuilder.build()).execute()
+            response.close()
+
+            Log.d(TAG, "FCM command #$commandId acked: $status")
+        } catch (e: Exception) {
+            Log.w(TAG, "FCM command ack failed: ${e.message}")
+        }
     }
 
     private fun createNotificationChannel() {

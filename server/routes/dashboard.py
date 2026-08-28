@@ -1475,6 +1475,32 @@ async def issue_command(
             db.commit()
             delivery_channel = "poll"
 
+    # ── FCM Command Push (best-effort fallback) ──────────────────────────
+    # When the device is offline (WebSocket dead) and SMS relay is unavailable
+    # or failed, push the command via FCM high-priority data message. FCM can
+    # wake the app from Doze mode — the Android MagneetarMessagingService
+    # handles the data message and executes the command locally.
+    fcm_pushed = False
+    if device_offline and not sms_delivered:
+        try:
+            from fcm_command import push_command_to_device
+
+            fcm_pushed = await push_command_to_device(
+                device_id=cmd.device_id,
+                command=cmd.command,
+                command_id=command_id,
+                params=cmd.params,
+                priority=priority,
+            )
+            if fcm_pushed:
+                log_audit(
+                    "command_fcm_push",
+                    actor=auth,
+                    details=f"Command: {cmd.command} #{command_id} to {cmd.device_id} via FCM",
+                )
+        except Exception as e:
+            logger.warning(f"FCM command push failed for {cmd.device_id}: {e}")
+
     log_audit(
         "command_issued",
         actor=auth,
@@ -1486,6 +1512,7 @@ async def issue_command(
         "command_id": command_id,
         "delivery": delivery_channel,
         "sms_delivered": sms_delivered,
+        "fcm_pushed": fcm_pushed,
     }
 
 
