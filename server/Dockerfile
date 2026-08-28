@@ -46,6 +46,11 @@ ENV PATH=/root/.local/bin:$PATH
 # Port — Railway sets $PORT dynamically; default 8000 for local Docker Compose.
 ENV PORT=8000
 
+# Ensure data and media directories exist (Railway free tier has no persistent
+# volumes — the DB lives in the ephemeral container filesystem and is lost on
+# redeploy, which is acceptable for MVP testing).
+RUN mkdir -p /app/data /app/media /app/static/apk
+
 # Health check
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:$PORT/health')" || exit 1
