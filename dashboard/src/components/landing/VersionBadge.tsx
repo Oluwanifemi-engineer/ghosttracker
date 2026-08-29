@@ -12,7 +12,7 @@ import { useEffect, useState } from 'react';
  * baked from the repo VERSION file by the Docker build) until the fetch
  * resolves or when the API is unreachable.
  */
-const FALLBACK_VERSION = process.env.NEXT_PUBLIC_APP_VERSION || '1.4.0';
+const FALLBACK_VERSION = process.env.NEXT_PUBLIC_APP_VERSION || '1.4.4';
 
 export type ServerStatus = 'checking' | 'online' | 'offline';
 
@@ -32,7 +32,7 @@ export function useLiveServerInfo(): LiveServerInfo {
     // the build-time fallback rather than crashing the landing page.
     if (typeof fetch !== 'function') return;
     let cancelled = false;
-    const base = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000').replace(/\/+$/, '');
+    const base = (process.env.NEXT_PUBLIC_API_URL || 'https://api.magneetar.me').replace(/\/+$/, '');
     fetch(`${base}/health`)
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
       .then((h: { status?: string; version?: string }) => {
