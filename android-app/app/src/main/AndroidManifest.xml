@@ -189,7 +189,14 @@
             android:theme="@style/AppTheme"
             android:windowSoftInputMode="adjustResize" />
 
-        <!-- ─── Home ─────────────────────────────────────────────────────── -->
+        <!-- ─── Dashboard (Full in-app experience) ──────────────────────── -->
+        <activity
+            android:name=".DashboardActivity"
+            android:exported="false"
+            android:theme="@style/AppTheme"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- ─── Home (Legacy fallback) ─────────────────────────────────── -->
         <activity
             android:name=".HomeActivity"
             android:exported="false"
@@ -311,6 +318,11 @@
             android:exported="false"
             android:foregroundServiceType="dataSync"
             android:stopWithTask="false" />
+
+        <!-- ─── Google Maps API Key ─────────────────────────────────────── -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="YOUR_GOOGLE_MAPS_API_KEY" />
 
         <!-- ─── Firebase Cloud Messaging ───────────────────────────────── -->
         <service

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/btn_surface"
+    android:orientation="vertical"
+    android:padding="14dp"
+    android:layout_marginBottom="8dp">
+
+    <!-- Type + Time -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:id="@+id/tv_alert_type"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="ALERT"
+            android:textSize="11sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tv_alert_time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:textColor="#505050"
+            android:textSize="10sp" />
+    </LinearLayout>
+
+    <!-- Message -->
+    <TextView
+        android:id="@+id/tv_alert_message"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:textColor="#E0E0E0"
+        android:textSize="13sp"
+        android:layout_marginTop="4dp" />
+
+    <!-- Device -->
+    <TextView
+        android:id="@+id/tv_alert_device"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:textColor="#505050"
+        android:textSize="11sp"
+        android:layout_marginTop="4dp" />
+</LinearLayout>

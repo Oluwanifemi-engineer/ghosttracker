@@ -54,9 +54,9 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(this, PermissionsActivity::class.java))
             finish()
         } else {
-            // Fully authenticated → home
+            // Fully authenticated → full dashboard
             startServicesSafe()
-            startActivity(Intent(this, HomeActivity::class.java))
+            startActivity(Intent(this, DashboardActivity::class.java))
             finish()
         }
     }
