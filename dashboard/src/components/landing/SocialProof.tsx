@@ -1,6 +1,6 @@
 'use client';
 
-import { ShieldCheck, Lock, Code, EyeOff, Users, Zap, Globe } from 'lucide-react';
+import { ShieldCheck, Lock, EyeOff, Users, Zap, Globe } from 'lucide-react';
 
 /**
  * SocialProof — replaces fictional testimonials with verifiable metrics.

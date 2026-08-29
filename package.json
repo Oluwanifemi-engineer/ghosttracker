@@ -1,6 +1,6 @@
 {
   "name": "magneetar",
-  "version": "1.0.0",
+  "version": "1.4.4",
   "description": "> **Military-grade anti-theft tracking system.**   > Track, protect, and recover your devices with intelligent telemetry and real-time alerts.",
   "main": "index.js",
   "directories": {

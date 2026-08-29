@@ -66,6 +66,9 @@ class PermissionsActivity : AppCompatActivity() {
         btnAction.setOnClickListener { onActionClick() }
         btnSkip.setOnClickListener { onSkipClick() }
 
+        // Track Device Admin state across onResume calls
+        wasDeviceAdminActive = isDeviceAdmin()
+
         // Auto-start on first load
         refreshUI()
     }
@@ -103,8 +106,23 @@ class PermissionsActivity : AppCompatActivity() {
     // Device Admin is MANDATORY — cannot be skipped for proper uninstall protection
     // The skip button only appears after all core permissions AND Device Admin are granted
 
+    private var wasDeviceAdminActive = false
+
     override fun onResume() {
         super.onResume()
+        // Detect Device Admin activation — onResume is more reliable than
+        // onActivityResult on Samsung, Xiaomi, and other OEM Android devices.
+        if (wasDeviceAdminActive && !isDeviceAdmin()) {
+            // Admin was just deactivated
+            wasDeviceAdminActive = isDeviceAdmin()
+        } else if (!wasDeviceAdminActive && isDeviceAdmin()) {
+            // Admin was just activated — apply uninstall protection
+            wasDeviceAdminActive = true
+            getSharedPreferences("mt", Context.MODE_PRIVATE).edit()
+                .putBoolean("admin_skip_acknowledged", false)
+                .apply()
+            UninstallProtection.enforceUninstallBlocked(this)
+        }
         // After returning from background location settings, check if it was granted
         if (backgroundLocationPending) {
             backgroundLocationPending = false
@@ -486,14 +504,10 @@ class PermissionsActivity : AppCompatActivity() {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == ADMIN_REQUEST_CODE && resultCode == RESULT_OK && isDeviceAdmin()) {
-            // Admin activated — clear any earlier skip acknowledgement and apply
-            // the hard uninstall block if we're running as device owner.
-            getSharedPreferences("mt", Context.MODE_PRIVATE).edit()
-                .putBoolean("admin_skip_acknowledged", false)
-                .apply()
-            UninstallProtection.enforceUninstallBlocked(this)
-        }
+        // NOTE: onActivityResult is NOT reliable for Device Admin activation on
+        // many Android OEMs (Samsung, Xiaomi, etc.). The intent returns but the
+        // callback never fires. We handle admin activation in onResume() instead
+        // by polling isDeviceAdmin().
         refreshUI()
     }
 

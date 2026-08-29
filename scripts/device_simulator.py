@@ -78,7 +78,7 @@ class DeviceSimulator:
             "fingerprint": f"sim-{self.device_id}-fingerprint",
             "model": "Simulated Phone v1.0",
             "os_version": "Android 14",
-            "app_version": "1.0.0",
+            "app_version": "1.4.4",
         }
         if self.device_key:
             payload["device_key"] = self.device_key

@@ -205,7 +205,7 @@ def day3_circle_reminder(name: str, email: str) -> tuple[str, str]:
       </div>
 
       <p style="font-size:14px;color:#6b7280;line-height:1.6;margin:0 0 24px;">
-        <strong>Upgrade to Personal (₦1,500/month)</strong> to create a circle of up to 5 people.
+        <strong>Upgrade to Personal (₦500/month)</strong> to create a circle of up to 5 people.
       </p>
 
       <a href="{FRONTEND_URL}/login" style="display:inline-block;background:#111827;color:#ffffff;padding:12px 24px;border-radius:10px;font-size:13px;font-weight:700;text-decoration:none;letter-spacing:0.05em;">  # noqa: E501  # noqa: E501
@@ -248,7 +248,7 @@ def day7_engagement(name: str, email: str) -> tuple[str, str]:
       </div>
 
       <p style="font-size:14px;color:#111827;font-weight:700;margin:0 0 24px;">
-        Upgrade to Personal for ₦1,500/month — less than ₦50/day.
+        Upgrade to Personal for ₦500/month — less than ₦17/day.
       </p>
 
       <a href="{FRONTEND_URL}/login" style="display:inline-block;background:#111827;color:#ffffff;padding:12px 24px;border-radius:10px;font-size:13px;font-weight:700;text-decoration:none;letter-spacing:0.05em;">  # noqa: E501  # noqa: E501

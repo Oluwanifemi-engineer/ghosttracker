@@ -19,9 +19,8 @@ export default function HomePage() {
   const [authed, setAuthed] = useState(false);
 
   useEffect(() => {
-    const serverUrl = sessionStorage.getItem('mt_server_url');
     const apiKey = sessionStorage.getItem('mt_api_key');
-    setAuthed(Boolean(serverUrl && apiKey));
+    setAuthed(Boolean(apiKey));
   }, []);
 
   return (
