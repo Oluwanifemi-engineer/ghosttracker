@@ -78,22 +78,22 @@ class PermissionsActivity : AppCompatActivity() {
      * drag them back here on every launch.
      */
     private fun onSkipClick() {
+        // Device Admin is strongly recommended but the user can skip it.
+        // Show a warning but allow proceeding.
         if (isDeviceAdminAvailable() && !isDeviceAdmin()) {
             androidx.appcompat.app.AlertDialog.Builder(this)
-                .setTitle("Device Admin Required")
+                .setTitle("Skip Device Admin?")
                 .setMessage(
-                    "Device Admin is required for anti-theft protection.\n\n" +
-                    "Without it:\n" +
-                    "• Anyone can uninstall this app\n" +
-                    "• Remote lock/wipe will not work\n" +
-                    "• Your device cannot be recovered if stolen\n\n" +
-                    "Please activate Device Admin to continue."
+                    "Device Admin enables remote lock, wipe and uninstall protection.\n\n" +
+                    "You can activate it later in Settings."
                 )
                 .setPositiveButton("ACTIVATE NOW") { _, _ ->
                     activateDeviceAdmin()
                 }
-                .setNegativeButton("EXIT", { _, _ -> finish() })
-                .setCancelable(false)
+                .setNegativeButton("SKIP") { _, _ ->
+                    navigateToHome()
+                }
+                .setCancelable(true)
                 .show()
         } else {
             navigateToHome()
@@ -433,32 +433,10 @@ class PermissionsActivity : AppCompatActivity() {
         // Android 13+ requires POST_NOTIFICATIONS for FCM alert delivery
         if (!hasNotifications()) missing.add(Manifest.permission.POST_NOTIFICATIONS)
 
-        // SMS permissions are OPTIONAL (Offline Command Relay) — only request
-        // if the manifest declares them (they're stripped in the Play build)
-        if (!hasSmsPermissions() && hasSmsPermissionsFeature()) {
-            missing.add(Manifest.permission.RECEIVE_SMS)
-            missing.add(Manifest.permission.SEND_SMS)
-            missing.add(Manifest.permission.READ_PHONE_STATE)
-        }
-
-        // Bluetooth permissions are OPTIONAL (Find Network beacons) — only
-        // requestable on API 31+; older devices grant them at install time.
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !hasBluetoothPermissions()) {
-            missing.add(Manifest.permission.BLUETOOTH_SCAN)
-            missing.add(Manifest.permission.BLUETOOTH_ADVERTISE)
-            missing.add(Manifest.permission.BLUETOOTH_CONNECT)
-        }
-
-        // Wi-Fi RTT (802.11mc) indoor ranging is OPTIONAL (G1-17): on API 33+
-        // NEARBY_WIFI_DEVICES is a runtime permission. A denial just means no
-        // 1-2m indoor fixes — the fused/GPS/network streams are unaffected,
-        // so it never blocks onboarding (same posture as SMS/Bluetooth).
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            ContextCompat.checkSelfPermission(this, Manifest.permission.NEARBY_WIFI_DEVICES) !=
-                PackageManager.PERMISSION_GRANTED
-        ) {
-            missing.add(Manifest.permission.NEARBY_WIFI_DEVICES)
-        }
+        // OPTIONAL permissions (SMS, Bluetooth, Wi-Fi) are NOT requested here.
+        // They are shown in the UI as "Optional" and can be granted later from
+        // Settings. Requesting them in the initial batch makes the permission
+        // dialog overwhelming and confuses users.
 
         if (missing.isNotEmpty()) {
             ActivityCompat.requestPermissions(
