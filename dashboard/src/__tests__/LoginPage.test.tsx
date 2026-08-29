@@ -52,9 +52,6 @@ describe('Login Page', () => {
     expect(screen.getByText('Your devices,')).toBeInTheDocument();
     expect(screen.getByLabelText('Email')).toBeInTheDocument();
     expect(screen.getByLabelText('Password')).toBeInTheDocument();
-    // Server URL is prefilled after mount
-    expect(await screen.findByDisplayValue('https://api.magneetar.me')).toBeInTheDocument();
-
     // Integrity: no fabricated adoption claims (fake avatars, "1,200+"
     // owners, invented star ratings) — the mockup is labelled DEMO and the
     // stats are the verifiable ones.
@@ -74,17 +71,6 @@ describe('Login Page', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Account' }));
     expect(await screen.findByLabelText('Email')).toBeInTheDocument();
     expect(screen.queryByLabelText('API Key')).not.toBeInTheDocument();
-  });
-
-  it('validates the server URL', async () => {
-    await renderPage();
-    const serverUrl = screen.getByLabelText('Server URL');
-    await act(async () => {
-      fireEvent.change(serverUrl, { target: { value: '' } });
-      fireEvent.submit(serverUrl.closest('form') as HTMLFormElement);
-    });
-    expect(screen.getByRole('alert')).toHaveTextContent('Please enter your server URL.');
-    expect(mockFetch).not.toHaveBeenCalled();
   });
 
   it('requires email and password in account mode', async () => {

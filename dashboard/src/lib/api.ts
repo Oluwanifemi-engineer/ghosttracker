@@ -504,6 +504,79 @@ class MagneetarAPI {
   async checkIMEI(_imei: string): Promise<any> { return {}; }
   async reportTheftIMEI(_data: any): Promise<any> { return {}; }
   async getTrustQRData(_deviceId: string): Promise<any> { return {}; }
+
+  // ─── Circles (Group Sharing) ────────────────────────────────────────────
+
+  async getCircles(): Promise<any> {
+    const res = await fetch(`${this.serverUrl}/api/circles`, { headers: this.headers() });
+    if (!res.ok) throw new Error(extractErrorMessage(await res.json().catch(() => null), 'Failed to load circles'));
+    return res.json();
+  }
+
+  async createCircle(name: string): Promise<any> {
+    const res = await fetch(`${this.serverUrl}/api/circles`, {
+      method: 'POST', headers: this.headers(),
+      body: JSON.stringify({ name }),
+    });
+    if (!res.ok) throw new Error(extractErrorMessage(await res.json().catch(() => null), 'Failed to create circle'));
+    return res.json();
+  }
+
+  async joinCircle(inviteCode: string): Promise<any> {
+    const res = await fetch(`${this.serverUrl}/api/circles/join`, {
+      method: 'POST', headers: this.headers(),
+      body: JSON.stringify({ invite_code: inviteCode }),
+    });
+    if (!res.ok) throw new Error(extractErrorMessage(await res.json().catch(() => null), 'Failed to join circle'));
+    return res.json();
+  }
+
+  async getCircle(circleId: string): Promise<any> {
+    const res = await fetch(`${this.serverUrl}/api/circles/${circleId}`, { headers: this.headers() });
+    if (!res.ok) throw new Error(extractErrorMessage(await res.json().catch(() => null), 'Failed to load circle'));
+    return res.json();
+  }
+
+  async shareDeviceToCircle(circleId: string, deviceId: string): Promise<any> {
+    const res = await fetch(`${this.serverUrl}/api/circles/${circleId}/devices`, {
+      method: 'POST', headers: this.headers(),
+      body: JSON.stringify({ device_id: deviceId }),
+    });
+    if (!res.ok) throw new Error(extractErrorMessage(await res.json().catch(() => null), 'Failed to share device'));
+    return res.json();
+  }
+
+  async removeDeviceFromCircle(circleId: string, deviceId: string): Promise<any> {
+    const res = await fetch(`${this.serverUrl}/api/circles/${circleId}/devices/${deviceId}`, {
+      method: 'DELETE', headers: this.headers(),
+    });
+    if (!res.ok) throw new Error(extractErrorMessage(await res.json().catch(() => null), 'Failed to remove device'));
+    return res.json();
+  }
+
+  async leaveCircle(circleId: string): Promise<any> {
+    const res = await fetch(`${this.serverUrl}/api/circles/${circleId}/leave`, {
+      method: 'POST', headers: this.headers(),
+    });
+    if (!res.ok) throw new Error(extractErrorMessage(await res.json().catch(() => null), 'Failed to leave circle'));
+    return res.json();
+  }
+
+  async deleteCircle(circleId: string): Promise<any> {
+    const res = await fetch(`${this.serverUrl}/api/circles/${circleId}`, {
+      method: 'DELETE', headers: this.headers(),
+    });
+    if (!res.ok) throw new Error(extractErrorMessage(await res.json().catch(() => null), 'Failed to delete circle'));
+    return res.json();
+  }
+
+  async refreshCircleInvite(circleId: string): Promise<any> {
+    const res = await fetch(`${this.serverUrl}/api/circles/${circleId}/refresh-invite`, {
+      method: 'POST', headers: this.headers(),
+    });
+    if (!res.ok) throw new Error(extractErrorMessage(await res.json().catch(() => null), 'Failed to refresh invite'));
+    return res.json();
+  }
 }
 
 // ─── Singleton ───────────────────────────────────────────────────────────────

@@ -471,6 +471,45 @@ class PostgresDatabase:
                         ON mesh_sightings(beacon_device_id, reported_at);
                     CREATE INDEX IF NOT EXISTS idx_mesh_sightings_finder
                         ON mesh_sightings(finder_device_id, reported_at);
+
+                    -- Circles (group device sharing)
+                    CREATE TABLE IF NOT EXISTS circles (
+                        id TEXT PRIMARY KEY,
+                        name TEXT NOT NULL,
+                        owner_id TEXT NOT NULL,
+                        invite_code TEXT NOT NULL UNIQUE,
+                        created_at TIMESTAMPTZ DEFAULT NOW(),
+                        FOREIGN KEY (owner_id) REFERENCES users(id)
+                    );
+                    CREATE INDEX IF NOT EXISTS idx_circles_owner ON circles(owner_id);
+                    CREATE INDEX IF NOT EXISTS idx_circles_invite ON circles(invite_code);
+
+                    CREATE TABLE IF NOT EXISTS circle_members (
+                        id TEXT PRIMARY KEY,
+                        circle_id TEXT NOT NULL,
+                        user_id TEXT NOT NULL,
+                        role TEXT NOT NULL DEFAULT 'member',
+                        joined_at TIMESTAMPTZ DEFAULT NOW(),
+                        UNIQUE (circle_id, user_id),
+                        FOREIGN KEY (circle_id) REFERENCES circles(id) ON DELETE CASCADE,
+                        FOREIGN KEY (user_id) REFERENCES users(id)
+                    );
+                    CREATE INDEX IF NOT EXISTS idx_circle_members_circle ON circle_members(circle_id);
+                    CREATE INDEX IF NOT EXISTS idx_circle_members_user ON circle_members(user_id);
+
+                    CREATE TABLE IF NOT EXISTS circle_devices (
+                        id TEXT PRIMARY KEY,
+                        circle_id TEXT NOT NULL,
+                        device_id TEXT NOT NULL,
+                        shared_by TEXT NOT NULL,
+                        created_at TIMESTAMPTZ DEFAULT NOW(),
+                        UNIQUE (circle_id, device_id),
+                        FOREIGN KEY (circle_id) REFERENCES circles(id) ON DELETE CASCADE,
+                        FOREIGN KEY (device_id) REFERENCES devices(id) ON DELETE CASCADE,
+                        FOREIGN KEY (shared_by) REFERENCES users(id)
+                    );
+                    CREATE INDEX IF NOT EXISTS idx_circle_devices_circle ON circle_devices(circle_id);
+                    CREATE INDEX IF NOT EXISTS idx_circle_devices_device ON circle_devices(device_id);
                 """
                 )
             except Exception as e:

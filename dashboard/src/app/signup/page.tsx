@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type MouseEvent, type FormEvent } from 're
 import Link from 'next/link';
 import { useStore } from '@/store/useStore';
 import { extractErrorMessage } from '@/lib/api';
-import { Mail, Lock, User, ArrowRight, Globe, Check, Eye, EyeOff, ShieldCheck } from 'lucide-react';
+import { Mail, Lock, User, ArrowRight, Check, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const PERKS = [
@@ -17,7 +17,7 @@ const PERKS = [
 export default function SignupPage() {
   const { setCredentials, setConnected } = useStore();
 
-  const [serverUrl, setServerUrl] = useState('');
+  const serverUrl = 'https://api.magneetar.me';
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -30,9 +30,7 @@ export default function SignupPage() {
 
   useEffect(() => { setMounted(true); }, []);
 
-  useEffect(() => {
-    if (!serverUrl) setServerUrl('https://api.magneetar.me');
-  }, []);
+
 
   const handleCardMove = (e: MouseEvent<HTMLDivElement>) => {
     const el = cardRef.current;
@@ -44,10 +42,6 @@ export default function SignupPage() {
 
   const handleSignup = async (e: FormEvent) => {
     e.preventDefault();
-    if (!serverUrl) {
-      setError('Please enter your server URL.');
-      return;
-    }
     if (!email || !password) {
       setError('Please enter your email and password.');
       return;
@@ -209,27 +203,6 @@ export default function SignupPage() {
               <div className="relative z-10">
                 <form onSubmit={handleSignup} noValidate>
                   <div className="space-y-4">
-                    {/* Server URL */}
-                    <div className="space-y-1.5">
-                      <label htmlFor="signup-server-url" className="text-[10px] font-mono text-white/30 uppercase tracking-[0.2em] font-bold">
-                        Server URL
-                      </label>
-                      <div className="relative">
-                        <Globe size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/15 pointer-events-none" />
-                        <input
-                          id="signup-server-url"
-                          name="serverUrl"
-                          type="text"
-                          value={serverUrl}
-                          onChange={(e) => setServerUrl(e.target.value)}
-                          placeholder="https://api.magneetar.me"
-                          autoComplete="url"
-                          className={inputClass}
-                          autoFocus
-                        />
-                      </div>
-                    </div>
-
                     {/* Display name */}
                     <div className="space-y-1.5">
                       <label htmlFor="signup-name" className="text-[10px] font-mono text-white/30 uppercase tracking-[0.2em] font-bold">

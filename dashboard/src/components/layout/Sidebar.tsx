@@ -55,6 +55,12 @@ export function Sidebar() {
   const [purgePassword, setPurgePassword] = useState('');
   const [purgeError, setPurgeError] = useState('');
   const [purging, setPurging] = useState(false);
+  const [circles, setCircles] = useState<any[]>([]);
+  const [showCircleModal, setShowCircleModal] = useState<null | 'create' | 'join'>(null);
+  const [circleName, setCircleName] = useState('');
+  const [joinCode, setJoinCode] = useState('');
+  const [circleError, setCircleError] = useState('');
+  const [circleLoading, setCircleLoading] = useState(false);
 
   const onlineCount = devices.filter(d => isOnline(d.last_seen)).length;
   const offlineCount = devices.filter(d => !isOnline(d.last_seen)).length;
@@ -110,6 +116,51 @@ export function Sidebar() {
     } finally {
       setPurging(false);
     }
+  };
+
+  const fetchCircles = useCallback(async () => {
+    if (!isConnected) return;
+    try {
+      const api = getAPI();
+      const data = await api.getCircles();
+      setCircles(data.circles || []);
+    } catch (e) {
+      // Circles endpoint may not exist yet
+    }
+  }, [isConnected]);
+
+  useEffect(() => {
+    fetchCircles();
+    const interval = setInterval(fetchCircles, 30000);
+    return () => clearInterval(interval);
+  }, [fetchCircles]);
+
+  const handleCreateCircle = async () => {
+    if (!circleName.trim()) { setCircleError('Enter a circle name.'); return; }
+    setCircleLoading(true); setCircleError('');
+    try {
+      const api = getAPI();
+      const result = await api.createCircle(circleName.trim());
+      setCircles(prev => [{ ...result, member_count: 1, device_count: 0, my_role: 'admin' }, ...prev]);
+      setShowCircleModal(null); setCircleName('');
+    } catch (e: any) {
+      setCircleError(e?.message || 'Failed to create circle');
+    } finally { setCircleLoading(false); }
+  };
+
+  const handleJoinCircle = async () => {
+    if (!joinCode.trim()) { setCircleError('Enter an invite code.'); return; }
+    setCircleLoading(true); setCircleError('');
+    try {
+      const api = getAPI();
+      const result = await api.joinCircle(joinCode.trim());
+      if (!circles.find(c => c.id === result.circle_id)) {
+        setCircles(prev => [{ ...result, member_count: 0, device_count: 0, my_role: 'member' }, ...prev]);
+      }
+      setShowCircleModal(null); setJoinCode('');
+    } catch (e: any) {
+      setCircleError(e?.message || 'Failed to join circle');
+    } finally { setCircleLoading(false); }
   };
 
   useEffect(() => {
@@ -245,6 +296,51 @@ export function Sidebar() {
               </div>
             </div>
           )}
+
+          {/* Circles Section */}
+          <div className="px-3 py-2 border-b border-white/[0.06] shrink-0">
+            <div className="flex items-center gap-2 mb-2">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/30">
+                <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1"/>
+              </svg>
+              <span className="text-[9px] font-mono text-white/35 uppercase tracking-[0.2em] font-bold">Circles</span>
+              <span className="ml-auto text-[9px] font-mono text-white/40 font-bold tabular-nums">{circles.length}</span>
+            </div>
+            {circles.length === 0 ? (
+              <div className="text-[9px] font-mono text-white/20 mb-2">No circles yet</div>
+            ) : (
+              <div className="space-y-1 mb-2">
+                {circles.slice(0, 3).map(c => (
+                  <div key={c.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.06]">
+                    <div className="w-5 h-5 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                      <span className="text-[7px] font-mono font-bold text-emerald-400">{c.name?.[0]?.toUpperCase() || 'C'}</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[10px] font-mono font-bold text-white/60 truncate">{c.name}</div>
+                      <div className="text-[7px] font-mono text-white/25">{c.member_count || 0} members</div>
+                    </div>
+                    {c.my_role === 'admin' && (
+                      <span className="text-[6px] font-mono font-bold text-emerald-400/50">ADMIN</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="flex gap-1">
+              <button
+                onClick={() => { setShowCircleModal('create'); setCircleError(''); }}
+                className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[8px] font-mono font-bold uppercase tracking-wider text-emerald-400/70 hover:text-emerald-300 hover:bg-emerald-500/10 border border-emerald-500/15 hover:border-emerald-500/30 transition-all"
+              >
+                + Create
+              </button>
+              <button
+                onClick={() => { setShowCircleModal('join'); setCircleError(''); }}
+                className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[8px] font-mono font-bold uppercase tracking-wider text-blue-400/70 hover:text-blue-300 hover:bg-blue-500/10 border border-blue-500/15 hover:border-blue-500/30 transition-all"
+              >
+                Join
+              </button>
+            </div>
+          </div>
 
           {/* Devices Section Header */}
           <div className="px-4 py-2.5 border-b border-white/[0.06] shrink-0">
@@ -408,6 +504,68 @@ export function Sidebar() {
             </button>
           </div>
         </>
+      )}
+
+      {/* Circle Create/Join Modal */}
+      {showCircleModal && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-[#0a0a0f]/80 backdrop-blur-sm p-4">
+          <div className="w-full max-w-sm rounded-2xl border border-white/[0.08] bg-[#111118] shadow-2xl p-5 space-y-4 animate-fade-in">
+            <div className="flex items-center justify-between">
+              <h3 className="text-[13px] font-mono font-bold text-white/80 uppercase tracking-wider">
+                {showCircleModal === 'create' ? 'Create Circle' : 'Join Circle'}
+              </h3>
+              <button onClick={() => setShowCircleModal(null)} className="text-white/30 hover:text-white/60">
+                <X size={14} />
+              </button>
+            </div>
+            {showCircleModal === 'create' ? (
+              <div className="space-y-3">
+                <div>
+                  <label className="text-[9px] font-mono text-white/30 uppercase tracking-wider font-bold block mb-1.5">Circle Name</label>
+                  <input
+                    value={circleName}
+                    onChange={e => setCircleName(e.target.value)}
+                    placeholder="e.g. Family, Roommates"
+                    autoFocus
+                    className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 py-2.5 text-xs font-mono text-white placeholder:text-white/20 focus:outline-none focus:border-emerald-500/50 transition-colors"
+                    onKeyDown={e => { if (e.key === 'Enter' && !circleLoading) handleCreateCircle(); }}
+                  />
+                </div>
+                {circleError && <div className="text-[10px] font-mono text-red-400">{circleError}</div>}
+                <button
+                  onClick={handleCreateCircle}
+                  disabled={circleLoading}
+                  className="w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-white text-[11px] font-bold font-mono uppercase tracking-wider transition-all"
+                >
+                  {circleLoading ? 'Creating...' : 'Create Circle'}
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div>
+                  <label className="text-[9px] font-mono text-white/30 uppercase tracking-wider font-bold block mb-1.5">Invite Code</label>
+                  <input
+                    value={joinCode}
+                    onChange={e => setJoinCode(e.target.value.toUpperCase().slice(0, 6))}
+                    placeholder="Enter 6-char code"
+                    autoFocus
+                    maxLength={6}
+                    className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 py-2.5 text-sm font-mono text-white text-center tracking-[0.3em] placeholder:text-white/20 placeholder:tracking-normal focus:outline-none focus:border-blue-500/50 transition-colors"
+                    onKeyDown={e => { if (e.key === 'Enter' && !circleLoading) handleJoinCircle(); }}
+                  />
+                </div>
+                {circleError && <div className="text-[10px] font-mono text-red-400">{circleError}</div>}
+                <button
+                  onClick={handleJoinCircle}
+                  disabled={circleLoading}
+                  className="w-full py-2.5 rounded-xl bg-blue-500 hover:bg-blue-400 disabled:opacity-50 text-white text-[11px] font-bold font-mono uppercase tracking-wider transition-all"
+                >
+                  {circleLoading ? 'Joining...' : 'Join Circle'}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
       )}
 
       {/* Claim modal */}

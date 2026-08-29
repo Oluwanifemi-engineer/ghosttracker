@@ -774,6 +774,48 @@ def init_db(db_path: str = None):
 
         CREATE INDEX IF NOT EXISTS idx_mesh_sightings_beacon ON mesh_sightings(beacon_device_id, reported_at);
         CREATE INDEX IF NOT EXISTS idx_mesh_sightings_finder ON mesh_sightings(finder_device_id, reported_at);
+
+        -- ─── Circles (Group Sharing) ────────────────────────────────────────
+        -- A circle is a private group of users who share device locations.
+        -- The creator is the admin. Members join via a 6-char invite code.
+        CREATE TABLE IF NOT EXISTS circles (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            owner_id TEXT NOT NULL,
+            invite_code TEXT NOT NULL UNIQUE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (owner_id) REFERENCES users(id)
+        );
+        CREATE INDEX IF NOT EXISTS idx_circles_owner ON circles(owner_id);
+        CREATE INDEX IF NOT EXISTS idx_circles_invite ON circles(invite_code);
+
+        CREATE TABLE IF NOT EXISTS circle_members (
+            id TEXT PRIMARY KEY,
+            circle_id TEXT NOT NULL,
+            user_id TEXT NOT NULL,
+            role TEXT NOT NULL DEFAULT 'member',
+            joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE (circle_id, user_id),
+            FOREIGN KEY (circle_id) REFERENCES circles(id) ON DELETE CASCADE,
+            FOREIGN KEY (user_id) REFERENCES users(id)
+        );
+        CREATE INDEX IF NOT EXISTS idx_circle_members_circle ON circle_members(circle_id);
+        CREATE INDEX IF NOT EXISTS idx_circle_members_user ON circle_members(user_id);
+
+        -- Which devices are shared with a circle (auto-shared by members)
+        CREATE TABLE IF NOT EXISTS circle_devices (
+            id TEXT PRIMARY KEY,
+            circle_id TEXT NOT NULL,
+            device_id TEXT NOT NULL,
+            shared_by TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE (circle_id, device_id),
+            FOREIGN KEY (circle_id) REFERENCES circles(id) ON DELETE CASCADE,
+            FOREIGN KEY (device_id) REFERENCES devices(id) ON DELETE CASCADE,
+            FOREIGN KEY (shared_by) REFERENCES users(id)
+        );
+        CREATE INDEX IF NOT EXISTS idx_circle_devices_circle ON circle_devices(circle_id);
+        CREATE INDEX IF NOT EXISTS idx_circle_devices_device ON circle_devices(device_id);
     """
     )
     conn.commit()
@@ -1124,6 +1166,9 @@ def ensure_initialized() -> bool:
         "analytics_events",  # MVP user metrics (docs/USER_ANALYTICS_SETUP.md)
         "mesh_beacons",  # BLE mesh: beacon registrations
         "mesh_sightings",  # BLE mesh: sighting reports
+        "circles",  # Group device sharing
+        "circle_members",
+        "circle_devices",
     }
     # ⚠️ Keep in sync with the CREATE TABLE devices columns in init_db() +
     # the guarded ALTER TABLE migrations below it. A stale list here makes

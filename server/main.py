@@ -521,6 +521,11 @@ from routes.mesh import router as mesh_router  # noqa: E402
 
 app.include_router(mesh_router)
 
+# Circles (group device sharing)
+from routes.circles import router as circles_router  # noqa: E402
+
+app.include_router(circles_router)
+
 
 # ─── Request Timeout Middleware ───────────────────────────────────────────
 

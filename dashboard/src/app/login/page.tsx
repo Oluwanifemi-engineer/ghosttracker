@@ -13,7 +13,6 @@ import {
   Mail,
   Lock,
   KeyRound,
-  Globe,
   Eye,
   EyeOff,
   Check,
@@ -41,7 +40,7 @@ export default function LoginPage() {
   const { setCredentials, setConnected } = useStore();
 
   const [mode, setMode] = useState<LoginMode>('account');
-  const [serverUrl, setServerUrl] = useState('');
+  const serverUrl = 'https://api.magneetar.me';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -56,9 +55,7 @@ export default function LoginPage() {
 
   useEffect(() => { setMounted(true); }, []);
 
-  useEffect(() => {
-    if (!serverUrl) setServerUrl('https://api.magneetar.me');
-  }, []);
+
 
   const handleCardMove = (e: MouseEvent<HTMLDivElement>) => {
     const el = cardRef.current;
@@ -70,7 +67,6 @@ export default function LoginPage() {
 
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
-    if (!serverUrl) { setError('Please enter your server URL.'); return; }
     setLoading(true); setError('');
     const baseUrl = serverUrl.replace(/\/+$/, '');
     try {
@@ -415,15 +411,6 @@ export default function LoginPage() {
 
                     <form onSubmit={handleLogin} noValidate>
                       <div className="space-y-4">
-                        <div className="space-y-1.5">
-                          <label htmlFor="server-url" className="text-[10px] font-mono text-white/30 uppercase tracking-[0.2em] font-bold">Server URL</label>
-                          <div className="relative">
-                            <Globe size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/15 pointer-events-none" />
-                            <input id="server-url" name="serverUrl" type="text" value={serverUrl} onChange={(e) => setServerUrl(e.target.value)}
-                              placeholder="https://api.magneetar.me" autoComplete="url" className={inputClass} autoFocus />
-                          </div>
-                        </div>
-
                         {mode === 'account' ? (
                           <>
                             <div className="space-y-1.5">
@@ -484,7 +471,7 @@ export default function LoginPage() {
                               </>
                             ) : (
                               <>
-                                <span>Connect</span>
+                                <span>Sign In</span>
                                 <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" />
                               </>
                             )}

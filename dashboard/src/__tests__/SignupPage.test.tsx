@@ -61,7 +61,6 @@ describe('Signup Page', () => {
     expect(
       screen.getByText(/Forensic-grade PDF reports for recovery/)
     ).toBeInTheDocument();
-    expect(await screen.findByDisplayValue('https://api.magneetar.me')).toBeInTheDocument();
   });
 
   it('rejects a password shorter than 8 characters', async () => {
