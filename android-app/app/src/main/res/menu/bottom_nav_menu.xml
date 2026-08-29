@@ -2,22 +2,22 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
         android:id="@+id/nav_map"
-        android:icon="@android:drawable/ic_menu_mapmode"
+        android:icon="@drawable/ic_nav_map"
         android:title="Map" />
     <item
         android:id="@+id/nav_devices"
-        android:icon="@android:drawable/ic_menu_mylocation"
+        android:icon="@drawable/ic_nav_devices"
         android:title="Devices" />
     <item
         android:id="@+id/nav_commands"
-        android:icon="@android:drawable/ic_lock_lock"
+        android:icon="@drawable/ic_nav_commands"
         android:title="Commands" />
     <item
         android:id="@+id/nav_alerts"
-        android:icon="@android:drawable/ic_popup_reminder"
+        android:icon="@drawable/ic_nav_alerts"
         android:title="Alerts" />
     <item
         android:id="@+id/nav_settings"
-        android:icon="@android:drawable/ic_menu_preferences"
+        android:icon="@drawable/ic_nav_settings"
         android:title="Settings" />
 </menu>

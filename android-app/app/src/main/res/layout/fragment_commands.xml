@@ -2,211 +2,235 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#0A0A0A"
+    android:background="@color/md_theme_background"
     android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="16dp">
+        android:padding="20dp">
 
         <!-- Header -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Quick Actions"
-            android:textColor="#F5F5F5"
-            android:textSize="22sp"
-            android:textStyle="bold"
-            android:fontFamily="sans-serif-medium"
-            android:layout_marginBottom="8dp" />
+            android:textAppearance="@style/TextAppearance.Magneetar.Headline2"
+            android:textColor="@color/md_theme_onSurface"
+            android:layout_marginBottom="20dp" />
 
         <!-- Device Selector -->
-        <LinearLayout
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@drawable/btn_surface"
-            android:padding="14dp"
-            android:layout_marginBottom="16dp"
-            android:gravity="center_vertical">
+            style="@style/Widget.Magneetar.Card"
+            android:layout_marginBottom="20dp">
 
-            <TextView
-                android:layout_width="0dp"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Target Device"
-                android:textColor="#E0E0E0"
-                android:textSize="13sp" />
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
 
-            <Spinner
-                android:id="@+id/spinner_devices"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:popupBackground="#1A1A1A" />
-        </LinearLayout>
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Target Device"
+                    android:textAppearance="@style/TextAppearance.Magneetar.Body1"
+                    android:textColor="@color/md_theme_onSurface" />
 
-        <!-- Command Grid -->
+                <Spinner
+                    android:id="@+id/spinner_devices"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:popupBackground="@color/md_theme_surfaceContainerHigh" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Command Grid Row 1 -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginBottom="16dp">
+            android:layout_marginBottom="12dp">
 
             <!-- Ring / Siren -->
-            <LinearLayout
+            <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cmd_ring"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:orientation="vertical"
-                android:gravity="center"
-                android:background="@drawable/btn_surface"
-                android:padding="20dp"
-                android:layout_marginEnd="8dp"
+                android:layout_marginEnd="6dp"
                 android:clickable="true"
-                android:focusable="true">
+                android:focusable="true"
+                style="@style/Widget.Magneetar.Card">
 
-                <TextView
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="🔊"
-                    android:textSize="32sp" />
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:padding="20dp">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Ring"
-                    android:textColor="#F5F5F5"
-                    android:textSize="12sp"
-                    android:textStyle="bold"
-                    android:layout_marginTop="8dp" />
+                    <ImageView
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:src="@drawable/ic_action_ring"
+                        android:contentDescription="Ring"
+                        android:layout_marginBottom="12dp" />
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Max volume alarm"
-                    android:textColor="#606060"
-                    android:textSize="10sp" />
-            </LinearLayout>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Ring"
+                        android:textAppearance="@style/TextAppearance.Magneetar.Subtitle2"
+                        android:textColor="@color/md_theme_onSurface" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Max volume alarm"
+                        android:textAppearance="@style/TextAppearance.Magneetar.Caption"
+                        android:textColor="@color/md_theme_onSurfaceVariant"
+                        android:layout_marginTop="4dp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
             <!-- Lock -->
-            <LinearLayout
+            <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cmd_lock"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:orientation="vertical"
-                android:gravity="center"
-                android:background="@drawable/btn_surface"
-                android:padding="20dp"
-                android:layout_marginStart="8dp"
+                android:layout_marginStart="6dp"
                 android:clickable="true"
-                android:focusable="true">
+                android:focusable="true"
+                style="@style/Widget.Magneetar.Card">
 
-                <TextView
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="🔒"
-                    android:textSize="32sp" />
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:padding="20dp">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Lock"
-                    android:textColor="#F5F5F5"
-                    android:textSize="12sp"
-                    android:textStyle="bold"
-                    android:layout_marginTop="8dp" />
+                    <ImageView
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:src="@drawable/ic_action_lock"
+                        android:contentDescription="Lock"
+                        android:layout_marginBottom="12dp" />
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Lock device screen"
-                    android:textColor="#606060"
-                    android:textSize="10sp" />
-            </LinearLayout>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Lock"
+                        android:textAppearance="@style/TextAppearance.Magneetar.Subtitle2"
+                        android:textColor="@color/md_theme_onSurface" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Lock device screen"
+                        android:textAppearance="@style/TextAppearance.Magneetar.Caption"
+                        android:textColor="@color/md_theme_onSurfaceVariant"
+                        android:layout_marginTop="4dp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
 
+        <!-- Command Grid Row 2 -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginBottom="16dp">
+            android:layout_marginBottom="24dp">
 
             <!-- Locate -->
-            <LinearLayout
+            <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cmd_locate"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:orientation="vertical"
-                android:gravity="center"
-                android:background="@drawable/btn_surface"
-                android:padding="20dp"
-                android:layout_marginEnd="8dp"
+                android:layout_marginEnd="6dp"
                 android:clickable="true"
-                android:focusable="true">
+                android:focusable="true"
+                style="@style/Widget.Magneetar.Card">
 
-                <TextView
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="📍"
-                    android:textSize="32sp" />
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:padding="20dp">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Locate"
-                    android:textColor="#F5F5F5"
-                    android:textSize="12sp"
-                    android:textStyle="bold"
-                    android:layout_marginTop="8dp" />
+                    <ImageView
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:src="@drawable/ic_action_locate"
+                        android:contentDescription="Locate"
+                        android:layout_marginBottom="12dp" />
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Get current location"
-                    android:textColor="#606060"
-                    android:textSize="10sp" />
-            </LinearLayout>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Locate"
+                        android:textAppearance="@style/TextAppearance.Magneetar.Subtitle2"
+                        android:textColor="@color/md_theme_onSurface" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Get current location"
+                        android:textAppearance="@style/TextAppearance.Magneetar.Caption"
+                        android:textColor="@color/md_theme_onSurfaceVariant"
+                        android:layout_marginTop="4dp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
             <!-- Capture -->
-            <LinearLayout
+            <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cmd_capture"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:orientation="vertical"
-                android:gravity="center"
-                android:background="@drawable/btn_surface"
-                android:padding="20dp"
-                android:layout_marginStart="8dp"
+                android:layout_marginStart="6dp"
                 android:clickable="true"
-                android:focusable="true">
+                android:focusable="true"
+                style="@style/Widget.Magneetar.Card">
 
-                <TextView
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="📸"
-                    android:textSize="32sp" />
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:padding="20dp">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Capture"
-                    android:textColor="#F5F5F5"
-                    android:textSize="12sp"
-                    android:textStyle="bold"
-                    android:layout_marginTop="8dp" />
+                    <ImageView
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:src="@drawable/ic_action_capture"
+                        android:contentDescription="Capture"
+                        android:layout_marginBottom="12dp" />
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Take photo + audio"
-                    android:textColor="#606060"
-                    android:textSize="10sp" />
-            </LinearLayout>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Capture"
+                        android:textAppearance="@style/TextAppearance.Magneetar.Subtitle2"
+                        android:textColor="@color/md_theme_onSurface" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Take photo + audio"
+                        android:textAppearance="@style/TextAppearance.Magneetar.Caption"
+                        android:textColor="@color/md_theme_onSurfaceVariant"
+                        android:layout_marginTop="4dp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
 
         <!-- Danger Zone -->
@@ -214,54 +238,22 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="DANGER ZONE"
-            android:textColor="#FF4444"
-            android:textSize="10sp"
-            android:textStyle="bold"
-            android:letterSpacing="0.2"
-            android:layout_marginTop="8dp"
+            android:textAppearance="@style/TextAppearance.Magneetar.Overline"
+            android:textColor="@color/md_theme_error"
             android:layout_marginBottom="12dp" />
 
-        <!-- Wipe -->
-        <LinearLayout
+        <!-- Wipe Button -->
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/cmd_wipe"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@drawable/btn_danger"
-            android:padding="16dp"
-            android:gravity="center_vertical"
-            android:clickable="true"
-            android:focusable="true"
-            android:layout_marginBottom="8dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="⚠️"
-                android:textSize="20sp" />
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical"
-                android:layout_marginStart="12dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Factory Reset"
-                    android:textColor="#FF4444"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Erase all data on the device"
-                    android:textColor="#FF6666"
-                    android:textSize="11sp" />
-            </LinearLayout>
-        </LinearLayout>
+            android:layout_height="56dp"
+            android:text="Factory Reset"
+            android:textColor="@color/md_theme_error"
+            android:backgroundTint="@color/md_theme_errorContainer"
+            android:textAllCaps="false"
+            android:textSize="14sp"
+            android:fontFamily="sans-serif-medium"
+            android:layout_marginBottom="16dp" />
 
         <!-- Command Status -->
         <TextView
@@ -269,10 +261,10 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text=""
-            android:textColor="#00FF88"
-            android:textSize="12sp"
+            android:textAppearance="@style/TextAppearance.Magneetar.Body2"
+            android:textColor="@color/md_theme_primary"
             android:textAlignment="center"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="12dp"
             android:visibility="gone" />
 
     </LinearLayout>

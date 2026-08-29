@@ -1,10 +1,15 @@
 package com.magneetar.app.ui
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
@@ -38,6 +43,17 @@ class MapFragment : Fragment(), OnMapReadyCallback {
 
     // Default: OAU campus, Ile-Ife, Nigeria
     private val defaultLocation = LatLng(7.518, 4.528)
+
+    // Contextual permission request — only when user needs location
+    private val locationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val fineGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true
+        val coarseGranted = permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+        if (fineGranted || coarseGranted) {
+            googleMap?.let { enableMyLocation(it) }
+        }
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -75,8 +91,68 @@ class MapFragment : Fragment(), OnMapReadyCallback {
         map.uiSettings.isZoomControlsEnabled = true
         map.uiSettings.isMyLocationButtonEnabled = false
 
+        // Check and request location permission contextually
+        checkAndRequestLocationPermission()
+
         // Load devices
         loadDevices()
+    }
+
+    /**
+     * Request location permission only when the user needs it (map screen).
+     * This follows Material Design guidelines — ask in context, not upfront.
+     */
+    private fun checkAndRequestLocationPermission() {
+        val hasFine = ContextCompat.checkSelfPermission(
+            requireContext(), Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+        val hasCoarse = ContextCompat.checkSelfPermission(
+            requireContext(), Manifest.permission.ACCESS_COARSE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+
+        if (hasFine || hasCoarse) {
+            enableMyLocation(googleMap!!)
+            return
+        }
+
+        // Show rationale before requesting — this is what real products do
+        if (shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION)) {
+            AlertDialog.Builder(requireContext())
+                .setTitle("Location Access")
+                .setMessage(
+                    "Magneetar needs your location so you can see your device on the map " +
+                    "and track it if stolen.\n\n" +
+                    "Your location is only used for device tracking and is never shared " +
+                    "with third parties."
+                )
+                .setPositiveButton("ALLOW") { _, _ ->
+                    locationPermissionLauncher.launch(
+                        arrayOf(
+                            Manifest.permission.ACCESS_FINE_LOCATION,
+                            Manifest.permission.ACCESS_COARSE_LOCATION
+                        )
+                    )
+                }
+                .setNegativeButton("NOT NOW", null)
+                .show()
+        } else {
+            // First time — request directly
+            locationPermissionLauncher.launch(
+                arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                )
+            )
+        }
+    }
+
+    private fun enableMyLocation(map: GoogleMap) {
+        try {
+            map.isMyLocationEnabled = true
+            map.uiSettings.isMyLocationButtonEnabled = true
+        } catch (_: SecurityException) {
+            // Permission not yet granted — will retry on next map load
+        }
     }
 
     override fun onResume() {

@@ -1,28 +1,85 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Core -->
-    <color name="primary">#0A0A0A</color>
+    <!-- ═══════════════════════════════════════════════════════════════════
+         Material Design 3 — Magneetar Dark Theme
+         Source color: #00FF88 (Magneetar Green)
+         Generated via Material Theme Builder pattern
+         ═══════════════════════════════════════════════════════════════════ -->
+
+    <!-- Primary -->
+    <color name="md_theme_primary">#00E87B</color>
+    <color name="md_theme_onPrimary">#003920</color>
+    <color name="md_theme_primaryContainer">#005231</color>
+    <color name="md_theme_onPrimaryContainer">#66FFB8</color>
+
+    <!-- Secondary -->
+    <color name="md_theme_secondary">#8CDDB4</color>
+    <color name="md_theme_onSecondary">#003824</color>
+    <color name="md_theme_secondaryContainer">#005139</color>
+    <color name="md_theme_onSecondaryContainer">#A8FBD0</color>
+
+    <!-- Tertiary -->
+    <color name="md_theme_tertiary">#A2C8FF</color>
+    <color name="md_theme_onTertiary">#00315C</color>
+    <color name="md_theme_tertiaryContainer">#004883</color>
+    <color name="md_theme_onTertiaryContainer">#D6E3FF</color>
+
+    <!-- Error -->
+    <color name="md_theme_error">#FFB4AB</color>
+    <color name="md_theme_onError">#690005</color>
+    <color name="md_theme_errorContainer">#93000A</color>
+    <color name="md_theme_onErrorContainer">#FFDAD6</color>
+
+    <!-- Background & Surface -->
+    <color name="md_theme_background">#0D1117</color>
+    <color name="md_theme_onBackground">#E1E3E0</color>
+    <color name="md_theme_surface">#0D1117</color>
+    <color name="md_theme_onSurface">#E1E3E0</color>
+    <color name="md_theme_surfaceVariant">#161B22</color>
+    <color name="md_theme_onSurfaceVariant">#C0C9C0</color>
+
+    <!-- Surface Elevations -->
+    <color name="md_theme_surfaceContainerLowest">#0D1117</color>
+    <color name="md_theme_surfaceContainerLow">#161B22</color>
+    <color name="md_theme_surfaceContainer">#1C2128</color>
+    <color name="md_theme_surfaceContainerHigh">#21262D</color>
+    <color name="md_theme_surfaceContainerHighest">#2D333B</color>
+
+    <!-- Outline -->
+    <color name="md_theme_outline">#8A9290</color>
+    <color name="md_theme_outlineVariant">#404945</color>
+
+    <!-- Inverse -->
+    <color name="md_theme_inverseSurface">#E1E3E0</color>
+    <color name="md_theme_inverseOnSurface">#191C19</color>
+    <color name="md_theme_inversePrimary">#00C86F</color>
+
+    <!-- Scrim -->
+    <color name="md_theme_scrim">#000000</color>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         Semantic Colors (used by custom components)
+         ═══════════════════════════════════════════════════════════════════ -->
+    <color name="status_online">#00E87B</color>
+    <color name="status_offline">#FF6B6B</color>
+    <color name="status_warning">#FFB800</color>
+    <color name="status_info">#A2C8FF</color>
+
+    <!-- Legacy aliases (for backward compatibility) -->
+    <color name="primary">#0D1117</color>
     <color name="primary_dark">#000000</color>
-    <color name="accent">#00FF88</color>
-    <color name="accent_dark">#00CC66</color>
-
-    <!-- Surfaces -->
-    <color name="surface">#111111</color>
-    <color name="surface_light">#1A1A1A</color>
-    <color name="surface_elevated">#222222</color>
-
-    <!-- Text -->
-    <color name="text_primary">#F5F5F5</color>
-    <color name="text_secondary">#808080</color>
-    <color name="text_muted">#404040</color>
-
-    <!-- States -->
-    <color name="success">#00FF88</color>
+    <color name="accent">#00E87B</color>
+    <color name="accent_dark">#00C86F</color>
+    <color name="surface">#161B22</color>
+    <color name="surface_light">#1C2128</color>
+    <color name="surface_elevated">#21262D</color>
+    <color name="text_primary">#E1E3E0</color>
+    <color name="text_secondary">#8A9290</color>
+    <color name="text_muted">#404945</color>
+    <color name="success">#00E87B</color>
     <color name="warning">#FFB800</color>
-    <color name="error">#FF4444</color>
-    <color name="info">#4488FF</color>
-
-    <!-- Overlay -->
+    <color name="error">#FFB4AB</color>
+    <color name="info">#A2C8FF</color>
     <color name="overlay">#80000000</color>
-    <color name="border">#1FFFFFFF</color>
+    <color name="border">#404945</color>
 </resources>

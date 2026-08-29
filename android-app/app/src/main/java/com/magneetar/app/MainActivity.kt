@@ -34,6 +34,8 @@ class MainActivity : AppCompatActivity() {
         try { UninstallProtection.enforceUninstallBlocked(this) } catch (_: Exception) {}
 
         // Route immediately — no delays, no handlers
+        // Real products don't force a permission screen before showing the app.
+        // Permissions are requested contextually when the user needs them.
         if (!onboardingComplete) {
             // First launch → show onboarding directly
             setContentView(R.layout.activity_onboarding)
@@ -44,17 +46,12 @@ class MainActivity : AppCompatActivity() {
                 findViewById<android.widget.TextView>(R.id.tv_version)?.text =
                     getString(R.string.app_version, BuildConfig.VERSION_NAME)
             } catch (_: Exception) {}
-        } else if (userToken.isEmpty() || !hasAllPermissions() ||
-                   (!hasDeviceAdmin() && !adminSkipped)
-        ) {
-            // Signed up but needs permissions — OR the user disabled device
-            // admin (which would let anyone uninstall). Send them back to the
-            // permissions screen so protection is restored unless they
-            // explicitly acknowledged skipping it.
-            startActivity(Intent(this, PermissionsActivity::class.java))
+        } else if (userToken.isEmpty()) {
+            // No token → need to sign in
+            startActivity(Intent(this, SignInActivity::class.java))
             finish()
         } else {
-            // Fully authenticated → full dashboard
+            // Has token → go straight to dashboard (permissions requested contextually)
             startServicesSafe()
             startActivity(Intent(this, DashboardActivity::class.java))
             finish()

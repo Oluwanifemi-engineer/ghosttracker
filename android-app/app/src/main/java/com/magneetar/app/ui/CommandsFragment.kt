@@ -1,11 +1,15 @@
 package com.magneetar.app.ui
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.magneetar.app.R
 import com.magneetar.app.TokenVault
@@ -26,6 +30,19 @@ class CommandsFragment : Fragment() {
     private lateinit var tvStatus: TextView
     private var devices = mutableListOf<JSONObject>()
     private var selectedDeviceId: String = ""
+
+    // Contextual permission request for camera/mic — only when user taps Capture
+    private val capturePermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val cameraGranted = permissions[Manifest.permission.CAMERA] == true
+        val micGranted = permissions[Manifest.permission.RECORD_AUDIO] == true
+        if (cameraGranted && micGranted) {
+            sendCommand("capture")
+        } else {
+            showStatus("Camera & microphone permissions are required for capture", false)
+        }
+    }
 
     private val client = OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS)
@@ -49,7 +66,7 @@ class CommandsFragment : Fragment() {
         view.findViewById<LinearLayout>(R.id.cmd_ring)?.setOnClickListener { sendCommand("ring") }
         view.findViewById<LinearLayout>(R.id.cmd_lock)?.setOnClickListener { sendCommand("lock") }
         view.findViewById<LinearLayout>(R.id.cmd_locate)?.setOnClickListener { sendCommand("locate") }
-        view.findViewById<LinearLayout>(R.id.cmd_capture)?.setOnClickListener { sendCommand("capture") }
+        view.findViewById<LinearLayout>(R.id.cmd_capture)?.setOnClickListener { requestCapturePermissionsAndSend() }
         view.findViewById<LinearLayout>(R.id.cmd_wipe)?.setOnClickListener { confirmWipe() }
 
         loadDevices()
@@ -106,6 +123,47 @@ class CommandsFragment : Fragment() {
                 }
             }
         })
+    }
+
+    /**
+     * Request camera and mic permissions contextually — only when user taps Capture.
+     * This is what real products do: ask in context, not upfront.
+     */
+    private fun requestCapturePermissionsAndSend() {
+        val hasCamera = ContextCompat.checkSelfPermission(
+            requireContext(), Manifest.permission.CAMERA
+        ) == PackageManager.PERMISSION_GRANTED
+        val hasMic = ContextCompat.checkSelfPermission(
+            requireContext(), Manifest.permission.RECORD_AUDIO
+        ) == PackageManager.PERMISSION_GRANTED
+
+        if (hasCamera && hasMic) {
+            sendCommand("capture")
+            return
+        }
+
+        // Show rationale before requesting
+        if (shouldShowRequestPermissionRationale(Manifest.permission.CAMERA) ||
+            shouldShowRequestPermissionRationale(Manifest.permission.RECORD_AUDIO)) {
+            AlertDialog.Builder(requireContext())
+                .setTitle("Evidence Capture")
+                .setMessage(
+                    "Magneetar needs camera and microphone access to take a photo " +
+                    "and record audio of anyone who tries to steal your phone.\n\n" +
+                    "This is only used when you send a capture command from your dashboard."
+                )
+                .setPositiveButton("ALLOW") { _, _ ->
+                    capturePermissionLauncher.launch(
+                        arrayOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO)
+                    )
+                }
+                .setNegativeButton("NOT NOW", null)
+                .show()
+        } else {
+            capturePermissionLauncher.launch(
+                arrayOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO)
+            )
+        }
     }
 
     private fun sendCommand(command: String) {
