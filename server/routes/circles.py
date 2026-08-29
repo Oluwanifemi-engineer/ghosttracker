@@ -192,7 +192,7 @@ async def get_circle(
         ).fetchall()
 
         devices = db.execute(
-            """SELECT cd.device_id, cd.shared_by, cd.created_at, d.label, d.model,
+            """SELECT cd.device_id, cd.shared_by, cd.created_at, d.alias, d.model,
                       u.display_name as shared_by_name
                FROM circle_devices cd
                JOIN devices d ON d.id = cd.device_id
