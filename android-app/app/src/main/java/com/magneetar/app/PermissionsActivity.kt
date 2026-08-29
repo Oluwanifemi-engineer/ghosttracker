@@ -15,6 +15,7 @@ import android.os.Process
 import android.provider.Settings
 import android.widget.Button
 import android.widget.TextView
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -27,12 +28,30 @@ class PermissionsActivity : AppCompatActivity() {
 
     companion object {
         private const val PERM_REQUEST_CODE = 200
-        private const val ADMIN_REQUEST_CODE = 201
         private const val BG_LOCATION_DISCLOSURE_CODE = 202
     }
 
     private lateinit var devicePolicyManager: DevicePolicyManager
     private lateinit var adminComponent: ComponentName
+
+    // Modern Activity Result API — replaces deprecated startActivityForResult.
+    // Works reliably on Samsung, Xiaomi, and all OEM Android devices.
+    private val adminLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        // Device Admin activation result received
+        val isActive = isDeviceAdmin()
+        android.util.Log.d("Magneetar", "DeviceAdmin result: resultCode=${result.resultCode}, isActive=$isActive")
+        if (isActive) {
+            // Admin was activated — apply uninstall protection
+            wasDeviceAdminActive = true
+            getSharedPreferences("mt", Context.MODE_PRIVATE).edit()
+                .putBoolean("admin_skip_acknowledged", false)
+                .apply()
+            UninstallProtection.enforceUninstallBlocked(this)
+        }
+        refreshUI()
+    }
 
     private lateinit var permLocationStatus: TextView
     private lateinit var permCameraStatus: TextView
@@ -112,17 +131,13 @@ class PermissionsActivity : AppCompatActivity() {
         super.onResume()
         // Detect Device Admin activation — onResume is more reliable than
         // onActivityResult on Samsung, Xiaomi, and other OEM Android devices.
-        if (wasDeviceAdminActive && !isDeviceAdmin()) {
-            // Admin was just deactivated
-            wasDeviceAdminActive = isDeviceAdmin()
-        } else if (!wasDeviceAdminActive && isDeviceAdmin()) {
-            // Admin was just activated — apply uninstall protection
-            wasDeviceAdminActive = true
-            getSharedPreferences("mt", Context.MODE_PRIVATE).edit()
-                .putBoolean("admin_skip_acknowledged", false)
-                .apply()
-            UninstallProtection.enforceUninstallBlocked(this)
-        }
+        //
+        // Delayed check: Some Samsung devices process the Device Admin activation
+        // asynchronously. The system returns to our app before the admin state
+        // is fully committed. A 500ms delayed re-check handles this race condition.
+        android.os.Handler(mainLooper).postDelayed({ checkDeviceAdminState() }, 500)
+        android.os.Handler(mainLooper).postDelayed({ checkDeviceAdminState() }, 1500)
+        checkDeviceAdminState()
         // After returning from background location settings, check if it was granted
         if (backgroundLocationPending) {
             backgroundLocationPending = false
@@ -130,6 +145,22 @@ class PermissionsActivity : AppCompatActivity() {
             return
         }
         refreshUI()
+    }
+
+    private fun checkDeviceAdminState() {
+        val currentAdmin = isDeviceAdmin()
+        if (wasDeviceAdminActive && !currentAdmin) {
+            // Admin was just deactivated
+            wasDeviceAdminActive = false
+        } else if (!wasDeviceAdminActive && currentAdmin) {
+            // Admin was just activated — apply uninstall protection
+            wasDeviceAdminActive = true
+            getSharedPreferences("mt", Context.MODE_PRIVATE).edit()
+                .putBoolean("admin_skip_acknowledged", false)
+                .apply()
+            UninstallProtection.enforceUninstallBlocked(this)
+            refreshUI()
+        }
     }
 
     private fun refreshUI() {
@@ -375,7 +406,7 @@ class PermissionsActivity : AppCompatActivity() {
                     "uninstalling Magneetar without deactivating it first."
                 )
             }
-            startActivityForResult(intent, ADMIN_REQUEST_CODE)
+            adminLauncher.launch(intent)
             return
         }
 
@@ -579,8 +610,18 @@ class PermissionsActivity : AppCompatActivity() {
     }
 
     private fun isDeviceAdmin(): Boolean {
-        if (!isDeviceAdminAvailable()) return false
-        return try { devicePolicyManager.isAdminActive(adminComponent) } catch (e: Exception) { false }
+        if (!isDeviceAdminAvailable()) {
+            android.util.Log.d("Magneetar", "DeviceAdmin: not available (receiver stripped from manifest)")
+            return false
+        }
+        return try {
+            val active = devicePolicyManager.isAdminActive(adminComponent)
+            android.util.Log.d("Magneetar", "DeviceAdmin: isActive=$active, component=$adminComponent")
+            active
+        } catch (e: Exception) {
+            android.util.Log.e("Magneetar", "DeviceAdmin check failed", e)
+            false
+        }
     }
 
     private fun isBatteryOk(): Boolean {
@@ -608,7 +649,7 @@ class PermissionsActivity : AppCompatActivity() {
                 "uninstalling the app without deactivating it first."
             )
         }
-        startActivityForResult(intent, ADMIN_REQUEST_CODE)
+        adminLauncher.launch(intent)
     }
 
     // ── Navigation ─────────────────────────────────────────────────────
