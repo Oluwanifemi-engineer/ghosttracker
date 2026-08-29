@@ -26,9 +26,6 @@ WORKDIR /app
 # Accept version from build arg (fallback to 1.0.0)
 ARG APP_VERSION=1.0.0
 
-# Write VERSION file so main.py can read it at runtime
-RUN echo "$APP_VERSION" > /VERSION
-
 # Install runtime dependencies only
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
@@ -39,6 +36,11 @@ COPY --from=builder /root/.local /root/.local
 
 # Copy application code
 COPY . .
+
+# Write VERSION file so main.py can read it at runtime.
+# If a VERSION file was copied from the build context, use it;
+# otherwise fall back to the build arg (or 1.0.0).
+RUN if [ -f /app/VERSION ]; then cp /app/VERSION /VERSION; else echo "$APP_VERSION" > /VERSION; fi
 
 # Make sure scripts in .local are usable
 ENV PATH=/root/.local/bin:$PATH
