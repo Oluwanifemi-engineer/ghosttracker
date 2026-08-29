@@ -192,7 +192,10 @@ class TrackingService : Service() {
         private val JSON = "application/json".toMediaType()
         private val SERVER = BuildConfig.SERVER_URL
         private val DEVICE_KEY = BuildConfig.DEVICE_KEY
-        private const val WAIT_BETWEEN_COMMANDS_MS = 10_000L
+        // 30s polling — FCM delivers commands instantly, so polling is just
+        // a fallback. 30s saves significant battery vs 10s with no real latency
+        // penalty (FCM delivers in <1s when the device has a data connection).
+        private const val WAIT_BETWEEN_COMMANDS_MS = 30_000L
         private const val HEARTBEAT_INTERVAL_MS = 60_000L
         private const val LOCATION_INTERVAL_MS = 3_000L
         /**
