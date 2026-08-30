@@ -276,8 +276,8 @@ dependencies {
     // Coroutine extensions for Google Play Services Tasks (await())
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.0")
 
-    // Google Maps SDK — in-app map for the dashboard (Life360-style)
-    implementation("com.google.android.gms:play-services-maps:19.0.0")
+    // OSMDroid — OpenStreetMap for Android (matches dashboard Leaflet/OSM)
+    implementation("org.osmdroid:osmdroid-android:6.1.18")
 
     // Nearby Connections — P2P_CLUSTER mesh for the offline paired-device
     // network (Layer 3, docs/offline-network-design.md §4). ~100m range,
@@ -306,4 +306,17 @@ dependencies {
     // JVM unit tests (pure logic only — e.g. CaptureRoutingTest). No
     // Robolectric: anything touching Android APIs stays out of src/test.
     testImplementation("junit:junit:4.13.2")
+
+    // Espresso UI tests — critical flow validation
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
+    androidTestImplementation("androidx.test.espresso:espresso-intents:3.6.1")
+    androidTestImplementation("androidx.test.espresso:espresso-contrib:3.6.1")
+    androidTestImplementation("androidx.test:runner:1.6.2")
+    androidTestImplementation("androidx.test:rules:1.6.1")
+    androidTestImplementation("androidx.test:core:1.6.1")
+    // Mockito for mocking network calls in instrumented tests
+    androidTestImplementation("org.mockito:mockito-android:5.14.2")
+    // OkHttp MockWebServer for API testing
+    androidTestImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
 }

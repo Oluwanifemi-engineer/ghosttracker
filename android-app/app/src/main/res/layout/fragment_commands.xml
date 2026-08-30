@@ -1,60 +1,74 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
     android:background="#0D1117"
-    android:fillViewport="true">
+    android:padding="16dp">
 
+    <!-- Device selector -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="SELECT DEVICE"
+        android:textColor="#8B949E"
+        android:textSize="11sp"
+        android:letterSpacing="0.15"
+        android:fontFamily="sans-serif-medium"
+        android:layout_marginBottom="8dp" />
+
+    <Spinner
+        android:id="@+id/spinner_devices"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:background="@drawable/input_background"
+        android:layout_marginBottom="20dp"
+        android:popupBackground="#161B22" />
+
+    <!-- Quick Actions Header -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="QUICK ACTIONS"
+        android:textColor="#8B949E"
+        android:textSize="11sp"
+        android:letterSpacing="0.15"
+        android:fontFamily="sans-serif-medium"
+        android:layout_marginBottom="12dp" />
+
+    <!-- Action Grid — 3 columns, all visible -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="16dp">
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical">
 
-        <!-- Device selector -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="SELECT DEVICE"
-            android:textColor="#8B949E"
-            android:textSize="11sp"
-            android:letterSpacing="0.15"
-            android:fontFamily="sans-serif-medium"
-            android:layout_marginBottom="8dp" />
-
-        <Spinner
-            android:id="@+id/spinner_devices"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:background="@drawable/input_background"
-            android:layout_marginBottom="20dp"
-            android:popupBackground="#161B22" />
-
-        <!-- Action cards — 2-column grid -->
+        <!-- Row 1: Ring + Lock + Locate -->
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="0dp"
+            android:layout_weight="1"
             android:orientation="horizontal"
-            android:layout_marginBottom="12dp">
+            android:layout_marginBottom="8dp">
 
             <!-- Ring -->
             <LinearLayout
                 android:id="@+id/cmd_ring"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="match_parent"
                 android:layout_weight="1"
-                android:layout_marginEnd="6dp"
+                android:layout_marginEnd="4dp"
                 android:orientation="vertical"
                 android:gravity="center"
-                android:padding="20dp"
+                android:padding="12dp"
                 android:background="@drawable/cmd_card"
                 android:clickable="true"
                 android:focusable="true">
 
                 <ImageView
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:layout_marginBottom="8dp"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:layout_marginBottom="6dp"
                     android:src="@drawable/ic_action_ring"
                     android:contentDescription="Ring" />
 
@@ -66,26 +80,36 @@
                     android:textSize="13sp"
                     android:textStyle="bold"
                     android:fontFamily="sans-serif-medium" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Max volume alarm"
+                    android:textColor="#8B949E"
+                    android:textSize="10sp"
+                    android:fontFamily="sans-serif"
+                    android:layout_marginTop="2dp" />
             </LinearLayout>
 
             <!-- Lock -->
             <LinearLayout
                 android:id="@+id/cmd_lock"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="match_parent"
                 android:layout_weight="1"
-                android:layout_marginStart="6dp"
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
                 android:orientation="vertical"
                 android:gravity="center"
-                android:padding="20dp"
+                android:padding="12dp"
                 android:background="@drawable/cmd_card"
                 android:clickable="true"
                 android:focusable="true">
 
                 <ImageView
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:layout_marginBottom="8dp"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:layout_marginBottom="6dp"
                     android:src="@drawable/ic_action_lock"
                     android:contentDescription="Lock" />
 
@@ -97,33 +121,35 @@
                     android:textSize="13sp"
                     android:textStyle="bold"
                     android:fontFamily="sans-serif-medium" />
-            </LinearLayout>
-        </LinearLayout>
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginBottom="12dp">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Lock screen"
+                    android:textColor="#8B949E"
+                    android:textSize="10sp"
+                    android:fontFamily="sans-serif"
+                    android:layout_marginTop="2dp" />
+            </LinearLayout>
 
             <!-- Locate -->
             <LinearLayout
                 android:id="@+id/cmd_locate"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="match_parent"
                 android:layout_weight="1"
-                android:layout_marginEnd="6dp"
+                android:layout_marginStart="4dp"
                 android:orientation="vertical"
                 android:gravity="center"
-                android:padding="20dp"
+                android:padding="12dp"
                 android:background="@drawable/cmd_card"
                 android:clickable="true"
                 android:focusable="true">
 
                 <ImageView
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:layout_marginBottom="8dp"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:layout_marginBottom="6dp"
                     android:src="@drawable/ic_action_locate"
                     android:contentDescription="Locate" />
 
@@ -135,26 +161,43 @@
                     android:textSize="13sp"
                     android:textStyle="bold"
                     android:fontFamily="sans-serif-medium" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Force GPS fix"
+                    android:textColor="#8B949E"
+                    android:textSize="10sp"
+                    android:fontFamily="sans-serif"
+                    android:layout_marginTop="2dp" />
             </LinearLayout>
+        </LinearLayout>
+
+        <!-- Row 2: Capture + Wipe (full width) -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:orientation="horizontal">
 
             <!-- Capture -->
             <LinearLayout
                 android:id="@+id/cmd_capture"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="match_parent"
                 android:layout_weight="1"
-                android:layout_marginStart="6dp"
+                android:layout_marginEnd="4dp"
                 android:orientation="vertical"
                 android:gravity="center"
-                android:padding="20dp"
+                android:padding="12dp"
                 android:background="@drawable/cmd_card"
                 android:clickable="true"
                 android:focusable="true">
 
                 <ImageView
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:layout_marginBottom="8dp"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:layout_marginBottom="6dp"
                     android:src="@drawable/ic_action_capture"
                     android:contentDescription="Capture" />
 
@@ -166,64 +209,68 @@
                     android:textSize="13sp"
                     android:textStyle="bold"
                     android:fontFamily="sans-serif-medium" />
-            </LinearLayout>
-        </LinearLayout>
-
-        <!-- Wipe — full width danger -->
-        <LinearLayout
-            android:id="@+id/cmd_wipe"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:padding="20dp"
-            android:background="@drawable/cmd_card_danger"
-            android:layout_marginBottom="16dp"
-            android:clickable="true"
-            android:focusable="true">
-
-            <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:layout_marginEnd="12dp"
-                android:src="@drawable/ic_action_wipe"
-                android:contentDescription="Wipe" />
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Factory Reset"
+                    android:text="Photo + audio"
+                    android:textColor="#8B949E"
+                    android:textSize="10sp"
+                    android:fontFamily="sans-serif"
+                    android:layout_marginTop="2dp" />
+            </LinearLayout>
+
+            <!-- Wipe -->
+            <LinearLayout
+                android:id="@+id/cmd_wipe"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:layout_marginStart="4dp"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:padding="12dp"
+                android:background="@drawable/cmd_card_danger"
+                android:clickable="true"
+                android:focusable="true">
+
+                <ImageView
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:layout_marginBottom="6dp"
+                    android:src="@drawable/ic_action_wipe"
+                    android:contentDescription="Wipe" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Wipe"
                     android:textColor="#F85149"
-                    android:textSize="14sp"
+                    android:textSize="13sp"
                     android:textStyle="bold"
                     android:fontFamily="sans-serif-medium" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Erase all data on device"
+                    android:text="Erase all data"
                     android:textColor="#8B949E"
-                    android:textSize="12sp"
-                    android:fontFamily="sans-serif" />
+                    android:textSize="10sp"
+                    android:fontFamily="sans-serif"
+                    android:layout_marginTop="2dp" />
             </LinearLayout>
         </LinearLayout>
-
-        <!-- Status -->
-        <TextView
-            android:id="@+id/tv_command_status"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:padding="12dp"
-            android:visibility="gone"
-            android:textSize="13sp"
-            android:fontFamily="sans-serif-medium" />
-
     </LinearLayout>
-</ScrollView>
+
+    <!-- Status -->
+    <TextView
+        android:id="@+id/tv_command_status"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:padding="12dp"
+        android:visibility="gone"
+        android:textSize="13sp"
+        android:fontFamily="sans-serif-medium" />
+
+</LinearLayout>

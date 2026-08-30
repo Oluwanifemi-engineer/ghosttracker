@@ -19,8 +19,7 @@
             android:background="#0D1117"
             android:elevation="0dp"
             app:titleTextColor="#F0F6FC"
-            app:subtitleTextColor="#8B949E"
-            app:titleTextAppearance="@style/TextAppearance.Material3.TitleMedium" />
+            app:subtitleTextColor="#8B949E" />
 
         <View
             android:layout_width="match_parent"
@@ -34,7 +33,7 @@
             android:layout_height="0dp"
             android:layout_weight="1" />
 
-        <!-- Bottom Navigation -->
+        <!-- Bottom Navigation — always visible -->
         <com.google.android.material.bottomnavigation.BottomNavigationView
             android:id="@+id/bottom_nav"
             android:layout_width="match_parent"
@@ -43,14 +42,12 @@
             app:itemIconTint="@color/bottom_nav_colors"
             app:itemTextColor="@color/bottom_nav_colors"
             app:labelVisibilityMode="labeled"
-            app:itemTextAppearanceActive="@style/TextAppearance.Material3.LabelSmall"
-            app:itemTextAppearanceInactive="@style/TextAppearance.Material3.LabelSmall"
             app:elevation="8dp"
             app:menu="@menu/bottom_nav_menu" />
 
     </LinearLayout>
 
-    <!-- Lock overlay — shown after 2-min timeout (Opay-style) -->
+    <!-- Lock overlay — shown after 2-min timeout -->
     <FrameLayout
         android:id="@+id/lock_overlay"
         android:layout_width="match_parent"
@@ -68,7 +65,6 @@
             android:orientation="vertical"
             android:padding="32dp">
 
-            <!-- Lock icon -->
             <ImageView
                 android:layout_width="64dp"
                 android:layout_height="64dp"
@@ -84,7 +80,6 @@
                 android:textColor="#F0F6FC"
                 android:textSize="22sp"
                 android:textStyle="bold"
-                android:fontFamily="sans-serif-medium"
                 android:layout_marginBottom="8dp" />
 
             <TextView
@@ -92,8 +87,7 @@
                 android:layout_height="wrap_content"
                 android:text="Tap anywhere to sign in again"
                 android:textColor="#8B949E"
-                android:textSize="14sp"
-                android:fontFamily="sans-serif" />
+                android:textSize="14sp" />
 
         </LinearLayout>
     </FrameLayout>

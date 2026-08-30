@@ -14,27 +14,29 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import com.google.android.gms.maps.CameraUpdateFactory
-import com.google.android.gms.maps.GoogleMap
-import com.google.android.gms.maps.OnMapReadyCallback
-import com.google.android.gms.maps.SupportMapFragment
-import com.google.android.gms.maps.model.BitmapDescriptorFactory
-import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.MarkerOptions
 import com.magneetar.app.R
 import com.magneetar.app.TokenVault
 import okhttp3.*
 import org.json.JSONObject
+import org.osmdroid.config.Configuration
+import org.osmdroid.tileprovider.tilesource.TileSourceFactory
+import org.osmdroid.util.GeoPoint
+import org.osmdroid.views.MapView
+import org.osmdroid.views.overlay.Marker
+import org.osmdroid.views.overlay.compass.CompassOverlay
+import org.osmdroid.views.overlay.gestures.RotationGestureOverlay
+import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 
 /**
- * Map screen — shows all linked devices on a Google Map.
+ * Map screen using OSMDroid (OpenStreetMap) — matches the dashboard's Leaflet/OSM tiles.
+ * Dark CartoDB tiles for consistent look with the web dashboard.
  * Auto-refreshes every 15 seconds for real-time tracking.
  */
-class MapFragment : Fragment(), OnMapReadyCallback {
+class MapFragment : Fragment() {
 
-    private var googleMap: GoogleMap? = null
+    private var osmMap: MapView? = null
     private lateinit var tvActiveDevice: TextView
     private lateinit var tvLastUpdate: TextView
     private lateinit var tvLocationInfo: TextView
@@ -47,9 +49,9 @@ class MapFragment : Fragment(), OnMapReadyCallback {
         .readTimeout(10, TimeUnit.SECONDS)
         .build()
 
-    private val defaultLocation = LatLng(7.518, 4.528) // OAU campus
+    private val defaultLocation = GeoPoint(7.518, 4.528)
     private val refreshHandler = Handler(Looper.getMainLooper())
-    private val REFRESH_INTERVAL = 15_000L // 15 seconds
+    private val REFRESH_INTERVAL = 15_000L
 
     private val refreshRunnable = object : Runnable {
         override fun run() {
@@ -63,7 +65,7 @@ class MapFragment : Fragment(), OnMapReadyCallback {
     ) { permissions ->
         val granted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
                 permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
-        if (granted) googleMap?.let { enableMyLocation(it) }
+        if (granted) enableMyLocation()
     }
 
     override fun onCreateView(
@@ -81,37 +83,46 @@ class MapFragment : Fragment(), OnMapReadyCallback {
         progressBar = view.findViewById(R.id.progress_bar)
         statusDot = view.findViewById(R.id.status_dot)
 
-        val mapFragment = childFragmentManager.findFragmentById(R.id.mapFragment) as? SupportMapFragment
-        mapFragment?.getMapAsync(this)
-    }
+        Configuration.getInstance().userAgentValue = requireContext().packageName
 
-    override fun onMapReady(map: GoogleMap) {
-        googleMap = map
-
-        try {
-            val style = com.google.android.gms.maps.model.MapStyleOptions
-                .loadRawResourceStyle(requireContext(), R.raw.map_style_dark)
-            map.setMapStyle(style)
-        } catch (_: Exception) {}
-
-        map.moveCamera(CameraUpdateFactory.newLatLngZoom(defaultLocation, 15f))
-        map.uiSettings.isZoomControlsEnabled = true
-        map.uiSettings.isMyLocationButtonEnabled = false
-        map.setPadding(0, 0, 0, 200) // Leave room for info card
+        osmMap = view.findViewById(R.id.osm_map)
+        osmMap?.let { setupMap(it) }
 
         checkAndRequestLocationPermission()
-        loadDevices()
     }
 
-    override fun onResume() {
-        super.onResume()
-        loadDevices()
-        refreshHandler.postDelayed(refreshRunnable, REFRESH_INTERVAL)
+    private fun setupMap(map: MapView) {
+        // Standard OSM tiles — free, no API key, matches dashboard's fallback
+        map.setTileSource(TileSourceFactory.MAPNIK)
+        map.setMultiTouchControls(true)
+        map.controller.setZoom(16.0)
+        map.controller.setCenter(defaultLocation)
+
+        // Compass overlay
+        try {
+            val compass = CompassOverlay(requireContext(), map)
+            compass.enableCompass()
+            map.overlays.add(compass)
+        } catch (_: Exception) {}
+
+        // Rotation gesture
+        val rotation = RotationGestureOverlay(map)
+        rotation.isEnabled = true
+        map.overlays.add(rotation)
+
+        map.invalidate()
     }
 
-    override fun onPause() {
-        super.onPause()
-        refreshHandler.removeCallbacks(refreshRunnable)
+    private fun enableMyLocation() {
+        osmMap?.let { map ->
+            try {
+                val myLocOverlay = MyLocationNewOverlay(map)
+                myLocOverlay.enableMyLocation()
+                myLocOverlay.enableFollowLocation()
+                map.overlays.add(0, myLocOverlay)
+                map.invalidate()
+            } catch (_: SecurityException) {}
+        }
     }
 
     private fun checkAndRequestLocationPermission() {
@@ -123,7 +134,7 @@ class MapFragment : Fragment(), OnMapReadyCallback {
         ) == PackageManager.PERMISSION_GRANTED
 
         if (hasFine || hasCoarse) {
-            enableMyLocation(googleMap!!)
+            enableMyLocation()
             return
         }
 
@@ -149,11 +160,17 @@ class MapFragment : Fragment(), OnMapReadyCallback {
         }
     }
 
-    private fun enableMyLocation(map: GoogleMap) {
-        try {
-            map.isMyLocationEnabled = true
-            map.uiSettings.isMyLocationButtonEnabled = true
-        } catch (_: SecurityException) {}
+    override fun onResume() {
+        super.onResume()
+        osmMap?.onResume()
+        loadDevices()
+        refreshHandler.postDelayed(refreshRunnable, REFRESH_INTERVAL)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        refreshHandler.removeCallbacks(refreshRunnable)
+        osmMap?.onPause()
     }
 
     private fun loadDevices() {
@@ -195,11 +212,12 @@ class MapFragment : Fragment(), OnMapReadyCallback {
                             tvLocationInfo.text = "—"
                             tvSpeedInfo.text = ""
                             tvLastUpdate.text = ""
-                            statusDot.background = ContextCompat.getDrawable(requireContext(), R.drawable.dot_green)
                             return@runOnUiThread
                         }
 
-                        googleMap?.clear()
+                        // Clear old markers
+                        osmMap?.overlays?.removeIf { it is Marker }
+
                         var lastDevice: JSONObject? = null
 
                         for (i in 0 until devices.length()) {
@@ -208,23 +226,25 @@ class MapFragment : Fragment(), OnMapReadyCallback {
                             val lng = device.optDouble("longitude", 0.0)
 
                             if (lat != 0.0 && lng != 0.0) {
-                                val position = LatLng(lat, lng)
+                                val point = GeoPoint(lat, lng)
                                 val name = device.optString("name", device.optString("model", "Device"))
 
-                                googleMap?.addMarker(
-                                    MarkerOptions()
-                                        .position(position)
-                                        .title(name)
-                                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE))
-                                )
+                                val marker = Marker(osmMap)
+                                marker.position = point
+                                marker.title = name
+                                marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                                marker.icon = ContextCompat.getDrawable(requireContext(), R.drawable.map_marker_blue)
+                                osmMap?.overlays?.add(marker)
 
                                 lastDevice = device
 
                                 if (i == 0) {
-                                    googleMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(position, 16f))
+                                    osmMap?.controller?.animateTo(point)
                                 }
                             }
                         }
+
+                        osmMap?.invalidate()
 
                         if (lastDevice != null) {
                             val name = lastDevice.optString("name", lastDevice.optString("model", "Device"))
@@ -237,10 +257,6 @@ class MapFragment : Fragment(), OnMapReadyCallback {
                             tvLocationInfo.text = String.format("%.4f, %.4f", lat, lng)
                             tvSpeedInfo.text = if (speed > 0) String.format("%.1f m/s", speed) else ""
                             tvLastUpdate.text = if (isOnline) "Live" else "Last known"
-                            statusDot.background = ContextCompat.getDrawable(
-                                requireContext(),
-                                if (isOnline) R.drawable.dot_green else R.drawable.dot_green
-                            )
                         }
                     } catch (_: Exception) {
                         tvActiveDevice.text = "Error loading devices"

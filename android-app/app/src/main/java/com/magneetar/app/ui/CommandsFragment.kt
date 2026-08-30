@@ -21,7 +21,7 @@ import java.io.IOException
 import java.util.concurrent.TimeUnit
 
 /**
- * Commands screen — premium one-tap actions.
+ * Commands screen — all 5 actions visible in a grid, no scrolling.
  * Contextual permissions: camera/mic requested only when Capture is tapped.
  */
 class CommandsFragment : Fragment() {
@@ -56,7 +56,7 @@ class CommandsFragment : Fragment() {
         spinnerDevices = view.findViewById(R.id.spinner_devices)
         tvStatus = view.findViewById(R.id.tv_command_status)
 
-        // Command actions
+        // Command actions — all visible
         view.findViewById<View>(R.id.cmd_ring)?.setOnClickListener { sendCommand("ring") }
         view.findViewById<View>(R.id.cmd_lock)?.setOnClickListener { sendCommand("lock") }
         view.findViewById<View>(R.id.cmd_locate)?.setOnClickListener { sendCommand("locate") }

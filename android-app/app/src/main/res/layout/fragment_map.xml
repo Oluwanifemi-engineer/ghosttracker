@@ -4,10 +4,9 @@
     android:layout_height="match_parent"
     android:background="#0D1117">
 
-    <!-- Google Map -->
-    <fragment
-        android:id="@+id/mapFragment"
-        android:name="com.google.android.gms.maps.SupportMapFragment"
+    <!-- OSMDroid MapView — OpenStreetMap (matches dashboard) -->
+    <org.osmdroid.views.MapView
+        android:id="@+id/osm_map"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
