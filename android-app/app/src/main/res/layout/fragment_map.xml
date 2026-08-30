@@ -1,38 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="#0A0A0A">
+    android:background="#0D1117">
 
-    <!-- Map View -->
+    <!-- Google Map -->
     <fragment
         android:id="@+id/mapFragment"
         android:name="com.google.android.gms.maps.SupportMapFragment"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1" />
+        android:layout_height="match_parent" />
 
-    <!-- Device Status Bar (bottom sheet style) -->
+    <!-- Device info card — bottom overlay -->
     <LinearLayout
-        android:id="@+id/deviceStatusBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:layout_margin="16dp"
         android:orientation="vertical"
-        android:background="#111111"
+        android:background="@drawable/card_surface"
         android:padding="16dp"
-        android:elevation="8dp">
+        android:elevation="4dp">
 
-        <!-- Active Device Indicator -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical">
 
+            <!-- Status dot -->
             <View
+                android:id="@+id/status_dot"
                 android:layout_width="8dp"
                 android:layout_height="8dp"
+                android:layout_marginEnd="8dp"
                 android:background="@drawable/dot_green" />
 
             <TextView
@@ -40,10 +41,10 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:layout_marginStart="8dp"
-                android:text="No devices"
-                android:textColor="#F5F5F5"
-                android:textSize="14sp"
+                android:text="No device"
+                android:textColor="#F0F6FC"
+                android:textSize="16sp"
+                android:textStyle="bold"
                 android:fontFamily="sans-serif-medium" />
 
             <TextView
@@ -51,16 +52,17 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text=""
-                android:textColor="#606060"
-                android:textSize="11sp" />
+                android:textColor="#8B949E"
+                android:textSize="12sp"
+                android:fontFamily="sans-serif" />
         </LinearLayout>
 
-        <!-- Quick Stats Row -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:orientation="horizontal"
             android:layout_marginTop="8dp"
-            android:orientation="horizontal">
+            android:gravity="center_vertical">
 
             <TextView
                 android:id="@+id/tv_location_info"
@@ -68,18 +70,28 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="—"
-                android:textColor="#707070"
-                android:textSize="11sp"
-                android:fontFamily="monospace" />
+                android:textColor="#8B949E"
+                android:textSize="12sp"
+                android:fontFamily="sans-serif" />
 
             <TextView
                 android:id="@+id/tv_speed_info"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text=""
-                android:textColor="#707070"
-                android:textSize="11sp" />
+                android:textColor="#58A6FF"
+                android:textSize="12sp"
+                android:fontFamily="sans-serif" />
         </LinearLayout>
     </LinearLayout>
 
-</LinearLayout>
+    <!-- Loading indicator -->
+    <ProgressBar
+        android:id="@+id/progress_bar"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_gravity="center"
+        android:indeterminateTint="#58A6FF"
+        android:visibility="gone" />
+
+</FrameLayout>

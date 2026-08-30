@@ -2,7 +2,7 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#0A0A0A"
+    android:background="#0D1117"
     android:fillViewport="true">
 
     <LinearLayout
@@ -11,194 +11,111 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <!-- Header -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Settings"
-            android:textColor="#F5F5F5"
-            android:textSize="22sp"
-            android:textStyle="bold"
-            android:fontFamily="sans-serif-medium"
-            android:layout_marginBottom="20dp" />
-
-        <!-- Account Section -->
+        <!-- Account section -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="ACCOUNT"
-            android:textColor="#00FF88"
-            android:textSize="10sp"
-            android:textStyle="bold"
-            android:letterSpacing="0.2"
-            android:layout_marginBottom="8dp" />
+            android:textColor="#8B949E"
+            android:textSize="11sp"
+            android:letterSpacing="0.15"
+            android:fontFamily="sans-serif-medium"
+            android:layout_marginBottom="12dp" />
 
-        <!-- User Info Card -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@drawable/btn_surface"
-            android:padding="16dp"
             android:orientation="vertical"
-            android:layout_marginBottom="2dp">
+            android:background="@drawable/card_surface"
+            android:padding="16dp"
+            android:layout_marginBottom="20dp">
 
             <TextView
                 android:id="@+id/tv_user_name"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="User"
-                android:textColor="#F5F5F5"
+                android:textColor="#F0F6FC"
                 android:textSize="16sp"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                android:fontFamily="sans-serif-medium" />
 
             <TextView
                 android:id="@+id/tv_user_email"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="email@example.com"
-                android:textColor="#707070"
+                android:text="user@email.com"
+                android:textColor="#8B949E"
                 android:textSize="13sp"
-                android:layout_marginTop="4dp" />
+                android:fontFamily="sans-serif"
+                android:layout_marginTop="2dp" />
 
             <TextView
                 android:id="@+id/tv_user_tier"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Free Tier"
-                android:textColor="#FFB800"
-                android:textSize="11sp"
-                android:textStyle="bold"
-                android:layout_marginTop="4dp" />
+                android:textColor="#58A6FF"
+                android:textSize="12sp"
+                android:fontFamily="sans-serif-medium"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/badge_free"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:paddingTop="2dp"
+                android:paddingBottom="2dp" />
         </LinearLayout>
 
-        <!-- Circles Section -->
+        <!-- Protection section -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="CIRCLES"
-            android:textColor="#00FF88"
-            android:textSize="10sp"
-            android:textStyle="bold"
-            android:letterSpacing="0.2"
-            android:layout_marginTop="20dp"
-            android:layout_marginBottom="8dp" />
-
-        <LinearLayout
-            android:id="@+id/btn_create_circle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@drawable/btn_surface"
-            android:padding="16dp"
-            android:gravity="center_vertical"
-            android:clickable="true"
-            android:focusable="true"
-            android:layout_marginBottom="2dp">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Create Circle"
-                android:textColor="#E0E0E0"
-                android:textSize="14sp" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="+"
-                android:textColor="#00FF88"
-                android:textSize="20sp" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/btn_join_circle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@drawable/btn_surface"
-            android:padding="16dp"
-            android:gravity="center_vertical"
-            android:clickable="true"
-            android:focusable="true"
-            android:layout_marginBottom="2dp">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Join Circle"
-                android:textColor="#E0E0E0"
-                android:textSize="14sp" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="→"
-                android:textColor="#707070"
-                android:textSize="16sp" />
-        </LinearLayout>
-
-        <!-- Protection Section -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="PROTECTION"
-            android:textColor="#00FF88"
-            android:textSize="10sp"
-            android:textStyle="bold"
-            android:letterSpacing="0.2"
-            android:layout_marginTop="20dp"
-            android:layout_marginBottom="8dp" />
+            android:text="PROTECTION STATUS"
+            android:textColor="#8B949E"
+            android:textSize="11sp"
+            android:letterSpacing="0.15"
+            android:fontFamily="sans-serif-medium"
+            android:layout_marginBottom="12dp" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@drawable/btn_surface"
-            android:padding="16dp"
             android:orientation="vertical"
-            android:layout_marginBottom="2dp">
+            android:background="@drawable/card_surface"
+            android:padding="16dp"
+            android:layout_marginBottom="20dp">
 
+            <!-- Device Admin -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:gravity="center_vertical">
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="12dp">
 
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="Device Admin"
-                    android:textColor="#E0E0E0"
-                    android:textSize="14sp" />
+                    android:textColor="#F0F6FC"
+                    android:textSize="14sp"
+                    android:fontFamily="sans-serif" />
 
                 <TextView
                     android:id="@+id/tv_admin_status"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Checking..."
-                    android:textColor="#FFB800"
-                    android:textSize="12sp" />
+                    android:text="Inactive"
+                    android:textSize="13sp"
+                    android:fontFamily="sans-serif-medium" />
             </LinearLayout>
 
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Remote lock, wipe &amp; uninstall protection"
-                android:textColor="#505050"
-                android:textSize="11sp"
-                android:layout_marginTop="4dp" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@drawable/btn_surface"
-            android:padding="16dp"
-            android:orientation="vertical"
-            android:layout_marginBottom="2dp">
-
+            <!-- Background Tracking -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:orientation="horizontal"
                 android:gravity="center_vertical">
 
                 <TextView
@@ -206,113 +123,193 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="Background Tracking"
-                    android:textColor="#E0E0E0"
-                    android:textSize="14sp" />
+                    android:textColor="#F0F6FC"
+                    android:textSize="14sp"
+                    android:fontFamily="sans-serif" />
 
                 <TextView
                     android:id="@+id/tv_tracking_status"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Active"
-                    android:textColor="#00FF88"
-                    android:textSize="12sp" />
+                    android:textSize="13sp"
+                    android:fontFamily="sans-serif-medium" />
             </LinearLayout>
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="GPS tracking &amp; theft recovery"
-                android:textColor="#505050"
-                android:textSize="11sp"
-                android:layout_marginTop="4dp" />
         </LinearLayout>
 
-        <!-- Preferences Section -->
+        <!-- Actions section -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="PREFERENCES"
-            android:textColor="#00FF88"
-            android:textSize="10sp"
-            android:textStyle="bold"
-            android:letterSpacing="0.2"
-            android:layout_marginTop="20dp"
-            android:layout_marginBottom="8dp" />
+            android:text="ACTIONS"
+            android:textColor="#8B949E"
+            android:textSize="11sp"
+            android:letterSpacing="0.15"
+            android:fontFamily="sans-serif-medium"
+            android:layout_marginBottom="12dp" />
 
         <LinearLayout
-            android:id="@+id/btn_battery"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@drawable/btn_surface"
-            android:padding="16dp"
-            android:gravity="center_vertical"
-            android:clickable="true"
-            android:focusable="true"
-            android:layout_marginBottom="2dp">
+            android:orientation="vertical"
+            android:background="@drawable/card_surface"
+            android:layout_marginBottom="20dp">
 
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Battery Optimization"
-                android:textColor="#E0E0E0"
-                android:textSize="14sp" />
+            <!-- Create Circle -->
+            <LinearLayout
+                android:id="@+id/btn_create_circle"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:clickable="true"
+                android:focusable="true">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="→"
-                android:textColor="#707070"
-                android:textSize="16sp" />
-        </LinearLayout>
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Create Circle"
+                    android:textColor="#F0F6FC"
+                    android:textSize="14sp"
+                    android:fontFamily="sans-serif" />
 
-        <LinearLayout
-            android:id="@+id/btn_open_dashboard"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@drawable/btn_surface"
-            android:padding="16dp"
-            android:gravity="center_vertical"
-            android:clickable="true"
-            android:focusable="true"
-            android:layout_marginBottom="2dp">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="&#8250;"
+                    android:textColor="#8B949E"
+                    android:textSize="18sp" />
+            </LinearLayout>
 
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Open Web Dashboard"
-                android:textColor="#E0E0E0"
-                android:textSize="14sp" />
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginStart="16dp"
+                android:background="#21262D" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="↗"
-                android:textColor="#707070"
-                android:textSize="16sp" />
+            <!-- Join Circle -->
+            <LinearLayout
+                android:id="@+id/btn_join_circle"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:clickable="true"
+                android:focusable="true">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Join Circle"
+                    android:textColor="#F0F6FC"
+                    android:textSize="14sp"
+                    android:fontFamily="sans-serif" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="&#8250;"
+                    android:textColor="#8B949E"
+                    android:textSize="18sp" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginStart="16dp"
+                android:background="#21262D" />
+
+            <!-- Battery Optimization -->
+            <LinearLayout
+                android:id="@+id/btn_battery"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:clickable="true"
+                android:focusable="true">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Battery Optimization"
+                    android:textColor="#F0F6FC"
+                    android:textSize="14sp"
+                    android:fontFamily="sans-serif" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="&#8250;"
+                    android:textColor="#8B949E"
+                    android:textSize="18sp" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginStart="16dp"
+                android:background="#21262D" />
+
+            <!-- Open Web Dashboard -->
+            <LinearLayout
+                android:id="@+id/btn_open_dashboard"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:clickable="true"
+                android:focusable="true">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Open Web Dashboard"
+                    android:textColor="#F0F6FC"
+                    android:textSize="14sp"
+                    android:fontFamily="sans-serif" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="&#8250;"
+                    android:textColor="#8B949E"
+                    android:textSize="18sp" />
+            </LinearLayout>
         </LinearLayout>
 
         <!-- Logout -->
         <LinearLayout
             android:id="@+id/btn_logout"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@drawable/btn_danger"
-            android:padding="16dp"
+            android:layout_height="52dp"
+            android:orientation="horizontal"
             android:gravity="center"
+            android:background="@drawable/cmd_card_danger"
             android:clickable="true"
             android:focusable="true"
-            android:layout_marginTop="24dp"
-            android:layout_marginBottom="32dp">
+            android:layout_marginBottom="80dp">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Sign Out"
-                android:textColor="#FF4444"
+                android:textColor="#F85149"
                 android:textSize="14sp"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                android:fontFamily="sans-serif-medium" />
         </LinearLayout>
 
     </LinearLayout>

@@ -183,11 +183,7 @@
             android:windowSoftInputMode="adjustResize" />
 
         <!-- ─── Permissions ─────────────────────────────────────────────── -->
-        <activity
-            android:name=".PermissionsActivity"
-            android:exported="false"
-            android:theme="@style/AppTheme"
-            android:windowSoftInputMode="adjustResize" />
+        <!-- PermissionsActivity archived — permissions now requested contextually in UI fragments -->
 
         <!-- ─── Dashboard (Full in-app experience) ──────────────────────── -->
         <activity
@@ -197,11 +193,7 @@
             android:windowSoftInputMode="adjustResize" />
 
         <!-- ─── Home (Legacy fallback) ─────────────────────────────────── -->
-        <activity
-            android:name=".HomeActivity"
-            android:exported="false"
-            android:theme="@style/AppTheme"
-            android:windowSoftInputMode="adjustResize" />
+        <!-- HomeActivity archived — replaced by DashboardActivity -->
 
         <!-- ─── Pairing (Offline Device Network §4) ────────────────────── -->
         <activity

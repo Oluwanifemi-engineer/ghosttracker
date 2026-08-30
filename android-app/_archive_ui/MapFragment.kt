@@ -3,12 +3,9 @@ package com.magneetar.app.ui
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
@@ -22,7 +19,6 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
 import com.magneetar.app.R
-import com.magneetar.app.TokenVault
 import okhttp3.*
 import org.json.JSONObject
 import java.io.IOException
@@ -30,7 +26,7 @@ import java.util.concurrent.TimeUnit
 
 /**
  * Map screen — shows all linked devices on a Google Map.
- * Auto-refreshes every 15 seconds for real-time tracking.
+ * Pulls device locations from the server API and places markers.
  */
 class MapFragment : Fragment(), OnMapReadyCallback {
 
@@ -39,37 +35,32 @@ class MapFragment : Fragment(), OnMapReadyCallback {
     private lateinit var tvLastUpdate: TextView
     private lateinit var tvLocationInfo: TextView
     private lateinit var tvSpeedInfo: TextView
-    private lateinit var progressBar: ProgressBar
-    private lateinit var statusDot: View
 
     private val client = OkHttpClient.Builder()
         .connectTimeout(10, TimeUnit.SECONDS)
         .readTimeout(10, TimeUnit.SECONDS)
         .build()
 
-    private val defaultLocation = LatLng(7.518, 4.528) // OAU campus
-    private val refreshHandler = Handler(Looper.getMainLooper())
-    private val REFRESH_INTERVAL = 15_000L // 15 seconds
+    // Default: OAU campus, Ile-Ife, Nigeria
+    private val defaultLocation = LatLng(7.518, 4.528)
 
-    private val refreshRunnable = object : Runnable {
-        override fun run() {
-            loadDevices()
-            refreshHandler.postDelayed(this, REFRESH_INTERVAL)
-        }
-    }
-
+    // Contextual permission request — only when user needs location
     private val locationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
-        val granted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
-                permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
-        if (granted) googleMap?.let { enableMyLocation(it) }
+        val fineGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true
+        val coarseGranted = permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+        if (fineGranted || coarseGranted) {
+            googleMap?.let { enableMyLocation(it) }
+        }
     }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? = inflater.inflate(R.layout.fragment_map, container, false)
+    ): View? {
+        return inflater.inflate(R.layout.fragment_map, container, false)
+    }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -78,8 +69,6 @@ class MapFragment : Fragment(), OnMapReadyCallback {
         tvLastUpdate = view.findViewById(R.id.tv_last_update)
         tvLocationInfo = view.findViewById(R.id.tv_location_info)
         tvSpeedInfo = view.findViewById(R.id.tv_speed_info)
-        progressBar = view.findViewById(R.id.progress_bar)
-        statusDot = view.findViewById(R.id.status_dot)
 
         val mapFragment = childFragmentManager.findFragmentById(R.id.mapFragment) as? SupportMapFragment
         mapFragment?.getMapAsync(this)
@@ -88,32 +77,31 @@ class MapFragment : Fragment(), OnMapReadyCallback {
     override fun onMapReady(map: GoogleMap) {
         googleMap = map
 
+        // Dark map style
         try {
-            val style = com.google.android.gms.maps.model.MapStyleOptions
-                .loadRawResourceStyle(requireContext(), R.raw.map_style_dark)
+            val style = com.google.android.gms.maps.model.MapStyleOptions.loadRawResourceStyle(
+                requireContext(), R.raw.map_style_dark
+            )
             map.setMapStyle(style)
-        } catch (_: Exception) {}
+        } catch (_: Exception) {
+            // Default style is fine
+        }
 
         map.moveCamera(CameraUpdateFactory.newLatLngZoom(defaultLocation, 15f))
         map.uiSettings.isZoomControlsEnabled = true
         map.uiSettings.isMyLocationButtonEnabled = false
-        map.setPadding(0, 0, 0, 200) // Leave room for info card
 
+        // Check and request location permission contextually
         checkAndRequestLocationPermission()
+
+        // Load devices
         loadDevices()
     }
 
-    override fun onResume() {
-        super.onResume()
-        loadDevices()
-        refreshHandler.postDelayed(refreshRunnable, REFRESH_INTERVAL)
-    }
-
-    override fun onPause() {
-        super.onPause()
-        refreshHandler.removeCallbacks(refreshRunnable)
-    }
-
+    /**
+     * Request location permission only when the user needs it (map screen).
+     * This follows Material Design guidelines — ask in context, not upfront.
+     */
     private fun checkAndRequestLocationPermission() {
         val hasFine = ContextCompat.checkSelfPermission(
             requireContext(), Manifest.permission.ACCESS_FINE_LOCATION
@@ -127,24 +115,33 @@ class MapFragment : Fragment(), OnMapReadyCallback {
             return
         }
 
+        // Show rationale before requesting — this is what real products do
         if (shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION)) {
-            AlertDialog.Builder(requireContext(), com.google.android.material.R.style.ThemeOverlay_Material3_MaterialAlertDialog)
+            AlertDialog.Builder(requireContext())
                 .setTitle("Location Access")
                 .setMessage(
-                    "Magneetar needs your location to show devices on the map " +
-                    "and track them if stolen.\n\n" +
-                    "Your location is only used for device tracking."
+                    "Magneetar needs your location so you can see your device on the map " +
+                    "and track it if stolen.\n\n" +
+                    "Your location is only used for device tracking and is never shared " +
+                    "with third parties."
                 )
-                .setPositiveButton("Allow") { _, _ ->
+                .setPositiveButton("ALLOW") { _, _ ->
                     locationPermissionLauncher.launch(
-                        arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
+                        arrayOf(
+                            Manifest.permission.ACCESS_FINE_LOCATION,
+                            Manifest.permission.ACCESS_COARSE_LOCATION
+                        )
                     )
                 }
-                .setNegativeButton("Not Now", null)
+                .setNegativeButton("NOT NOW", null)
                 .show()
         } else {
+            // First time — request directly
             locationPermissionLauncher.launch(
-                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
+                arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                )
             )
         }
     }
@@ -153,20 +150,25 @@ class MapFragment : Fragment(), OnMapReadyCallback {
         try {
             map.isMyLocationEnabled = true
             map.uiSettings.isMyLocationButtonEnabled = true
-        } catch (_: SecurityException) {}
+        } catch (_: SecurityException) {
+            // Permission not yet granted — will retry on next map load
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        loadDevices()
     }
 
     private fun loadDevices() {
         val prefs = requireContext().getSharedPreferences("mt", 0)
         val serverUrl = prefs.getString("server_url", "") ?: ""
-        val userToken = TokenVault.accessToken(requireContext())
+        val userToken = com.magneetar.app.TokenVault.accessToken(requireContext())
 
         if (serverUrl.isEmpty() || userToken.isEmpty()) {
             tvActiveDevice.text = "Not signed in"
             return
         }
-
-        progressBar.visibility = View.VISIBLE
 
         val request = Request.Builder()
             .url("$serverUrl/api/dashboard/devices")
@@ -177,7 +179,6 @@ class MapFragment : Fragment(), OnMapReadyCallback {
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
                 activity?.runOnUiThread {
-                    progressBar.visibility = View.GONE
                     tvActiveDevice.text = "Connection failed"
                 }
             }
@@ -185,17 +186,12 @@ class MapFragment : Fragment(), OnMapReadyCallback {
             override fun onResponse(call: Call, response: Response) {
                 val body = response.body?.string() ?: return
                 activity?.runOnUiThread {
-                    progressBar.visibility = View.GONE
                     try {
                         val json = JSONObject(body)
                         val devices = json.optJSONArray("devices") ?: return@runOnUiThread
 
                         if (devices.length() == 0) {
                             tvActiveDevice.text = "No devices linked"
-                            tvLocationInfo.text = "—"
-                            tvSpeedInfo.text = ""
-                            tvLastUpdate.text = ""
-                            statusDot.background = ContextCompat.getDrawable(requireContext(), R.drawable.dot_green)
                             return@runOnUiThread
                         }
 
@@ -215,34 +211,31 @@ class MapFragment : Fragment(), OnMapReadyCallback {
                                     MarkerOptions()
                                         .position(position)
                                         .title(name)
-                                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE))
+                                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN))
                                 )
 
                                 lastDevice = device
 
+                                // Center on first device
                                 if (i == 0) {
                                     googleMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(position, 16f))
                                 }
                             }
                         }
 
+                        // Update status bar
                         if (lastDevice != null) {
                             val name = lastDevice.optString("name", lastDevice.optString("model", "Device"))
                             val lat = lastDevice.optDouble("latitude", 0.0)
                             val lng = lastDevice.optDouble("longitude", 0.0)
                             val speed = lastDevice.optDouble("speed", 0.0)
-                            val isOnline = lastDevice.optBoolean("is_online", false)
 
                             tvActiveDevice.text = name
                             tvLocationInfo.text = String.format("%.4f, %.4f", lat, lng)
                             tvSpeedInfo.text = if (speed > 0) String.format("%.1f m/s", speed) else ""
-                            tvLastUpdate.text = if (isOnline) "Live" else "Last known"
-                            statusDot.background = ContextCompat.getDrawable(
-                                requireContext(),
-                                if (isOnline) R.drawable.dot_green else R.drawable.dot_green
-                            )
+                            tvLastUpdate.text = "Live"
                         }
-                    } catch (_: Exception) {
+                    } catch (e: Exception) {
                         tvActiveDevice.text = "Error loading devices"
                     }
                 }

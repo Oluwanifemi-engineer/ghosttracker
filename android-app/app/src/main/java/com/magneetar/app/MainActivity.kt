@@ -12,8 +12,13 @@ import androidx.core.content.ContextCompat
 
 /**
  * Bomb-proof entry point — synchronous routing in onCreate.
- * No handlers, no postDelayed, no window dependencies.
- * Just reads prefs and sets the correct content view immediately.
+ *
+ * Flow:
+ *   1. First launch → onboarding
+ *   2. Has token → validate against server → dashboard or sign-in
+ *   3. No token → sign-in
+ *
+ * Opay-style: every app open requires authentication. No silent bypass.
  */
 class MainActivity : AppCompatActivity() {
 
@@ -23,47 +28,44 @@ class MainActivity : AppCompatActivity() {
         // Safe Sentry init (optional, never crashes)
         initSentrySafe()
 
-        // Read state
         val prefs = getSharedPreferences("mt", Context.MODE_PRIVATE)
         val onboardingComplete = prefs.getBoolean("onboarding_complete", false)
-        val userToken = TokenVault.accessToken(this)
-        val adminSkipped = prefs.getBoolean("admin_skip_acknowledged", false)
 
-        // Re-assert the hard uninstall block whenever we're device owner — a
-        // reinstall, data wipe or system restore must not silently drop it.
+        // Re-assert hard uninstall block
         try { UninstallProtection.enforceUninstallBlocked(this) } catch (_: Exception) {}
 
-        // Route immediately — no delays, no handlers
-        // Real products don't force a permission screen before showing the app.
-        // Permissions are requested contextually when the user needs them.
         if (!onboardingComplete) {
-            // First launch → show onboarding directly
+            // First launch → onboarding
             setContentView(R.layout.activity_onboarding)
             setupOnboardingButtons()
-            // Footer version must reflect the actual build (BuildConfig), not
-            // the raw format placeholder or a stale literal.
             try {
                 findViewById<android.widget.TextView>(R.id.tv_version)?.text =
                     getString(R.string.app_version, BuildConfig.VERSION_NAME)
             } catch (_: Exception) {}
-        } else if (userToken.isEmpty()) {
-            // No token → need to sign in
-            startActivity(Intent(this, SignInActivity::class.java))
-            finish()
         } else {
-            // Has token → go straight to dashboard (permissions requested contextually)
-            startServicesSafe()
-            startActivity(Intent(this, DashboardActivity::class.java))
+            // Onboarding done → must sign in
+            // Never auto-bypass auth. The user must authenticate every session.
+            // Token expiry is handled by DashboardActivity's 2-minute timeout.
+            startActivity(Intent(this, SignInActivity::class.java))
             finish()
         }
     }
 
     private fun setupOnboardingButtons() {
         findViewById<Button>(R.id.btn_get_started)?.setOnClickListener {
+            // Mark onboarding as seen, then go to signup
+            getSharedPreferences("mt", MODE_PRIVATE).edit()
+                .putBoolean("onboarding_complete", true)
+                .apply()
             startActivity(Intent(this, SignUpActivity::class.java))
+            finish()
         }
         findViewById<Button>(R.id.btn_sign_in)?.setOnClickListener {
+            getSharedPreferences("mt", MODE_PRIVATE).edit()
+                .putBoolean("onboarding_complete", true)
+                .apply()
             startActivity(Intent(this, SignInActivity::class.java))
+            finish()
         }
     }
 
@@ -78,52 +80,5 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         } catch (t: Throwable) { /* Sentry optional */ }
-    }
-
-    private fun hasAllPermissions(): Boolean {
-        return try {
-            arrayOf(
-                android.Manifest.permission.ACCESS_FINE_LOCATION,
-                android.Manifest.permission.CAMERA,
-                android.Manifest.permission.RECORD_AUDIO
-            ).all {
-                ContextCompat.checkSelfPermission(this, it) ==
-                        android.content.pm.PackageManager.PERMISSION_GRANTED
-            }
-        } catch (e: Exception) { false }
-    }
-
-    private fun hasDeviceAdmin(): Boolean {
-        return try {
-            val dpm = getSystemService(android.content.Context.DEVICE_POLICY_SERVICE)
-                    as android.app.admin.DevicePolicyManager
-            dpm.isAdminActive(
-                android.content.ComponentName(this, AdminReceiver::class.java)
-            )
-        } catch (e: Exception) { false }
-    }
-
-    private fun startServicesSafe() {
-        try {
-            ContextCompat.startForegroundService(this, Intent(this, TrackingService::class.java))
-            ContextCompat.startForegroundService(this, Intent(this, PersistenceService::class.java))
-            try { WatchdogReceiver.scheduleWatchdog(this) } catch (_: Exception) {}
-            try { HealthCheckWorker.schedule(this) } catch (_: Exception) {}
-            try { requestBatteryOptimization() } catch (_: Exception) {}
-        } catch (e: Exception) {
-            android.util.Log.e("MainActivity", "Services failed: ${e.message}")
-        }
-    }
-
-    private fun requestBatteryOptimization() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            val pm = getSystemService(Context.POWER_SERVICE) as? PowerManager
-            if (pm != null && !pm.isIgnoringBatteryOptimizations(packageName)) {
-                startActivity(Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
-                    data = android.net.Uri.parse("package:$packageName")
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                })
-            }
-        }
     }
 }

@@ -6,7 +6,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
-import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -18,7 +17,7 @@ import java.io.IOException
 import java.util.concurrent.TimeUnit
 
 /**
- * Alerts screen — theft, SIM change, offline alerts with premium styling.
+ * Alerts screen — shows theft alerts, SIM changes, and offline notifications.
  */
 class AlertsFragment : Fragment() {
 
@@ -33,7 +32,9 @@ class AlertsFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? = inflater.inflate(R.layout.fragment_alerts, container, false)
+    ): View? {
+        return inflater.inflate(R.layout.fragment_alerts, container, false)
+    }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -90,7 +91,7 @@ class AlertsFragment : Fragment() {
                             rvAlerts.visibility = View.VISIBLE
                             rvAlerts.adapter?.notifyDataSetChanged()
                         }
-                    } catch (_: Exception) {
+                    } catch (e: Exception) {
                         showEmpty()
                     }
                 }
@@ -126,27 +127,18 @@ class AlertsFragment : Fragment() {
             val deviceName = alert.optString("device_name", "")
             val createdAt = alert.optString("created_at", "")
 
-            // Color coding by severity
-            val colorRes = when (type.lowercase()) {
-                "theft", "theft_detected" -> R.color.alert_critical
-                "sim_changed" -> R.color.alert_warning
-                "device_offline" -> R.color.alert_warning
-                "failed_unlock" -> R.color.alert_error
-                "motion_detected" -> R.color.alert_info
-                else -> R.color.status_offline
+            // Set icon/color based on type
+            val (icon, color) = when (type.lowercase()) {
+                "theft", "theft_detected" -> "🚨" to "#FF4444"
+                "sim_changed" -> "📱" to "#FFB800"
+                "device_offline" -> "📴" to "#FF8800"
+                "failed_unlock" -> "🔓" to "#FF6666"
+                "motion_detected" -> "🏃" to "#FFB800"
+                else -> "🔔" to "#707070"
             }
 
-            val typeLabel = when (type.lowercase()) {
-                "theft", "theft_detected" -> "THEFT DETECTED"
-                "sim_changed" -> "SIM CHANGED"
-                "device_offline" -> "DEVICE OFFLINE"
-                "failed_unlock" -> "FAILED UNLOCK"
-                "motion_detected" -> "MOTION DETECTED"
-                else -> type.replace("_", " ").uppercase()
-            }
-
-            holder.tvType.text = typeLabel
-            holder.tvType.setTextColor(ContextCompat.getColor(requireContext(), colorRes))
+            holder.tvType.text = "$icon ${type.replace("_", " ").uppercase()}"
+            holder.tvType.setTextColor(android.graphics.Color.parseColor(color))
             holder.tvMessage.text = message
             holder.tvDevice.text = deviceName
             holder.tvTime.text = formatTime(createdAt)
@@ -157,8 +149,13 @@ class AlertsFragment : Fragment() {
         private fun formatTime(isoTime: String): String {
             if (isoTime.isEmpty()) return ""
             return try {
+                // Simple parsing — just show the time part
                 val parts = isoTime.split("T")
-                if (parts.size > 1) parts[1].take(5) else isoTime.take(10)
+                if (parts.size > 1) {
+                    parts[1].take(5) // HH:MM
+                } else {
+                    isoTime.take(10)
+                }
             } catch (_: Exception) { isoTime }
         }
     }

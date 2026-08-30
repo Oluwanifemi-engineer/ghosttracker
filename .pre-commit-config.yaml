@@ -97,3 +97,15 @@ repos:
         language: system
         pass_filenames: false
         files: ^dashboard/.*\.(ts|tsx)$
+
+  # ─── Kotlin dead code detection (android-app) — local hook ──────────────
+  # Checks for empty catch blocks, TODO/FIXME markers, commented-out code
+  # blocks, and unused private functions. Warnings only — never blocks commits.
+  - repo: local
+    hooks:
+      - id: kotlin-dead-code
+        name: kotlin-dead-code (android-app)
+        entry: scripts/check-kotlin-dead-code.sh
+        language: script
+        files: ^android-app/.*\.kt$
+        pass_filenames: true

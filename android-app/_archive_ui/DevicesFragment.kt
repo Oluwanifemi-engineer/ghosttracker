@@ -5,9 +5,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
-import android.widget.ProgressBar
 import android.widget.TextView
-import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -19,14 +17,13 @@ import java.io.IOException
 import java.util.concurrent.TimeUnit
 
 /**
- * Devices screen — shows all linked devices with premium status cards.
+ * Devices screen — shows all linked devices with status, location, and battery.
  */
 class DevicesFragment : Fragment() {
 
     private lateinit var rvDevices: RecyclerView
     private lateinit var emptyState: LinearLayout
     private lateinit var tvDeviceCount: TextView
-    private lateinit var progressBar: ProgressBar
     private val client = OkHttpClient.Builder()
         .connectTimeout(10, TimeUnit.SECONDS)
         .readTimeout(10, TimeUnit.SECONDS)
@@ -36,7 +33,9 @@ class DevicesFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? = inflater.inflate(R.layout.fragment_devices, container, false)
+    ): View? {
+        return inflater.inflate(R.layout.fragment_devices, container, false)
+    }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -44,7 +43,6 @@ class DevicesFragment : Fragment() {
         rvDevices = view.findViewById(R.id.rv_devices)
         emptyState = view.findViewById(R.id.emptyState)
         tvDeviceCount = view.findViewById(R.id.tv_device_count)
-        progressBar = view.findViewById(R.id.progress_bar)
 
         rvDevices.layoutManager = LinearLayoutManager(requireContext())
         rvDevices.adapter = DeviceAdapter(devices)
@@ -67,8 +65,6 @@ class DevicesFragment : Fragment() {
             return
         }
 
-        progressBar.visibility = View.VISIBLE
-
         val request = Request.Builder()
             .url("$serverUrl/api/dashboard/devices")
             .addHeader("Authorization", "Bearer $userToken")
@@ -77,16 +73,12 @@ class DevicesFragment : Fragment() {
 
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                activity?.runOnUiThread {
-                    progressBar.visibility = View.GONE
-                    showEmpty()
-                }
+                activity?.runOnUiThread { showEmpty() }
             }
 
             override fun onResponse(call: Call, response: Response) {
                 val body = response.body?.string() ?: return
                 activity?.runOnUiThread {
-                    progressBar.visibility = View.GONE
                     try {
                         val json = JSONObject(body)
                         val arr = json.optJSONArray("devices") ?: return@runOnUiThread
@@ -102,7 +94,7 @@ class DevicesFragment : Fragment() {
                             tvDeviceCount.text = "${devices.size} device${if (devices.size != 1) "s" else ""} linked"
                             rvDevices.adapter?.notifyDataSetChanged()
                         }
-                    } catch (_: Exception) {
+                    } catch (e: Exception) {
                         showEmpty()
                     }
                 }
@@ -125,7 +117,6 @@ class DevicesFragment : Fragment() {
             val tvStatus: TextView = view.findViewById(R.id.tv_device_status)
             val tvLocation: TextView = view.findViewById(R.id.tv_device_location)
             val tvLastSeen: TextView = view.findViewById(R.id.tv_device_last_seen)
-            val statusDot: View = view.findViewById(R.id.status_dot)
         }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
@@ -144,36 +135,29 @@ class DevicesFragment : Fragment() {
 
             holder.tvName.text = name
             holder.tvModel.text = model
+            holder.tvStatus.text = if (isOnline) "Online" else "Offline"
+            holder.tvStatus.setTextColor(
+                android.graphics.Color.parseColor(if (isOnline) "#00FF88" else "#FF4444")
+            )
 
-            // Premium status indicator
-            if (isOnline) {
-                holder.tvStatus.text = "Online"
-                holder.tvStatus.setTextColor(ContextCompat.getColor(requireContext(), R.color.status_online))
-                holder.statusDot.background = ContextCompat.getDrawable(requireContext(), R.drawable.dot_green)
+            if (lat != 0.0 && lng != 0.0) {
+                holder.tvLocation.text = String.format("%.4f, %.4f", lat, lng)
             } else {
-                holder.tvStatus.text = "Offline"
-                holder.tvStatus.setTextColor(ContextCompat.getColor(requireContext(), R.color.status_offline))
-                holder.statusDot.background = ContextCompat.getDrawable(requireContext(), R.drawable.dot_green)
+                holder.tvLocation.text = "No location"
             }
 
-            holder.tvLocation.text = if (lat != 0.0 && lng != 0.0) {
-                String.format("%.4f, %.4f", lat, lng)
-            } else {
-                "No location data"
-            }
-
-            // Last seen — relative time
+            // Calculate last seen
             val lastSeen = device.optLong("last_seen", 0)
-            holder.tvLastSeen.text = if (lastSeen > 0) {
+            if (lastSeen > 0) {
                 val diff = System.currentTimeMillis() / 1000 - lastSeen
-                when {
+                holder.tvLastSeen.text = when {
                     diff < 60 -> "Just now"
                     diff < 3600 -> "${diff / 60}m ago"
                     diff < 86400 -> "${diff / 3600}h ago"
                     else -> "${diff / 86400}d ago"
                 }
             } else {
-                "Never connected"
+                holder.tvLastSeen.text = "Never"
             }
         }
 

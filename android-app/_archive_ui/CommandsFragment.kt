@@ -21,8 +21,8 @@ import java.io.IOException
 import java.util.concurrent.TimeUnit
 
 /**
- * Commands screen — premium one-tap actions.
- * Contextual permissions: camera/mic requested only when Capture is tapped.
+ * Commands screen — send remote commands to devices.
+ * One-tap actions: Ring, Lock, Locate, Capture, Wipe.
  */
 class CommandsFragment : Fragment() {
 
@@ -31,13 +31,17 @@ class CommandsFragment : Fragment() {
     private var devices = mutableListOf<JSONObject>()
     private var selectedDeviceId: String = ""
 
+    // Contextual permission request for camera/mic — only when user taps Capture
     private val capturePermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
-        val camera = permissions[Manifest.permission.CAMERA] == true
-        val mic = permissions[Manifest.permission.RECORD_AUDIO] == true
-        if (camera && mic) sendCommand("capture")
-        else showStatus("Camera and microphone permissions are required for capture", false)
+        val cameraGranted = permissions[Manifest.permission.CAMERA] == true
+        val micGranted = permissions[Manifest.permission.RECORD_AUDIO] == true
+        if (cameraGranted && micGranted) {
+            sendCommand("capture")
+        } else {
+            showStatus("Camera & microphone permissions are required for capture", false)
+        }
     }
 
     private val client = OkHttpClient.Builder()
@@ -48,7 +52,9 @@ class CommandsFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? = inflater.inflate(R.layout.fragment_commands, container, false)
+    ): View? {
+        return inflater.inflate(R.layout.fragment_commands, container, false)
+    }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -56,12 +62,12 @@ class CommandsFragment : Fragment() {
         spinnerDevices = view.findViewById(R.id.spinner_devices)
         tvStatus = view.findViewById(R.id.tv_command_status)
 
-        // Command actions
-        view.findViewById<View>(R.id.cmd_ring)?.setOnClickListener { sendCommand("ring") }
-        view.findViewById<View>(R.id.cmd_lock)?.setOnClickListener { sendCommand("lock") }
-        view.findViewById<View>(R.id.cmd_locate)?.setOnClickListener { sendCommand("locate") }
-        view.findViewById<View>(R.id.cmd_capture)?.setOnClickListener { requestCapturePermissionsAndSend() }
-        view.findViewById<View>(R.id.cmd_wipe)?.setOnClickListener { confirmWipe() }
+        // Command buttons
+        view.findViewById<LinearLayout>(R.id.cmd_ring)?.setOnClickListener { sendCommand("ring") }
+        view.findViewById<LinearLayout>(R.id.cmd_lock)?.setOnClickListener { sendCommand("lock") }
+        view.findViewById<LinearLayout>(R.id.cmd_locate)?.setOnClickListener { sendCommand("locate") }
+        view.findViewById<LinearLayout>(R.id.cmd_capture)?.setOnClickListener { requestCapturePermissionsAndSend() }
+        view.findViewById<LinearLayout>(R.id.cmd_wipe)?.setOnClickListener { confirmWipe() }
 
         loadDevices()
     }
@@ -119,6 +125,10 @@ class CommandsFragment : Fragment() {
         })
     }
 
+    /**
+     * Request camera and mic permissions contextually — only when user taps Capture.
+     * This is what real products do: ask in context, not upfront.
+     */
     private fun requestCapturePermissionsAndSend() {
         val hasCamera = ContextCompat.checkSelfPermission(
             requireContext(), Manifest.permission.CAMERA
@@ -132,20 +142,22 @@ class CommandsFragment : Fragment() {
             return
         }
 
+        // Show rationale before requesting
         if (shouldShowRequestPermissionRationale(Manifest.permission.CAMERA) ||
             shouldShowRequestPermissionRationale(Manifest.permission.RECORD_AUDIO)) {
-            AlertDialog.Builder(requireContext(), com.google.android.material.R.style.ThemeOverlay_Material3_MaterialAlertDialog)
+            AlertDialog.Builder(requireContext())
                 .setTitle("Evidence Capture")
                 .setMessage(
-                    "Magneetar needs camera and microphone to take a photo " +
-                    "and record audio when you send a capture command."
+                    "Magneetar needs camera and microphone access to take a photo " +
+                    "and record audio of anyone who tries to steal your phone.\n\n" +
+                    "This is only used when you send a capture command from your dashboard."
                 )
-                .setPositiveButton("Allow") { _, _ ->
+                .setPositiveButton("ALLOW") { _, _ ->
                     capturePermissionLauncher.launch(
                         arrayOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO)
                     )
                 }
-                .setNegativeButton("Not Now", null)
+                .setNegativeButton("NOT NOW", null)
                 .show()
         } else {
             capturePermissionLauncher.launch(
@@ -171,7 +183,9 @@ class CommandsFragment : Fragment() {
 
         showStatus("Sending $command...", true)
 
-        val body = JSONObject().apply { put("command", command) }.toString()
+        val body = JSONObject().apply {
+            put("command", command)
+        }.toString()
 
         val request = Request.Builder()
             .url("$serverUrl/api/dashboard/devices/$selectedDeviceId/commands")
@@ -191,7 +205,7 @@ class CommandsFragment : Fragment() {
                 val responseBody = response.body?.string() ?: ""
                 activity?.runOnUiThread {
                     if (response.isSuccessful) {
-                        showStatus("✓ $command sent", true)
+                        showStatus("✓ $command sent successfully", true)
                     } else {
                         val errorMsg = try {
                             JSONObject(responseBody).optString("detail", "Error ${response.code}")
@@ -209,10 +223,10 @@ class CommandsFragment : Fragment() {
             return
         }
 
-        AlertDialog.Builder(requireContext(), com.google.android.material.R.style.ThemeOverlay_Material3_MaterialAlertDialog)
-            .setTitle("Factory Reset")
-            .setMessage("This will erase ALL data on the device. This action cannot be undone.\n\nAre you sure?")
-            .setPositiveButton("Wipe Device") { _, _ -> sendCommand("wipe") }
+        AlertDialog.Builder(requireContext())
+            .setTitle("⚠️ Factory Reset")
+            .setMessage("This will ERASE ALL DATA on the device. This action cannot be undone.\n\nAre you sure?")
+            .setPositiveButton("WIPE DEVICE") { _, _ -> sendCommand("wipe") }
             .setNegativeButton("Cancel", null)
             .setCancelable(true)
             .show()
@@ -221,7 +235,7 @@ class CommandsFragment : Fragment() {
     private fun showStatus(message: String, success: Boolean) {
         tvStatus.text = message
         tvStatus.setTextColor(
-            ContextCompat.getColor(requireContext(), if (success) R.color.status_online else R.color.status_offline)
+            android.graphics.Color.parseColor(if (success) "#00FF88" else "#FF4444")
         )
         tvStatus.visibility = View.VISIBLE
     }

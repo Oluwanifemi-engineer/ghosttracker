@@ -2,16 +2,24 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="@drawable/btn_surface"
+    android:layout_marginBottom="8dp"
+    android:background="@drawable/card_surface"
     android:orientation="vertical"
-    android:padding="16dp"
-    android:layout_marginBottom="8dp">
+    android:padding="16dp">
 
-    <!-- Top row: Name + Status -->
+    <!-- Top row: name + status -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:orientation="horizontal"
         android:gravity="center_vertical">
+
+        <View
+            android:id="@+id/status_dot"
+            android:layout_width="8dp"
+            android:layout_height="8dp"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/dot_green" />
 
         <TextView
             android:id="@+id/tv_device_name"
@@ -19,17 +27,18 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="Device"
-            android:textColor="#F5F5F5"
+            android:textColor="#F0F6FC"
             android:textSize="15sp"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            android:fontFamily="sans-serif-medium" />
 
         <TextView
             android:id="@+id/tv_device_status"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Offline"
-            android:textSize="11sp"
-            android:textStyle="bold" />
+            android:textSize="12sp"
+            android:fontFamily="sans-serif-medium" />
     </LinearLayout>
 
     <!-- Model -->
@@ -37,41 +46,38 @@
         android:id="@+id/tv_device_model"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:layout_marginStart="16dp"
         android:text=""
-        android:textColor="#606060"
+        android:textColor="#8B949E"
         android:textSize="12sp"
-        android:layout_marginTop="2dp" />
+        android:fontFamily="sans-serif" />
 
-    <!-- Location -->
+    <!-- Bottom row: location + last seen -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:orientation="horizontal"
         android:layout_marginTop="8dp"
         android:gravity="center_vertical">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="📍"
-            android:textSize="12sp" />
 
         <TextView
             android:id="@+id/tv_device_location"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:layout_marginStart="6dp"
-            android:text="No location"
-            android:textColor="#707070"
+            android:text="—"
+            android:textColor="#8B949E"
             android:textSize="11sp"
-            android:fontFamily="monospace" />
+            android:fontFamily="sans-serif" />
 
         <TextView
             android:id="@+id/tv_device_last_seen"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text=""
-            android:textColor="#505050"
-            android:textSize="10sp" />
+            android:textColor="#484F58"
+            android:textSize="11sp"
+            android:fontFamily="sans-serif" />
     </LinearLayout>
 </LinearLayout>

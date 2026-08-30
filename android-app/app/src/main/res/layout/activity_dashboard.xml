@@ -1,38 +1,101 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="#0A0A0A">
+    android:background="#0D1117">
 
-    <!-- Top App Bar -->
-    <com.google.android.material.appbar.MaterialToolbar
-        android:id="@+id/topAppBar"
+    <!-- Content area -->
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
-        android:background="#0A0A0A"
-        android:elevation="4dp"
-        app:title="Magneetar"
-        app:titleTextColor="#F5F5F5"
-        app:subtitleTextColor="#707070" />
+        android:layout_height="match_parent"
+        android:orientation="vertical">
 
-    <!-- Fragment Container -->
+        <!-- Top App Bar -->
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/topAppBar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="#0D1117"
+            android:elevation="0dp"
+            app:titleTextColor="#F0F6FC"
+            app:subtitleTextColor="#8B949E"
+            app:titleTextAppearance="@style/TextAppearance.Material3.TitleMedium" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#21262D" />
+
+        <!-- Fragment container -->
+        <FrameLayout
+            android:id="@+id/fragment_container"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <!-- Bottom Navigation -->
+        <com.google.android.material.bottomnavigation.BottomNavigationView
+            android:id="@+id/bottom_nav"
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:background="#161B22"
+            app:itemIconTint="@color/bottom_nav_colors"
+            app:itemTextColor="@color/bottom_nav_colors"
+            app:labelVisibilityMode="labeled"
+            app:itemTextAppearanceActive="@style/TextAppearance.Material3.LabelSmall"
+            app:itemTextAppearanceInactive="@style/TextAppearance.Material3.LabelSmall"
+            app:elevation="8dp"
+            app:menu="@menu/bottom_nav_menu" />
+
+    </LinearLayout>
+
+    <!-- Lock overlay — shown after 2-min timeout (Opay-style) -->
     <FrameLayout
-        android:id="@+id/fragment_container"
+        android:id="@+id/lock_overlay"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1" />
+        android:layout_height="match_parent"
+        android:background="#0D1117"
+        android:clickable="true"
+        android:focusable="true"
+        android:visibility="gone">
 
-    <!-- Bottom Navigation -->
-    <com.google.android.material.bottomnavigation.BottomNavigationView
-        android:id="@+id/bottom_nav"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="#111111"
-        app:itemIconTint="@color/bottom_nav_colors"
-        app:itemTextColor="@color/bottom_nav_colors"
-        app:labelVisibilityMode="labeled"
-        app:menu="@menu/bottom_nav_menu" />
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="32dp">
 
-</LinearLayout>
+            <!-- Lock icon -->
+            <ImageView
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:layout_marginBottom="24dp"
+                android:src="@drawable/ic_action_lock"
+                android:contentDescription="Locked"
+                app:tint="#8B949E" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="App Locked"
+                android:textColor="#F0F6FC"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:fontFamily="sans-serif-medium"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Tap anywhere to sign in again"
+                android:textColor="#8B949E"
+                android:textSize="14sp"
+                android:fontFamily="sans-serif" />
+
+        </LinearLayout>
+    </FrameLayout>
+
+</FrameLayout>

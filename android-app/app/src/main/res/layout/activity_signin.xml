@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#0A0A0A"
-    android:fillViewport="true"
-    tools:context=".SignInActivity">
+    android:background="#0D1117"
+    android:fillViewport="true">
 
-    <RelativeLayout
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:orientation="vertical"
         android:padding="28dp">
 
         <!-- Back button -->
@@ -21,67 +21,52 @@
             android:padding="10dp"
             android:src="@drawable/ic_arrow_back"
             android:contentDescription="Back"
-            android:background="@drawable/btn_surface" />
+            android:background="@drawable/btn_surface"
+            app:tint="#8B949E" />
 
-        <!-- Magneetar logo -->
+        <!-- Logo -->
         <ImageView
-            android:id="@+id/iv_logo"
             android:layout_width="48dp"
             android:layout_height="48dp"
-            android:layout_below="@id/btn_back"
-            android:layout_marginTop="24dp"
-            android:layout_centerHorizontal="true"
+            android:layout_marginTop="40dp"
+            android:layout_gravity="center_horizontal"
             android:src="@drawable/magneetar_logo"
             android:contentDescription="@string/app_name" />
 
         <!-- Header -->
         <TextView
-            android:id="@+id/tv_title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_below="@id/iv_logo"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="24dp"
             android:text="@string/signin_title"
-            android:textColor="#F5F5F5"
+            android:textColor="#F0F6FC"
             android:textSize="28sp"
             android:textStyle="bold"
             android:fontFamily="sans-serif-medium" />
 
         <TextView
-            android:id="@+id/tv_subtitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_below="@id/tv_title"
             android:layout_marginTop="8dp"
             android:text="@string/signin_subtitle"
-            android:textColor="#808080"
+            android:textColor="#8B949E"
             android:textSize="14sp"
             android:fontFamily="sans-serif" />
 
         <!-- Form -->
         <LinearLayout
-            android:id="@+id/form_container"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_below="@id/tv_subtitle"
-            android:layout_marginTop="32dp"
+            android:layout_marginTop="36dp"
             android:orientation="vertical">
-
-            <!-- Server URL (hidden — hardcoded in BuildConfig) -->
-            <EditText
-                android:id="@+id/et_server_url"
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                android:visibility="gone"
-                android:hint="https://api.magneetar.me" />
 
             <!-- Email -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
-                android:text="@string/signin_email_hint"
-                android:textColor="#606060"
+                android:text="EMAIL"
+                android:textColor="#8B949E"
                 android:textSize="11sp"
                 android:letterSpacing="0.15"
                 android:fontFamily="sans-serif-medium" />
@@ -92,11 +77,11 @@
                 android:layout_height="52dp"
                 android:layout_marginBottom="20dp"
                 android:background="@drawable/input_background"
-                android:paddingLeft="16dp"
-                android:paddingRight="16dp"
-                android:textColor="#F5F5F5"
-                android:textColorHint="#404040"
-                android:textSize="14sp"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:textColor="#F0F6FC"
+                android:textColorHint="#484F58"
+                android:textSize="15sp"
                 android:hint="you@example.com"
                 android:inputType="textEmailAddress"
                 android:fontFamily="sans-serif" />
@@ -107,8 +92,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
-                android:text="@string/signin_password_hint"
-                android:textColor="#606060"
+                android:text="PASSWORD"
+                android:textColor="#8B949E"
                 android:textSize="11sp"
                 android:letterSpacing="0.15"
                 android:fontFamily="sans-serif-medium" />
@@ -117,25 +102,25 @@
                 android:id="@+id/et_password"
                 android:layout_width="match_parent"
                 android:layout_height="52dp"
+                android:layout_marginBottom="20dp"
                 android:background="@drawable/input_background"
-                android:paddingLeft="16dp"
-                android:paddingRight="16dp"
-                android:textColor="#F5F5F5"
-                android:textColorHint="#404040"
-                android:textSize="14sp"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:textColor="#F0F6FC"
+                android:textColorHint="#484F58"
+                android:textSize="15sp"
                 android:hint="Enter your password"
                 android:inputType="textPassword"
                 android:fontFamily="sans-serif" />
 
-            <!-- Two-factor authentication step (hidden until the server
-                 answers login with requires_2fa). -->
+            <!-- 2FA step (hidden by default) -->
             <TextView
                 android:id="@+id/tv_2fa_label"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
-                android:text="2-FACTOR CODE"
-                android:textColor="#606060"
+                android:text="VERIFICATION CODE"
+                android:textColor="#8B949E"
                 android:textSize="11sp"
                 android:letterSpacing="0.15"
                 android:fontFamily="sans-serif-medium"
@@ -147,7 +132,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
                 android:text="Open your authenticator app and enter the 6-digit code"
-                android:textColor="#808080"
+                android:textColor="#8B949E"
                 android:textSize="12sp"
                 android:fontFamily="sans-serif"
                 android:visibility="gone" />
@@ -158,11 +143,11 @@
                 android:layout_height="52dp"
                 android:layout_marginBottom="20dp"
                 android:background="@drawable/input_background"
-                android:paddingLeft="16dp"
-                android:paddingRight="16dp"
-                android:textColor="#F5F5F5"
-                android:textColorHint="#404040"
-                android:textSize="14sp"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:textColor="#F0F6FC"
+                android:textColorHint="#484F58"
+                android:textSize="15sp"
                 android:hint="000000"
                 android:inputType="number"
                 android:maxLength="6"
@@ -174,63 +159,68 @@
                 android:id="@+id/tv_error"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
+                android:layout_marginTop="12dp"
                 android:visibility="gone"
-                android:textColor="#FF4444"
+                android:textColor="#F85149"
                 android:textSize="13sp"
                 android:gravity="center"
                 android:padding="12dp"
-                android:background="#15FF4444"
+                android:background="@drawable/bg_error"
                 android:fontFamily="sans-serif" />
 
-            <!-- Submit -->
-            <Button
-                android:id="@+id/btn_signin"
+            <!-- Submit button -->
+            <FrameLayout
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
-                android:layout_marginTop="24dp"
-                android:background="@drawable/btn_primary"
-                android:text="@string/signin_button"
-                android:textColor="#0A0A0A"
-                android:textSize="13sp"
-                android:textStyle="bold"
-                android:letterSpacing="0.2"
-                android:fontFamily="sans-serif-medium"
-                android:stateListAnimator="@null" />
+                android:layout_marginTop="24dp">
+
+                <Button
+                    android:id="@+id/btn_signin"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/btn_primary"
+                    android:text="SIGN IN"
+                    android:textColor="#FFFFFF"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.1"
+                    android:fontFamily="sans-serif-medium"
+                    android:stateListAnimator="@null" />
+
+                <ProgressBar
+                    android:id="@+id/progress_bar"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="center"
+                    android:indeterminateTint="#FFFFFF"
+                    android:visibility="gone" />
+            </FrameLayout>
 
         </LinearLayout>
 
-        <!-- Sign up link -->
-        <LinearLayout
-            android:layout_width="match_parent"
+        <!-- Footer -->
+        <TextView
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_below="@id/form_container"
-            android:layout_marginTop="24dp"
-            android:layout_marginBottom="32dp"
-            android:gravity="center"
-            android:orientation="horizontal">
+            android:layout_marginTop="32dp"
+            android:layout_gravity="center_horizontal"
+            android:text="Don't have an account?"
+            android:textColor="#8B949E"
+            android:textSize="14sp"
+            android:fontFamily="sans-serif" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/signin_no_account"
-                android:textColor="#606060"
-                android:textSize="13sp"
-                android:fontFamily="sans-serif" />
+        <TextView
+            android:id="@+id/tv_signup_link"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="4dp"
+            android:text="Sign Up"
+            android:textColor="#58A6FF"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:fontFamily="sans-serif-medium"
+            android:padding="8dp" />
 
-            <TextView
-                android:id="@+id/tv_signup_link"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginLeft="6dp"
-                android:text="Sign Up"
-                android:textColor="#00FF88"
-                android:textSize="13sp"
-                android:textStyle="bold"
-                android:fontFamily="sans-serif-medium" />
-
-        </LinearLayout>
-
-    </RelativeLayout>
-
+    </LinearLayout>
 </ScrollView>
