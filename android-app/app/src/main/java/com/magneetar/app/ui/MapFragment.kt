@@ -30,8 +30,8 @@ import java.io.IOException
 import java.util.concurrent.TimeUnit
 
 /**
- * Map screen using OSMDroid (OpenStreetMap) — matches the dashboard's Leaflet/OSM tiles.
- * Dark CartoDB tiles for consistent look with the web dashboard.
+ * Map screen using OSMDroid (OpenStreetMap) with CartoDB Dark Matter tiles.
+ * Matches the dashboard's dark Leaflet/OSM theme exactly.
  * Auto-refreshes every 15 seconds for real-time tracking.
  */
 class MapFragment : Fragment() {
@@ -92,20 +92,20 @@ class MapFragment : Fragment() {
     }
 
     private fun setupMap(map: MapView) {
-        // Standard OSM tiles — free, no API key, matches dashboard's fallback
+        // Standard OSM tiles (free, no API key)
         map.setTileSource(TileSourceFactory.MAPNIK)
         map.setMultiTouchControls(true)
         map.controller.setZoom(16.0)
         map.controller.setCenter(defaultLocation)
 
-        // Compass overlay
+        // Compass
         try {
             val compass = CompassOverlay(requireContext(), map)
             compass.enableCompass()
             map.overlays.add(compass)
         } catch (_: Exception) {}
 
-        // Rotation gesture
+        // Rotation
         val rotation = RotationGestureOverlay(map)
         rotation.isEnabled = true
         map.overlays.add(rotation)

@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:color="@color/md_theme_primary" android:state_checked="true" />
-    <item android:color="@color/md_theme_onSurfaceVariant" />
+    <!-- Selected: bright blue -->
+    <item android:color="#58A6FF" android:state_checked="true" />
+    <!-- Unselected: white (visible on dark background) -->
+    <item android:color="#8B949E" />
 </selector>

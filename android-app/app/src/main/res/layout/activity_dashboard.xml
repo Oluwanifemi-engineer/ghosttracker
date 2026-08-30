@@ -16,15 +16,10 @@
             android:id="@+id/topAppBar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            android:background="#0D1117"
-            android:elevation="0dp"
+            android:background="#161B22"
+            android:elevation="4dp"
             app:titleTextColor="#F0F6FC"
             app:subtitleTextColor="#8B949E" />
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="#21262D" />
 
         <!-- Fragment container -->
         <FrameLayout
@@ -33,21 +28,23 @@
             android:layout_height="0dp"
             android:layout_weight="1" />
 
-        <!-- Bottom Navigation — always visible -->
+        <!-- Bottom Navigation — visible with proper contrast -->
         <com.google.android.material.bottomnavigation.BottomNavigationView
             android:id="@+id/bottom_nav"
             android:layout_width="match_parent"
-            android:layout_height="64dp"
-            android:background="#161B22"
+            android:layout_height="68dp"
+            android:background="#1C2128"
+            android:elevation="12dp"
             app:itemIconTint="@color/bottom_nav_colors"
             app:itemTextColor="@color/bottom_nav_colors"
             app:labelVisibilityMode="labeled"
             app:elevation="8dp"
-            app:menu="@menu/bottom_nav_menu" />
+            app:menu="@menu/bottom_nav_menu"
+            app:itemActiveIndicatorStyle="@null" />
 
     </LinearLayout>
 
-    <!-- Lock overlay — shown after 2-min timeout -->
+    <!-- Lock overlay -->
     <FrameLayout
         android:id="@+id/lock_overlay"
         android:layout_width="match_parent"
