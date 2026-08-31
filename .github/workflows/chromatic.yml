@@ -1,0 +1,217 @@
+name: Chromatic Visual Regression
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'dashboard/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'dashboard/**'
+
+# Cancel in-progress runs for the same branch
+concurrency:
+  group: chromatic-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Job 1: Build and validate Storybook
+  build-storybook:
+    name: Build Storybook
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: dashboard/package-lock.json
+
+      - name: Install dependencies
+        working-directory: dashboard
+        run: npm ci
+
+      - name: Build Storybook
+        working-directory: dashboard
+        run: npm run build-storybook
+
+      - name: Upload Storybook build
+        uses: actions/upload-artifact@v4
+        with:
+          name: storybook-build
+          path: dashboard/storybook-static
+          retention-days: 1
+
+  # Job 2: Chromatic visual regression tests
+  chromatic:
+    name: Visual Regression Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: build-storybook
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for Chromatic baseline comparison
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: dashboard/package-lock.json
+
+      - name: Install dependencies
+        working-directory: dashboard
+        run: npm ci
+
+      - name: Download Storybook build
+        uses: actions/download-artifact@v4
+        with:
+          name: storybook-build
+          path: dashboard/storybook-static
+
+      # Determine Chromatic flags based on branch
+      - name: Determine Chromatic flags
+        id: chromatic-flags
+        run: |
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo "auto-accept=true" >> $GITHUB_OUTPUT
+            echo "exit-zero=true" >> $GITHUB_OUTPUT
+            echo "baseline=main" >> $GITHUB_OUTPUT
+          elif [ "${{ github.ref }}" = "refs/heads/develop" ]; then
+            echo "auto-accept=false" >> $GITHUB_OUTPUT
+            echo "exit-zero=true" >> $GITHUB_OUTPUT
+            echo "baseline=develop" >> $GITHUB_OUTPUT
+          else
+            echo "auto-accept=false" >> $GITHUB_OUTPUT
+            echo "exit-zero=false" >> $GITHUB_OUTPUT
+            echo "baseline=branch" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run Chromatic
+        uses: chromaui/action@latest
+        with:
+          projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
+          workingDir: dashboard
+          exitZeroOnChanges: ${{ steps.chromatic-flags.outputs.exit-zero == 'true' }}
+          exitOnceUploaded: true
+          onlyChanged: true
+          autoAcceptChanges: ${{ steps.chromatic-flags.outputs.auto-accept == 'true' && 'main' || '' }}
+          buildScriptName: build-storybook
+          # Skip Chromatic on certain conditions
+          skip: '${{ github.event.head_commit.message =~ "\\[skip chromatic\\]" }}'
+          # Upload source maps for better diffs
+          uploadArtifact: true
+          # Skip unnecessary builds
+          skipBuild: false
+        env:
+          CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
+
+      - name: Upload Chromatic report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: chromatic-report
+          path: |
+            dashboard/chromatic-results.json
+            dashboard/build-results.json
+          retention-days: 30
+
+  # Job 3: Comment on PR with visual changes summary
+  chromatic-comment:
+    name: PR Comment
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: chromatic
+    if: github.event_name == 'pull_request' && always()
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download Chromatic report
+        uses: actions/download-artifact@v4
+        with:
+          name: chromatic-report
+          path: ./report
+        continue-on-error: true
+
+      - name: Comment on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            // Read Chromatic results
+            let results = {};
+            try {
+              const data = fs.readFileSync('./report/chromatic-results.json', 'utf8');
+              results = JSON.parse(data);
+            } catch (e) {
+              console.log('No Chromatic results found');
+            }
+
+            const hasChanges = results.changed?.length > 0;
+            const hasErrors = results.error;
+
+            // Determine status
+            let status = '✅';
+            let message = 'No visual changes detected.';
+
+            if (hasErrors) {
+              status = '❌';
+              message = 'Visual regression tests failed.';
+            } else if (hasChanges) {
+              status = '⚠️';
+              message = `${results.changed.length} visual change(s) detected.`;
+            }
+
+            // Create comment
+            const body = `## ${status} Visual Regression Tests
+
+            ${message}
+
+            ${hasChanges ? `
+            ### Changed Components
+            ${results.changed.map(c => `- ${c}`).join('\\n')}
+
+            [Review changes in Chromatic](https://www.chromatic.com/builds?appId=${{ secrets.CHROMATIC_PROJECT_ID }})
+            ` : ''}
+
+            ---
+            *Automated by Chromatic Visual Regression Tests*`;
+
+            // Find existing comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const existingComment = comments.find(c =>
+              c.body.includes('Visual Regression Tests')
+            );
+
+            if (existingComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existingComment.id,
+                body: body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: body,
+              });
+            }

@@ -40,6 +40,9 @@ jobs:
           cd server
           python -m pytest tests/ -q --cov=. --cov-report=xml:coverage.xml --tb=no -q
 
+      - name: Generate coverage JSON for dashboard
+        run: python3 scripts/generate-coverage-json.py
+
       - name: Generate badge SVG
         run: |
           COVERAGE=$(python3 -c "
@@ -91,10 +94,10 @@ jobs:
 
           echo "Coverage: ${COVERAGE} (badge generated at docs/coverage-badge.svg)"
 
-      - name: Commit badge
+      - name: Commit badge and coverage JSON
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add docs/coverage-badge.svg
-          git diff --cached --quiet || git commit -m "chore(ci): update coverage badge [skip ci]"
+          git add docs/coverage-badge.svg dashboard/public/coverage.json
+          git diff --cached --quiet || git commit -m "chore(ci): update coverage badge + JSON [skip ci]"
           git push

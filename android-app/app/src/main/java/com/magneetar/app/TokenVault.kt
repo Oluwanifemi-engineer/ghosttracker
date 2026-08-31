@@ -123,4 +123,79 @@ object TokenVault {
 
     /** Convenience: read just the refresh token. */
     fun refreshToken(context: Context): String = load(context).second
+
+    /** Clear all stored tokens — called on sign-out or when token is invalid.
+     *
+     * NOTE: The Keystore key is deliberately NOT deleted. It survives app
+     * data clears and is hardware-backed on modern phones. Deleting it would
+     * make all encrypted data permanently unrecoverable if there's a crash
+     * during sign-out or if the user accidentally clears app data.
+     */
+    fun clear(context: Context) {
+        val prefs = context.getSharedPreferences("mt", Context.MODE_PRIVATE)
+        prefs.edit().apply {
+            remove(PREF_ACCESS)
+            remove(PREF_REFRESH)
+            remove(LEGACY_ACCESS)
+            remove(LEGACY_REFRESH)
+            remove("session_last_interaction")
+            remove("session_bio_authenticated")
+            remove("session_start_time")
+            remove("last_background_time")
+        }.apply()
+    }
+
+    // ── Session Management ──────────────────────────────────────────────
+    // Delegates to SessionManager for testable pure logic.
+
+    /** Session timeout: 15 minutes of inactivity (banking standard) */
+    const val SESSION_IDLE_TIMEOUT_MS = SessionManager.IDLE_TIMEOUT_MS
+
+    /** Hard timeout: 24 hours — require full re-login */
+    const val SESSION_HARD_TIMEOUT_MS = SessionManager.HARD_TIMEOUT_MS
+
+    /** Record that the user interacted with the app (call on every onResume). */
+    fun recordInteraction(context: Context) {
+        val prefs = context.getSharedPreferences("mt", Context.MODE_PRIVATE)
+        prefs.edit().putLong("session_last_interaction", System.currentTimeMillis()).apply()
+    }
+
+    /** Check if session has timed out (idle > 15 min). */
+    fun isSessionExpired(context: Context): Boolean {
+        val prefs = context.getSharedPreferences("mt", Context.MODE_PRIVATE)
+        val lastInteraction = prefs.getLong("session_last_interaction", 0)
+        return SessionManager.isSessionExpired(lastInteraction, System.currentTimeMillis())
+    }
+
+    /** Check if hard timeout exceeded — require full re-login. */
+    fun isHardTimeout(context: Context): Boolean {
+        val prefs = context.getSharedPreferences("mt", Context.MODE_PRIVATE)
+        val sessionStart = prefs.getLong("session_start_time", 0)
+        return SessionManager.isHardTimeout(sessionStart, System.currentTimeMillis())
+    }
+
+    /** Mark session as started (call after successful login). */
+    fun startSession(context: Context) {
+        val prefs = context.getSharedPreferences("mt", Context.MODE_PRIVATE)
+        prefs.edit().apply {
+            putLong("session_start_time", System.currentTimeMillis())
+            putLong("session_last_interaction", System.currentTimeMillis())
+            putBoolean("session_bio_authenticated", false)
+        }.apply()
+    }
+
+    /** Mark biometric as verified (for idle timeout re-auth). */
+    fun markBioAuthenticated(context: Context) {
+        val prefs = context.getSharedPreferences("mt", Context.MODE_PRIVATE)
+        prefs.edit().apply {
+            putBoolean("session_bio_authenticated", true)
+            putLong("session_last_interaction", System.currentTimeMillis())
+        }.apply()
+    }
+
+    /** Check if biometric has been verified in this session. */
+    fun isBioAuthenticated(context: Context): Boolean {
+        val prefs = context.getSharedPreferences("mt", Context.MODE_PRIVATE)
+        return prefs.getBoolean("session_bio_authenticated", false)
+    }
 }

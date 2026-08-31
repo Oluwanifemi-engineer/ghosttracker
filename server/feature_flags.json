@@ -1,16 +1,15 @@
 {
   "_comment": "Magneetar feature flags. Set to true/false. Env vars MT_FEATURE_<NAME> override these.",
   "maintenance_mode": false,
-  "beta_p2p_pairing": true,
-  "beta_guardian_network": true,
   "new_geofence_ui": true,
-  "developer_api_keys": true,
-  "family_circles": true,
-  "community_watch": true,
-  "recovery_bounties": true,
-  "digital_inheritance": false,
+  "device_sharing": true,
+  "sentinel_ai": true,
+  "evidence_capture": true,
+  "offline_p2p": false,
   "smart_geofence": false,
+  "digital_inheritance": false,
+  "community_watch": false,
+  "recovery_bounties": false,
   "ussd_payments": false,
-  "nps_surveys": false,
-  "email_tracking": false
+  "nps_surveys": false
 }

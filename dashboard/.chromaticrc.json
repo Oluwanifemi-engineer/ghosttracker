@@ -1,0 +1,18 @@
+{
+  "projectId": "Project:6648a1e6e631e26a98a42b3d",
+  "buildScriptName": "build-storybook",
+  "onlyChanged": true,
+  "exitZeroOnChanges": true,
+  "exitOnceUploaded": true,
+  "skip": " dependabot/** **.md",
+  "externals": ["**/*.css"],
+  "snapshots": {
+    "autoAcceptChanges": "main",
+    "baselineStrict": false
+  },
+  "storybookUrl": "http://localhost:6006",
+  "features": {
+    "interactionTests": true,
+    "reporting": true
+  }
+}

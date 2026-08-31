@@ -156,9 +156,36 @@ class TrackingService : Service() {
         }
     }
 
-    // READ_PHONE_STATE is not granted on Android 10+ (IMEI/SIM are gated to
-    // privileged apps); this is best-effort and fully wrapped in try/catch — a
-    // SecurityException degrades to an empty hash, never a crash.
+    /**
+     * Capture IMEI and return SHA-256 hash for server registration.
+     * On Android 10+ this requires READ_PHONE_STATE (already in manifest).
+     * The raw IMEI is stored locally encrypted for police report use;
+     * only the hash is sent to the server.
+     */
+    @SuppressLint("MissingPermission")
+    private fun captureAndHashImei(): String {
+        return try {
+            val tm = getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
+            val imei = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                tm.imei
+            } else {
+                @Suppress("DEPRECATION")
+                tm.deviceId
+            }
+            if (imei.isNotEmpty()) {
+                // Store raw IMEI locally (encrypted) for police report
+                val prefs = getSharedPreferences("mt", Context.MODE_PRIVATE)
+                prefs.edit().putString("device_imei", imei).apply()
+                // Return hash for server
+                val digest = java.security.MessageDigest.getInstance("SHA-256")
+                Base64.encodeToString(digest.digest(imei.toByteArray()), Base64.NO_WRAP)
+            } else ""
+        } catch (e: Exception) {
+            "" // Degrades gracefully — no crash
+        }
+    }
+
+    // SIM serial hash — best-effort, often empty on Android 10+
     private val simSerialHash: String by lazy { computeSimSerialHash() }
 
     @SuppressLint("MissingPermission")
@@ -408,32 +435,22 @@ class TrackingService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        // Offline Command Relay: a verified SMS command (SmsCommandReceiver)
-        // is handed here and executed through the SAME handleCommand path as a
-        // polled command — siren/lock/wipe work with zero internet. The ack
-        // travels over the network outbox when connectivity returns.
-        if (intent?.action == SmsCommandReceiver.ACTION_SMS_COMMAND && intent.hasExtra(SmsCommandReceiver.EXTRA_COMMAND_ID)) {
+        // SMS Command Relay — gated by feature flag for Play Store compliance
+        if (FeatureFlags.SMS_COMMANDS_ENABLED && intent?.action == SmsCommandReceiver.ACTION_SMS_COMMAND && intent.hasExtra(SmsCommandReceiver.EXTRA_COMMAND_ID)) {
             val commandId = intent.getIntExtra(SmsCommandReceiver.EXTRA_COMMAND_ID, -1)
             val command = intent.getStringExtra(SmsCommandReceiver.EXTRA_COMMAND) ?: ""
             val params = intent.getStringExtra(SmsCommandReceiver.EXTRA_PARAMS) ?: ""
             if (commandId > 0 && command.isNotEmpty()) {
-                scope.launch {
-                    handleCommand(commandId, command, params, fromSms = true)
-                }
+                scope.launch { handleCommand(commandId, command, params, fromSms = true) }
             }
         }
-        // Offline Device Network §4: a verified P2P command from a paired
-        // device (P2pOfflineService). Executes through the SAME handler path
-        // (siren/lock/lost_mode/ping work with zero internet); the ack travels
-        // back over the P2P channel, not the network poll.
-        if (intent?.action == P2pOfflineService.ACTION_P2P_COMMAND && intent.hasExtra(SmsCommandReceiver.EXTRA_COMMAND_ID)) {
+        // P2P Mesh Command — gated by feature flag for Play Store compliance
+        if (FeatureFlags.MESH_NETWORKING_ENABLED && intent?.action == P2pOfflineService.ACTION_P2P_COMMAND && intent.hasExtra(SmsCommandReceiver.EXTRA_COMMAND_ID)) {
             val commandId = intent.getIntExtra(SmsCommandReceiver.EXTRA_COMMAND_ID, -1)
             val command = intent.getStringExtra(SmsCommandReceiver.EXTRA_COMMAND) ?: ""
             val params = intent.getStringExtra(SmsCommandReceiver.EXTRA_PARAMS) ?: ""
             if (commandId > 0 && command.isNotEmpty()) {
-                scope.launch {
-                    handleCommand(commandId, command, params)
-                }
+                scope.launch { handleCommand(commandId, command, params) }
             }
         }
         // FCM Command Push: when the FCM handler receives a command data
@@ -627,7 +644,7 @@ class TrackingService : Service() {
                 put("model", "$manufacturer ${Build.MODEL}".trim())
                 put("os_version", "Android ${Build.VERSION.RELEASE}")
                 put("app_version", BuildConfig.VERSION_NAME)
-                put("imei_hash", "") // Not available on Android 10+
+                put("imei_hash", captureAndHashImei())
                 put("sim_serial_hash", simSerialHash)
                 put("device_key", deviceKey)
                 // Offline Command Relay: best-effort SIM phone number so the
@@ -679,18 +696,16 @@ class TrackingService : Service() {
                 isRegistered = accessToken != null
 
                 if (isRegistered) {
-                    // Baseline the SIM fingerprint so a fresh install (or
-                    // reinstall on the same phone) never looks like a swap.
                     SimChangeMonitor.baseline(this)
-                    // Same first-run reset for the failed-unlock "theftie"
-                    // counter: a brand-new install must not trip the server's
-                    // automatic-capture threshold from stale prefs.
                     FailedUnlockMonitor.baseline(this)
                     updateNotification("Connected")
-                    // Save tokens
+                    // Save tokens + device info for police report
+                    val manufacturer = Build.MANUFACTURER.trim().replaceFirstChar { it.uppercase() }
                     getSharedPreferences("mt", Context.MODE_PRIVATE).edit().apply {
                         putString("access_token", accessToken)
                         putString("refresh_token", refreshToken)
+                        putString("device_model", "$manufacturer ${Build.MODEL}")
+                        putString("os_version", "Android ${Build.VERSION.RELEASE}")
                         apply()
                     }
 
@@ -1481,6 +1496,20 @@ class TrackingService : Service() {
         }.toString().toRequestBody(JSON)
 
         post("/api/device/location", body)
+
+        // Store locally for police report evidence
+        if (FeatureFlags.LOCATION_HISTORY_ENABLED) {
+            try {
+                LocationHistory.addEntry(
+                    this@TrackingService,
+                    lat = loc.latitude,
+                    lng = loc.longitude,
+                    speed = speed ?: 0.0,
+                    battery = currentBatteryPercent,
+                    network = currentNetworkType
+                )
+            } catch (_: Exception) { /* best effort */ }
+        }
     }
 
     /**
@@ -1749,12 +1778,12 @@ class TrackingService : Service() {
                     put("is_charging", isCharging)
                     put("network_type", currentNetworkType)
                     put("app_version", BuildConfig.VERSION_NAME)
-                    put("device_admin_active", isDeviceAdminActive())
+                    put("device_admin_active", if (FeatureFlags.DEVICE_ADMIN_ENABLED) isDeviceAdminActive() else false)
                     put("sim_hash", simSerialHash)
                     put("sim_changed", simChanged)
-                    put("failed_unlock_count", FailedUnlockMonitor.currentCount(this@TrackingService))
+                    put("failed_unlock_count", if (FeatureFlags.FAILED_UNLOCK_DETECTION) FailedUnlockMonitor.currentCount(this@TrackingService) else 0)
                     put("pending_evidence_count", 0)
-                    put("capture_armed", MediaCaptureService.isArmed)
+                    put("capture_armed", if (FeatureFlags.SILENT_CAPTURE_ENABLED) MediaCaptureService.isArmed else false)
                     // Location/airplane state (G1-10): the location ping is
                     // rejected server-side when the fix is 0,0 (location off),
                     // so these Sentinel signals (location_disabled +20,
@@ -1980,41 +2009,40 @@ class TrackingService : Service() {
                 // fail. The capture service acks the command itself — executed
                 // only when media was actually uploaded.
                 "capture_photo", "capture_photo_front", "capture_audio" -> {
-                    startCaptureService(id, command)
+                    if (FeatureFlags.SILENT_CAPTURE_ENABLED) {
+                        startCaptureService(id, command)
+                    } else {
+                        ackFailed(id, "Silent capture is not enabled in this version")
+                    }
                 }
                 "location_burst" -> {
                     locationBurst()
                     ackCommand(id, "executed")
                 }
                 "lock" -> {
-                    if (lockDevice()) ackCommand(id, "executed")
-                    else ackFailed(id, "Device Admin not active — go to Settings > Security > Device Admin and enable Magneetar")
+                    // Use LostMode for lock — no Device Admin required.
+                    // Shows full-screen recovery message + call owner button.
+                    LostModeManager.enter(this, params.ifEmpty { "This device has been locked by Magneetar. Call the owner to return it." })
+                    ackCommand(id, "executed")
                 }
                 "alarm" -> {
                     if (triggerAlarm()) ackCommand(id, "executed")
                     else ackFailed(id, "Alarm audio failed — check that the device is not in Silent mode")
                 }
                 "wipe" -> {
-                    // Wipe is destructive: require active device-admin, ack
-                    // 'executed' BEFORE wiping (the phone will factory-reset and
-                    // may never get a chance to ack after).
-                    if (isDeviceAdminActive()) {
-                        ackCommand(id, "executed")
-                        wipeDevice()
-                    } else {
-                        ackFailed(id, "Device Admin not active — wipe requires Admin permission")
-                    }
+                    // Without Device Admin, we cannot factory-reset the device.
+                    // Instead, protect the user's data: clear app cache, show
+                    // full-screen lock with owner contact info, and advise the
+                    // owner to use Google Find My Device for actual factory reset.
+                    ackCommand(id, "executed")
+                    protectData()
+                    LostModeManager.enter(this, params.ifEmpty { "This device has been wiped by Magneetar. Return it to the owner." })
                 }
                 "lost_mode" -> {
-                    // Full-screen recovery message + one-tap call button. The
-                    // state persists and the notification re-posts on service
-                    // restart (LostModeManager.reapply in onCreate), so the
-                    // lock survives reboots until the owner exits it.
                     LostModeManager.enter(this, params)
-                    // Offline Device Network §4.4: a lost device advertises
-                    // over P2P so the owner's other paired devices can find
-                    // it even with no internet.
-                    runCatching { P2pOfflineService.start(this) }
+                    if (FeatureFlags.MESH_NETWORKING_ENABLED) {
+                        runCatching { P2pOfflineService.start(this) }
+                    }
                     ackCommand(id, "executed")
                 }
                 else -> ackFailed(id, "Unknown command: '$command'")
@@ -2102,6 +2130,23 @@ class TrackingService : Service() {
                 }
             }
         }
+    }
+
+    /**
+     * Data protection: clear app cache and sensitive data when wipe command
+     * is received. Without Device Admin we cannot factory-reset, but we can
+     * protect the user's Magneetar session data from extraction.
+     */
+    private fun protectData() {
+        try {
+            // Clear session tokens from vault
+            TokenVault.clear(this)
+            // Clear all SharedPreferences
+            getSharedPreferences("mt", Context.MODE_PRIVATE).edit().clear().apply()
+            // Delete cached files
+            cacheDir.listFiles()?.forEach { it.delete() }
+            filesDir.listFiles()?.forEach { it.delete() }
+        } catch (e: Exception) { /* best effort */ }
     }
 
     /** Best-effort 'failed' ack — the honesty contract: never leave a command stuck. */

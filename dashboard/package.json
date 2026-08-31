@@ -10,7 +10,16 @@
     "lint": "next lint",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:ci": "jest --ci --coverage --maxWorkers=2"
+    "test:ci": "jest --ci --coverage --maxWorkers=2",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:report": "playwright show-report",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build",
+    "test-storybook": "test-storybook",
+    "chromatic": "chromatic --project-token=${CHROMATIC_PROJECT_TOKEN}",
+    "chromatic:ci": "chromatic --exit-zero-on-changes --exit-once-uploaded",
+    "chromatic:main": "chromatic --auto-accept-changes=main"
   },
   "dependencies": {
     "clsx": "^2.1.1",
@@ -39,6 +48,22 @@
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.13",
     "ts-jest": "^29.4.12",
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "@playwright/test": "^1.48.0",
+    "@storybook/react": "^8.4.0",
+    "@storybook/react-vite": "^8.4.0",
+    "@storybook/addon-essentials": "^8.4.0",
+    "@storybook/addon-links": "^8.4.0",
+    "@storybook/addon-onboarding": "^8.4.0",
+    "@storybook/addon-interactions": "^8.4.0",
+    "@storybook/addon-a11y": "^8.4.0",
+    "@storybook/addon-designs": "^8.4.0",
+    "@storybook/blocks": "^8.4.0",
+    "@storybook/nextjs": "^8.4.0",
+    "storybook": "^8.4.0",
+    "chromatic": "^11.0.0",
+    "@sentry/nextjs": "^8.0.0",
+    "@sentry/react": "^8.0.0",
+    "@figma/code-connect": "^1.0.0"
   }
 }

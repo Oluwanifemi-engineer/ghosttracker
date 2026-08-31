@@ -17,6 +17,10 @@ from datetime import datetime, timezone
 from typing import Optional
 
 from alerts import normalize_phone_to_e164  # noqa: E402  (SMS inbound webhook)
+from api_versioning import (  # noqa: F401
+    api_version_middleware,
+    customize_openapi_schema,
+)
 from archive_monitor import archive_stale_devices_loop
 from auth import decode_token, hash_device_key, user_id_from_subject
 from config import settings
@@ -409,6 +413,13 @@ app = FastAPI(
     docs_url=None if _prod else "/docs",
     redoc_url=None if _prod else "/redoc",
     openapi_url=None if _prod else "/openapi.json",
+    openapi_tags=[
+        {"name": "Authentication", "description": "User registration, login, and token management"},
+        {"name": "Device", "description": "Device registration, location, media, and commands"},
+        {"name": "Dashboard", "description": "Web dashboard operations"},
+        {"name": "Security", "description": "2FA, password reset, email verification"},
+        {"name": "Monitoring", "description": "Metrics, health checks, and observability"},
+    ],
 )
 
 # CORS — permissive in dev, strict in production (also serves as the
@@ -478,6 +489,10 @@ async def maintenance_mode_middleware(request: Request, call_next):
         )
     return await call_next(request)
 
+
+# ─── API Version Middleware ───────────────────────────────────────────────────
+# Injects version headers, handles deprecated/sunset versions
+app.add_middleware(api_version_middleware)
 
 # ─── Include Route Modules ───────────────────────────────────────────────────
 
@@ -1365,6 +1380,15 @@ async def admin_websocket(websocket: WebSocket):
                 await websocket.send_json({"type": "stats_update", "data": stats})
     except WebSocketDisconnect:
         await admin_disconnect(websocket)
+
+
+# ─── Run ─────────────────────────────────────────────────────────────────────
+
+# ─── OpenAPI Schema Customization ──────────────────────────────────────────────
+# Enhances the auto-generated schema with version info, security schemes,
+# and comprehensive documentation for API consumers.
+if not _prod:
+    customize_openapi_schema(app)
 
 
 # ─── Run ─────────────────────────────────────────────────────────────────────

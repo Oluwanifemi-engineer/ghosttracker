@@ -127,13 +127,25 @@ async def register_user(req: UserRegisterRequest, request: Request):
         )
         db.commit()
 
-        log_audit("user_registered", actor=user_id, ip_address=client_ip, details=req.email)
-
-    # Send welcome email (fire-and-forget)
+        log_audit(
+            "user_registered", actor=user_id, ip_address=client_ip, details=req.email
+        )  # Send verification email via Resend (fire-and-forget)
     try:
-        from email_service import send_welcome
+        from user_security import _issue_email_token, send_transactional_email
 
-        send_welcome(req.display_name or req.email.split("@")[0], req.email)
+        raw_token = _issue_email_token("email_verify_tokens", user_id, 1440)  # 24h TTL
+        verify_url = f"{settings.DASHBOARD_URL.rstrip('/')}/verify-email?token={raw_token}"
+        display = req.display_name or req.email.split("@")[0]
+        await send_transactional_email(
+            req.email,
+            "Magneetar — Verify your email address",
+            (
+                f"Welcome to Magneetar, {display}!\n\n"
+                "Confirm your email address to secure your account.\n\n"
+                f"Verify link (valid 24 hours): {verify_url}\n\n"
+                "If you didn't create this account, ignore this email."
+            ),
+        )
     except Exception:
         pass  # Don't block signup if email fails
 

@@ -1,0 +1,150 @@
+/**
+ * Auto-generated from Figma design tokens
+ * Do not edit manually - run `node config/style-dictionary.js` to regenerate
+ */
+
+:root {
+  /* Brand Colors */
+  --color-brand-primary: #3b82f6;
+  --color-brand-primary-hover: #2563eb;
+  --color-brand-primary-active: #1d4ed8;
+
+  /* Semantic Colors */
+  --color-semantic-success: #22c55e;
+  --color-semantic-success-hover: #16a34a;
+  --color-semantic-warning: #f59e0b;
+  --color-semantic-warning-hover: #d97706;
+  --color-semantic-danger: #ef4444;
+  --color-semantic-danger-hover: #dc2626;
+  --color-semantic-info: #0ea5e9;
+  --color-semantic-info-hover: #0284c7;
+
+  /* Neutral Colors */
+  --color-neutral-50: #fafafa;
+  --color-neutral-100: #f5f5f5;
+  --color-neutral-200: #e5e5e5;
+  --color-neutral-300: #d4d4d4;
+  --color-neutral-400: #a3a3a3;
+  --color-neutral-500: #737373;
+  --color-neutral-600: #525252;
+  --color-neutral-700: #404040;
+  --color-neutral-800: #262626;
+  --color-neutral-900: #171717;
+  --color-neutral-950: #0a0a0a;
+
+  /* Background Colors */
+  --color-background-default: #0a0a0a;
+  --color-background-card: #1a1a2e;
+  --color-background-muted: #262626;
+  --color-background-elevated: #27272a;
+
+  /* Foreground Colors */
+  --color-foreground-default: #fafafa;
+  --color-foreground-muted: #a3a3a3;
+  --color-foreground-subtle: #737373;
+  --color-foreground-inverse: #0a0a0a;
+
+  /* Border Colors */
+  --color-border-default: #404040;
+  --color-border-muted: #262626;
+  --color-border-strong: #737373;
+
+  /* Spacing */
+  --spacing-0: 0px;
+  --spacing-1: 4px;
+  --spacing-2: 8px;
+  --spacing-3: 12px;
+  --spacing-4: 16px;
+  --spacing-5: 20px;
+  --spacing-6: 24px;
+  --spacing-8: 32px;
+  --spacing-10: 40px;
+  --spacing-12: 48px;
+  --spacing-16: 64px;
+
+  /* Font Sizes */
+  --font-size-xs: 12px;
+  --font-size-sm: 14px;
+  --font-size-base: 16px;
+  --font-size-lg: 18px;
+  --font-size-xl: 20px;
+  --font-size-2xl: 24px;
+  --font-size-3xl: 30px;
+  --font-size-4xl: 36px;
+
+  /* Font Weights */
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Line Heights */
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.75;
+
+  /* Border Radius */
+  --border-radius-none: 0px;
+  --border-radius-sm: 4px;
+  --border-radius-md: 8px;
+  --border-radius-lg: 12px;
+  --border-radius-xl: 16px;
+  --border-radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+
+  /* Transitions */
+  --transition-duration-fast: 150ms;
+  --transition-duration-normal: 200ms;
+  --transition-duration-slow: 300ms;
+  --transition-easing-default: cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-easing-in: cubic-bezier(0.4, 0, 1, 1);
+  --transition-easing-out: cubic-bezier(0, 0, 0.2, 1);
+  --transition-easing-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Breakpoints */
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-2xl: 1536px;
+
+  /* Z-Index */
+  --z-index-dropdown: 1000;
+  --z-index-sticky: 1020;
+  --z-index-fixed: 1030;
+  --z-index-modal-backdrop: 1040;
+  --z-index-modal: 1050;
+  --z-index-popover: 1060;
+  --z-index-tooltip: 1070;
+}
+
+/* Dark mode (default) */
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Colors remain the same in dark mode */
+  }
+}
+
+/* Light mode */
+@media (prefers-color-scheme: light) {
+  :root {
+    --color-background-default: #ffffff;
+    --color-background-card: #f8fafc;
+    --color-background-muted: #f1f5f9;
+    --color-background-elevated: #ffffff;
+
+    --color-foreground-default: #0a0a0a;
+    --color-foreground-muted: #64748b;
+    --color-foreground-subtle: #94a3b8;
+    --color-foreground-inverse: #fafafa;
+
+    --color-border-default: #e2e8f0;
+    --color-border-muted: #f1f5f9;
+    --color-border-strong: #94a3b8;
+  }
+}

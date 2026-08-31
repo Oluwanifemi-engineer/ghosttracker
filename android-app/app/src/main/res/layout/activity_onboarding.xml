@@ -3,7 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#0A0A0A"
+    android:background="@color/md_theme_background"
     android:fillViewport="true"
     tools:context=".OnboardingActivity">
 
@@ -33,7 +33,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
                 android:text="@string/app_name"
-                android:textColor="#FFFFFF"
+                android:textColor="@color/md_theme_onSurface"
                 android:textSize="28sp"
                 android:textStyle="bold"
                 android:letterSpacing="0.1"
@@ -43,8 +43,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:text="TACTICAL COMMAND CENTER"
-                android:textColor="#404040"
+                android:text="DEVICE PROTECTION"
+                android:textColor="@color/md_theme_onSurfaceVariant"
                 android:textSize="10sp"
                 android:letterSpacing="0.4"
                 android:fontFamily="sans-serif" />
@@ -64,20 +64,19 @@
             <View
                 android:layout_width="48dp"
                 android:layout_height="1dp"
-                android:background="#20FFFFFF" />
+                android:background="@color/md_theme_outlineVariant" />
 
             <View
                 android:layout_width="6dp"
                 android:layout_height="6dp"
                 android:layout_marginLeft="12dp"
                 android:layout_marginRight="12dp"
-                android:background="#00FF88"
-                android:alpha="0.5" />
+                android:background="@color/md_theme_primary" />
 
             <View
                 android:layout_width="48dp"
                 android:layout_height="1dp"
-                android:background="#20FFFFFF" />
+                android:background="@color/md_theme_outlineVariant" />
 
         </LinearLayout>
 
@@ -89,7 +88,7 @@
             android:layout_below="@id/divider"
             android:layout_marginTop="32dp"
             android:text="@string/onboarding_title"
-            android:textColor="#F5F5F5"
+            android:textColor="@color/md_theme_onSurface"
             android:textSize="22sp"
             android:textStyle="bold"
             android:textAlignment="center"
@@ -104,7 +103,7 @@
             android:layout_below="@id/title"
             android:layout_marginTop="16dp"
             android:text="@string/onboarding_subtitle"
-            android:textColor="#808080"
+            android:textColor="@color/md_theme_onSurfaceVariant"
             android:textSize="14sp"
             android:textAlignment="center"
             android:lineSpacingExtra="6dp"
@@ -131,15 +130,14 @@
                     android:layout_width="8dp"
                     android:layout_height="8dp"
                     android:layout_marginRight="14dp"
-                    android:background="#00FF88"
-                    android:alpha="0.8" />
+                    android:background="@color/md_theme_primary" />
 
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="@string/onboarding_feature_tracking"
-                    android:textColor="#C0C0C0"
+                    android:textColor="@color/md_theme_onSurfaceVariant"
                     android:textSize="13sp"
                     android:lineSpacingExtra="4dp"
                     android:fontFamily="sans-serif" />
@@ -156,15 +154,14 @@
                     android:layout_width="8dp"
                     android:layout_height="8dp"
                     android:layout_marginRight="14dp"
-                    android:background="#00FF88"
-                    android:alpha="0.6" />
+                    android:background="@color/md_theme_primary" />
 
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="@string/onboarding_feature_stealth"
-                    android:textColor="#C0C0C0"
+                    android:textColor="@color/md_theme_onSurfaceVariant"
                     android:textSize="13sp"
                     android:lineSpacingExtra="4dp"
                     android:fontFamily="sans-serif" />
@@ -181,15 +178,14 @@
                     android:layout_width="8dp"
                     android:layout_height="8dp"
                     android:layout_marginRight="14dp"
-                    android:background="#00FF88"
-                    android:alpha="0.4" />
+                    android:background="@color/md_theme_primary" />
 
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="@string/onboarding_feature_persistence"
-                    android:textColor="#C0C0C0"
+                    android:textColor="@color/md_theme_onSurfaceVariant"
                     android:textSize="13sp"
                     android:lineSpacingExtra="4dp"
                     android:fontFamily="sans-serif" />
@@ -206,15 +202,14 @@
                     android:layout_width="8dp"
                     android:layout_height="8dp"
                     android:layout_marginRight="14dp"
-                    android:background="#00FF88"
-                    android:alpha="0.3" />
+                    android:background="@color/md_theme_primary" />
 
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="@string/onboarding_feature_remote"
-                    android:textColor="#C0C0C0"
+                    android:textColor="@color/md_theme_onSurfaceVariant"
                     android:textSize="13sp"
                     android:lineSpacingExtra="4dp"
                     android:fontFamily="sans-serif" />
@@ -238,7 +233,7 @@
                 android:layout_height="56dp"
                 android:background="@drawable/btn_primary"
                 android:text="@string/onboarding_get_started"
-                android:textColor="#0A0A0A"
+                android:textColor="@color/md_theme_onPrimary"
                 android:textSize="13sp"
                 android:textStyle="bold"
                 android:letterSpacing="0.2"
@@ -252,7 +247,7 @@
                 android:layout_marginTop="12dp"
                 android:background="@drawable/btn_secondary"
                 android:text="@string/onboarding_sign_in"
-                android:textColor="#C0C0C0"
+                android:textColor="@color/md_theme_onSurfaceVariant"
                 android:textSize="13sp"
                 android:textStyle="bold"
                 android:letterSpacing="0.2"
@@ -270,7 +265,7 @@
             android:layout_marginTop="32dp"
             android:layout_marginBottom="32dp"
             android:text="@string/app_version"
-            android:textColor="#303030"
+            android:textColor="@color/md_theme_onSurfaceVariant"
             android:textSize="11sp"
             android:textAlignment="center"
             android:fontFamily="sans-serif"

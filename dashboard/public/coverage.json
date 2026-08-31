@@ -1,0 +1,46 @@
+{
+  "timestamp": "2026-08-30T13:54:06.217749+00:00",
+  "overall": {
+    "rate": 80.5,
+    "total": 931,
+    "covered": 931
+  },
+  "backend": {
+    "rate": 76.1,
+    "total": 0,
+    "covered": 0,
+    "tests": 573,
+    "passed": 573,
+    "failed": 0
+  },
+  "dashboard": {
+    "rate": 85.0,
+    "tests": 208,
+    "passed": 208,
+    "failed": 0
+  },
+  "android": {
+    "tests": 150,
+    "passed": 150
+  },
+  "modules": [
+    {
+      "name": "/",
+      "rate": 0,
+      "total": 0,
+      "covered": 0
+    },
+    {
+      "name": "routes",
+      "rate": 0,
+      "total": 0,
+      "covered": 0
+    },
+    {
+      "name": "tests",
+      "rate": 0,
+      "total": 0,
+      "covered": 0
+    }
+  ]
+}

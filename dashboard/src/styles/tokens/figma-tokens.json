@@ -1,0 +1,448 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "color": {
+    "brand": {
+      "primary": {
+        "$value": "#3b82f6",
+        "$type": "color",
+        "$description": "Primary brand color - used for CTAs and key interactions"
+      },
+      "primary-hover": {
+        "$value": "#2563eb",
+        "$type": "color",
+        "$description": "Primary color on hover state"
+      },
+      "primary-active": {
+        "$value": "#1d4ed8",
+        "$type": "color",
+        "$description": "Primary color on active/pressed state"
+      }
+    },
+    "semantic": {
+      "success": {
+        "$value": "#22c55e",
+        "$type": "color",
+        "$description": "Success state - online devices, completed actions"
+      },
+      "success-hover": {
+        "$value": "#16a34a",
+        "$type": "color"
+      },
+      "warning": {
+        "$value": "#f59e0b",
+        "$type": "color",
+        "$description": "Warning state - low battery, degraded signal"
+      },
+      "warning-hover": {
+        "$value": "#d97706",
+        "$type": "color"
+      },
+      "danger": {
+        "$value": "#ef4444",
+        "$type": "color",
+        "$description": "Danger state - stolen device, destructive actions"
+      },
+      "danger-hover": {
+        "$value": "#dc2626",
+        "$type": "color"
+      },
+      "info": {
+        "$value": "#0ea5e9",
+        "$type": "color",
+        "$description": "Informational state"
+      },
+      "info-hover": {
+        "$value": "#0284c7",
+        "$type": "color"
+      }
+    },
+    "neutral": {
+      "50": {
+        "$value": "#fafafa",
+        "$type": "color"
+      },
+      "100": {
+        "$value": "#f5f5f5",
+        "$type": "color"
+      },
+      "200": {
+        "$value": "#e5e5e5",
+        "$type": "color"
+      },
+      "300": {
+        "$value": "#d4d4d4",
+        "$type": "color"
+      },
+      "400": {
+        "$value": "#a3a3a3",
+        "$type": "color"
+      },
+      "500": {
+        "$value": "#737373",
+        "$type": "color"
+      },
+      "600": {
+        "$value": "#525252",
+        "$type": "color"
+      },
+      "700": {
+        "$value": "#404040",
+        "$type": "color"
+      },
+      "800": {
+        "$value": "#262626",
+        "$type": "color"
+      },
+      "900": {
+        "$value": "#171717",
+        "$type": "color"
+      },
+      "950": {
+        "$value": "#0a0a0a",
+        "$type": "color"
+      }
+    },
+    "background": {
+      "default": {
+        "$value": "{color.neutral.950}",
+        "$type": "color",
+        "$description": "Main background color"
+      },
+      "card": {
+        "$value": "#1a1a2e",
+        "$type": "color",
+        "$description": "Card and panel background"
+      },
+      "muted": {
+        "$value": "{color.neutral.800}",
+        "$type": "color",
+        "$description": "Muted background for subtle elements"
+      },
+      "elevated": {
+        "$value": "#27272a",
+        "$type": "color",
+        "$description": "Elevated surfaces (modals, dropdowns)"
+      }
+    },
+    "foreground": {
+      "default": {
+        "$value": "{color.neutral.50}",
+        "$type": "color",
+        "$description": "Default text color"
+      },
+      "muted": {
+        "$value": "{color.neutral.400}",
+        "$type": "color",
+        "$description": "Muted text color"
+      },
+      "subtle": {
+        "$value": "{color.neutral.500}",
+        "$type": "color",
+        "$description": "Subtle text color"
+      },
+      "inverse": {
+        "$value": "{color.neutral.950}",
+        "$type": "color",
+        "$description": "Inverse text (on light backgrounds)"
+      }
+    },
+    "border": {
+      "default": {
+        "$value": "{color.neutral.700}",
+        "$type": "color",
+        "$description": "Default border color"
+      },
+      "muted": {
+        "$value": "{color.neutral.800}",
+        "$type": "color",
+        "$description": "Muted border color"
+      },
+      "strong": {
+        "$value": "{color.neutral.500}",
+        "$type": "color",
+        "$description": "Stronger border for emphasis"
+      }
+    }
+  },
+  "spacing": {
+    "0": {
+      "$value": "0px",
+      "$type": "dimension"
+    },
+    "1": {
+      "$value": "4px",
+      "$type": "dimension",
+      "$description": "Extra small spacing"
+    },
+    "2": {
+      "$value": "8px",
+      "$type": "dimension",
+      "$description": "Small spacing"
+    },
+    "3": {
+      "$value": "12px",
+      "$type": "dimension"
+    },
+    "4": {
+      "$value": "16px",
+      "$type": "dimension",
+      "$description": "Medium spacing (base unit)"
+    },
+    "5": {
+      "$value": "20px",
+      "$type": "dimension"
+    },
+    "6": {
+      "$value": "24px",
+      "$type": "dimension",
+      "$description": "Large spacing"
+    },
+    "8": {
+      "$value": "32px",
+      "$type": "dimension",
+      "$description": "Extra large spacing"
+    },
+    "10": {
+      "$value": "40px",
+      "$type": "dimension"
+    },
+    "12": {
+      "$value": "48px",
+      "$type": "dimension",
+      "$description": "2XL spacing"
+    },
+    "16": {
+      "$value": "64px",
+      "$type": "dimension",
+      "$description": "3XL spacing"
+    }
+  },
+  "fontSize": {
+    "xs": {
+      "$value": "12px",
+      "$type": "dimension",
+      "$description": "Extra small text"
+    },
+    "sm": {
+      "$value": "14px",
+      "$type": "dimension",
+      "$description": "Small text"
+    },
+    "base": {
+      "$value": "16px",
+      "$type": "dimension",
+      "$description": "Base text size"
+    },
+    "lg": {
+      "$value": "18px",
+      "$type": "dimension",
+      "$description": "Large text"
+    },
+    "xl": {
+      "$value": "20px",
+      "$type": "dimension",
+      "$description": "Extra large text"
+    },
+    "2xl": {
+      "$value": "24px",
+      "$type": "dimension",
+      "$description": "2XL text"
+    },
+    "3xl": {
+      "$value": "30px",
+      "$type": "dimension",
+      "$description": "3XL text"
+    },
+    "4xl": {
+      "$value": "36px",
+      "$type": "dimension",
+      "$description": "4XL text"
+    }
+  },
+  "fontWeight": {
+    "normal": {
+      "$value": "400",
+      "$type": "fontWeight"
+    },
+    "medium": {
+      "$value": "500",
+      "$type": "fontWeight"
+    },
+    "semibold": {
+      "$value": "600",
+      "$type": "fontWeight"
+    },
+    "bold": {
+      "$value": "700",
+      "$type": "fontWeight"
+    }
+  },
+  "lineHeight": {
+    "tight": {
+      "$value": "1.25",
+      "$type": "number",
+      "$description": "Tight line height for headings"
+    },
+    "normal": {
+      "$value": "1.5",
+      "$type": "number",
+      "$description": "Normal line height for body text"
+    },
+    "relaxed": {
+      "$value": "1.75",
+      "$type": "number",
+      "$description": "Relaxed line height"
+    }
+  },
+  "borderRadius": {
+    "none": {
+      "$value": "0px",
+      "$type": "dimension"
+    },
+    "sm": {
+      "$value": "4px",
+      "$type": "dimension",
+      "$description": "Small radius"
+    },
+    "md": {
+      "$value": "8px",
+      "$type": "dimension",
+      "$description": "Medium radius (default)"
+    },
+    "lg": {
+      "$value": "12px",
+      "$type": "dimension",
+      "$description": "Large radius"
+    },
+    "xl": {
+      "$value": "16px",
+      "$type": "dimension",
+      "$description": "Extra large radius"
+    },
+    "full": {
+      "$value": "9999px",
+      "$type": "dimension",
+      "$description": "Full radius (circles, pills)"
+    }
+  },
+  "shadow": {
+    "sm": {
+      "$value": "0 1px 2px 0 rgb(0 0 0 / 0.05)",
+      "$type": "shadow",
+      "$description": "Small shadow"
+    },
+    "md": {
+      "$value": "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)",
+      "$type": "shadow",
+      "$description": "Medium shadow"
+    },
+    "lg": {
+      "$value": "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
+      "$type": "shadow",
+      "$description": "Large shadow"
+    },
+    "xl": {
+      "$value": "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)",
+      "$type": "shadow",
+      "$description": "Extra large shadow"
+    }
+  },
+  "transition": {
+    "duration": {
+      "fast": {
+        "$value": "150ms",
+        "$type": "duration",
+        "$description": "Fast transition (hover states)"
+      },
+      "normal": {
+        "$value": "200ms",
+        "$type": "duration",
+        "$description": "Normal transition"
+      },
+      "slow": {
+        "$value": "300ms",
+        "$type": "duration",
+        "$description": "Slow transition (modals, drawers)"
+      }
+    },
+    "easing": {
+      "default": {
+        "$value": "cubic-bezier(0.4, 0, 0.2, 1)",
+        "$type": "cubicBezier",
+        "$description": "Default easing"
+      },
+      "in": {
+        "$value": "cubic-bezier(0.4, 0, 1, 1)",
+        "$type": "cubicBezier",
+        "$description": "Ease in"
+      },
+      "out": {
+        "$value": "cubic-bezier(0, 0, 0.2, 1)",
+        "$type": "cubicBezier",
+        "$description": "Ease out"
+      },
+      "in-out": {
+        "$value": "cubic-bezier(0.4, 0, 0.2, 1)",
+        "$type": "cubicBezier",
+        "$description": "Ease in out"
+      }
+    }
+  },
+  "breakpoint": {
+    "sm": {
+      "$value": "640px",
+      "$type": "dimension",
+      "$description": "Small breakpoint (mobile landscape)"
+    },
+    "md": {
+      "$value": "768px",
+      "$type": "dimension",
+      "$description": "Medium breakpoint (tablet)"
+    },
+    "lg": {
+      "$value": "1024px",
+      "$type": "dimension",
+      "$description": "Large breakpoint (desktop)"
+    },
+    "xl": {
+      "$value": "1280px",
+      "$type": "dimension",
+      "$description": "Extra large breakpoint"
+    },
+    "2xl": {
+      "$value": "1536px",
+      "$type": "dimension",
+      "$description": "2XL breakpoint"
+    }
+  },
+  "zIndex": {
+    "dropdown": {
+      "$value": "1000",
+      "$type": "number"
+    },
+    "sticky": {
+      "$value": "1020",
+      "$type": "number"
+    },
+    "fixed": {
+      "$value": "1030",
+      "$type": "number"
+    },
+    "modal-backdrop": {
+      "$value": "1040",
+      "$type": "number"
+    },
+    "modal": {
+      "$value": "1050",
+      "$type": "number"
+    },
+    "popover": {
+      "$value": "1060",
+      "$type": "number"
+    },
+    "tooltip": {
+      "$value": "1070",
+      "$type": "number"
+    }
+  }
+}

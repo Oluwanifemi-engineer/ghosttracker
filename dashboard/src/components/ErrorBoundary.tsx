@@ -1,6 +1,21 @@
-'use client';
+/**
+ * Sentry Error Boundary Component
+ *
+ * Catches React component errors and reports them to Sentry.
+ * Provides a fallback UI when errors occur.
+ *
+ * Usage:
+ * ```tsx
+ * <SentryErrorBoundary fallback={<ErrorFallback />}>
+ *   <MyComponent />
+ * </SentryErrorBoundary>
+ * ```
+ */
 
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+"use client";
+
+import React, { Component, ErrorInfo, ReactNode } from "react";
+import * as Sentry from "@sentry/nextjs";
 
 interface Props {
   children: ReactNode;
@@ -13,91 +28,88 @@ interface State {
   error: Error | null;
 }
 
-/**
- * Error Boundary — catches unhandled React errors and displays a
- * fallback UI instead of breaking the entire page.
- *
- * Usage:
- *   <ErrorBoundary>
- *     <YourComponent />
- *   </ErrorBoundary>
- */
-export class ErrorBoundary extends Component<Props, State> {
-  constructor(props: Props) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
+export class SentryErrorBoundary extends Component<Props, State> {
+  public state: State = {
+    hasError: false,
+    error: null,
+  };
 
-  static getDerivedStateFromError(error: Error): State {
+  public static getDerivedStateFromError(error: Error): State {
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    console.error('[ErrorBoundary]', error, errorInfo);
+  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    // Report to Sentry
+    Sentry.withScope((scope) => {
+      scope.setExtras(errorInfo);
+      scope.setTag("component", "ErrorBoundary");
+      Sentry.captureException(error);
+    });
+
+    // Call optional error handler
     this.props.onError?.(error, errorInfo);
   }
 
-  handleRetry = () => {
-    this.setState({ hasError: false, error: null });
-  };
-
-  render() {
+  public render() {
     if (this.state.hasError) {
+      // Custom fallback UI
       if (this.props.fallback) {
         return this.props.fallback;
       }
 
-      return (
-        <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-          {/* Error icon */}
-          <div className="w-12 h-12 rounded-xl bg-mag-danger/10 border border-mag-danger/20 flex items-center justify-center mb-4">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-mag-danger">
-              <circle cx="12" cy="12" r="10" />
-              <line x1="12" y1="8" x2="12" y2="12" />
-              <line x1="12" y1="16" x2="12.01" y2="16" />
-            </svg>
-          </div>
-
-          <h3 className="text-sm font-bold text-mag-text mb-1">
-            Something went wrong
-          </h3>
-          <p className="text-[10px] font-mono text-mag-text-dim/50 mb-4 max-w-xs">
-            {this.state.error?.message || 'An unexpected error occurred'}
-          </p>
-
-          <button
-            onClick={this.handleRetry}
-            className="mag-btn-primary text-[10px]"
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="23 4 23 10 17 10" />
-              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
-            </svg>
-            RETRY
-          </button>
-
-          <p className="text-[8px] font-mono text-mag-text-dim/30 mt-4">
-            If this persists, check the server error log.
-          </p>
-        </div>
-      );
+      // Default fallback UI
+      return <DefaultErrorFallback error={this.state.error} />;
     }
 
     return this.props.children;
   }
 }
 
-/**
- * Error boundary wrapper for async API calls.
- * Usage: wrap async operations that might fail.
- */
-export function withErrorBoundary<T>(
-  promise: Promise<T>,
-  onError?: (error: Error) => void
-): Promise<T> {
-  return promise.catch((error) => {
-    console.error('[AsyncError]', error);
-    onError?.(error instanceof Error ? error : new Error(String(error)));
-    throw error;
-  });
+// Default fallback component
+function DefaultErrorFallback({ error }: { error: Error | null }) {
+  const handleRetry = () => {
+    window.location.reload();
+  };
+
+  const handleReport = () => {
+    Sentry.showReportDialog({
+      eventId: Sentry.lastEventId(),
+    });
+  };
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[400px] p-8 text-center">
+      <div className="text-6xl mb-4">⚠️</div>
+      <h2 className="text-2xl font-bold mb-2">Something went wrong</h2>
+      <p className="text-muted-foreground mb-6 max-w-md">
+        An unexpected error occurred. Our team has been notified and is
+        investigating the issue.
+      </p>
+
+      {process.env.NODE_ENV === "development" && error && (
+        <pre className="text-sm text-left bg-muted p-4 rounded-lg mb-6 max-w-2xl overflow-auto">
+          {error.message}
+          {error.stack && `\n\n${error.stack}`}
+        </pre>
+      )}
+
+      <div className="flex gap-4">
+        <button
+          onClick={handleRetry}
+          className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+        >
+          Try Again
+        </button>
+        <button
+          onClick={handleReport}
+          className="px-4 py-2 bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/90"
+        >
+          Report Issue
+        </button>
+      </div>
+    </div>
+  );
 }
+
+export { SentryErrorBoundary as ErrorBoundary };
+export default SentryErrorBoundary;

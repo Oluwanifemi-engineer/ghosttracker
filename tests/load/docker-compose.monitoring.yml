@@ -1,0 +1,70 @@
+version: '3.8'
+
+# Magneetar Load Testing Monitoring Stack
+# Grafana + Prometheus for k6 metrics visualization
+#
+# Usage:
+#   docker-compose -f docker-compose.monitoring.yml up -d
+#   k6 run --out prometheus tests/load/k6-full-api.js
+#   Open Grafana at http://localhost:3000
+
+services:
+  # Prometheus - Metrics collection
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: magneetar-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=7d'
+      - '--web.enable-lifecycle'
+    networks:
+      - monitoring
+
+  # Grafana - Visualization
+  grafana:
+    image: grafana/grafana:latest
+    container_name: magneetar-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=magneetar-dev
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana:/etc/grafana/provisioning/dashboards
+      - ./grafana/k6-dashboard.json:/var/lib/grafana/dashboards/k6-dashboard.json
+    networks:
+      - monitoring
+    depends_on:
+      - prometheus
+
+  # k6 with Prometheus output
+  # Run k6 tests with: docker-compose -f docker-compose.monitoring.yml run k6
+  k6:
+    image: grafana/k6:latest
+    container_name: magneetar-k6
+    volumes:
+      - ./../:/scripts
+    environment:
+      - K6_OUT=prometheus
+      - K6_PROMETHEUS_RW_SERVER_URL=http://prometheus:9090/api/v1/write
+    networks:
+      - monitoring
+    depends_on:
+      - prometheus
+
+volumes:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  monitoring:
+    driver: bridge

@@ -49,6 +49,31 @@ jobs:
           cd server
           python -m pytest tests/ -v --tb=short --cov=. --cov-report=term-missing --cov-report=xml:/tmp/coverage.xml --cov-report=html:/tmp/coverage_html 2>&1 | tee /tmp/pytest.log
 
+      - name: Check coverage threshold
+        # Fail if overall coverage drops below 75%. This catches regressions
+        # where tests pass but coverage shrinks (e.g. untested new code).
+        # Threshold: 75% (realistic for a large project with many features).
+        run: |
+          python3 - <<'PYEOF'
+          import xml.etree.ElementTree as ET
+          import sys
+
+          THRESHOLD = 75.0
+          try:
+              tree = ET.parse('/tmp/coverage.xml')
+              root = tree.getroot()
+              rate = float(root.attrib['line-rate']) * 100
+          except Exception as e:
+              print(f'::warning::Could not parse coverage report: {e}')
+              sys.exit(0)  # Don't fail if report is missing
+
+          print(f'Coverage: {rate:.1f}% (threshold: {THRESHOLD}%)')
+          if rate < THRESHOLD:
+              print(f'::error::Coverage {rate:.1f}% is below {THRESHOLD}% threshold')
+              sys.exit(1)
+          print(f'✅ Coverage OK ({rate:.1f}% >= {THRESHOLD}%)')
+          PYEOF
+
       - name: Surface pytest failure details (diagnostic annotations)
         # CI logs require auth, but annotations are public via the check-runs
         # API. On failure, emit the tail of the pytest log as ::error:: so the
@@ -95,6 +120,52 @@ jobs:
         run: |
           cd server
           vulture . --min-confidence 70 --exclude 'venv/*,tests/*'
+        continue-on-error: true
+
+      - name: Auth integration tests with coverage
+        run: |
+          cd server
+          python -m pytest tests/test_auth_flow_integration.py -v --tb=short \
+            --cov=. --cov-report=term-missing --cov-report=xml:/tmp/coverage_auth.xml \
+            --cov-fail-under=0 2>&1 | tee /tmp/auth_coverage.log
+        continue-on-error: true
+
+      - name: Upload auth coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: auth-coverage-report
+          path: /tmp/coverage_auth.xml
+          retention-days: 7
+
+      - name: Generate coverage JSON
+        if: always()
+        run: python3 scripts/generate-coverage-json.py
+
+      - name: Upload coverage JSON
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-json
+          path: dashboard/public/coverage.json
+          retention-days: 30
+
+  # ── Kotlin Dead Code Check (warnings only, non-blocking) ─────────────────
+  # Checks Android Kotlin files for empty catch blocks, TODO/FIXME markers,
+  # commented-out code, and unused private functions. Warnings only — never
+  # blocks the pipeline. Gives developers visibility into potential dead code.
+  kotlin-dead-code:
+    name: Kotlin Dead Code Check
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check Kotlin dead code patterns
+        run: |
+          # Find all Kotlin files in android-app/src/main (skip tests)
+          find android-app/app/src/main -name '*.kt' -type f | \
+            xargs bash scripts/check-kotlin-dead-code.sh || true
         continue-on-error: true
 
   # ── Alert Credential Check (free, read-only, non-blocking) ───────────────

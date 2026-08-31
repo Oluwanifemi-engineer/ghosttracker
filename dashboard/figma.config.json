@@ -1,0 +1,68 @@
+{
+  "codeConnect": {
+    "parser": "react",
+    "include": ["src/components/**/*.tsx"],
+    "exclude": ["src/components/**/*.test.tsx", "src/components/**/*.stories.tsx"],
+    "figmaFileKey": "YOUR_FIGMA_FILE_KEY",
+    "figmaToken": "${FIGMA_ACCESS_TOKEN}"
+  },
+  "figma": {
+    "fileKey": "YOUR_FIGMA_FILE_KEY",
+    "baseUrl": "https://www.figma.com/file",
+    "components": {
+      "Button": {
+        "figmaName": "Button",
+        "figmaNode": "1-2",
+        "props": {
+          "variant": {
+            "figmaProperty": "variant",
+            "mapping": {
+              "primary": "primary",
+              "secondary": "secondary",
+              "danger": "danger",
+              "ghost": "ghost",
+              "outline": "outline"
+            }
+          },
+          "size": {
+            "figmaProperty": "size",
+            "mapping": {
+              "small": "sm",
+              "medium": "md",
+              "large": "lg"
+            }
+          }
+        }
+      },
+      "Card": {
+        "figmaName": "Card",
+        "figmaNode": "3-4",
+        "props": {
+          "variant": {
+            "figmaProperty": "variant",
+            "mapping": {
+              "default": "default",
+              "elevated": "elevated",
+              "outlined": "outlined"
+            }
+          }
+        }
+      },
+      "StatusIndicator": {
+        "figmaName": "Status Badge",
+        "figmaNode": "5-6",
+        "props": {
+          "status": {
+            "figmaProperty": "status",
+            "mapping": {
+              "online": "online",
+              "offline": "offline",
+              "stolen": "stolen",
+              "warning": "warning"
+            }
+          }
+        }
+      }
+    }
+  }
+}
