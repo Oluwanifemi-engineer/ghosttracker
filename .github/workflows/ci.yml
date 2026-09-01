@@ -108,7 +108,7 @@ jobs:
 
       - name: Upload coverage report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-report
           path: |
@@ -132,7 +132,7 @@ jobs:
 
       - name: Upload auth coverage report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: auth-coverage-report
           path: /tmp/coverage_auth.xml
@@ -144,7 +144,7 @@ jobs:
 
       - name: Upload coverage JSON
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-json
           path: dashboard/public/coverage.json
@@ -358,7 +358,7 @@ jobs:
           npm run build
 
       - name: Upload static export
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: dashboard-static
           path: dashboard/out/
