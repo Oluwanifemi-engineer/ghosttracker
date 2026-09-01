@@ -2,13 +2,19 @@
 
 > **Anti-theft tracking for Android.** When your phone is stolen, Magneetar keeps reporting its location, captures evidence, and lets you lock or alarm it remotely.
 
-![Status](https://img.shields.io/badge/status-pilot-green)
-![Tests](https://img.shields.io/badge/tests-535%20backend%20%2B%20209%20dashboard-brightgreen)
+![Status](https://img.shields.io/badge/status-active%20development-blue)
+![Tests](https://img.shields.io/badge/tests-556%20backend%20%2B%20209%20dashboard-brightgreen)
 ![Python](https://img.shields.io/badge/python-3.12-blue)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.140-green)
 ![Kotlin](https://img.shields.io/badge/kotlin-Android-orange)
 
 ---
+
+## The Problem
+
+Every year, thousands of phones are stolen at universities across Nigeria and Africa. Students lose contact with families, and recovery attempts cost ₦45,000+ with no guarantee. Google Find My Device and Samsung Find My Mobile fail when the device is wiped or offline.
+
+Magneetar solves this by making the phone fight back — even after it's stolen.
 
 ## What it does
 
@@ -22,82 +28,114 @@
 | **Geofencing** | Safe zones with exit alerts and auto-actions |
 | **Push alerts** | Theft, SIM change, geofence exit → instant notification |
 | **Web dashboard** | See your devices on a live map from any browser |
+| **Family circles** | Life360-style shared location tracking |
+| **IMEI vault** | Secure storage and one-tap police report generation |
 
 ## Architecture
 
 ```
-Android App ──▶ Magneetar API ──▶ SQLite (WAL)
-  (Kotlin)       (FastAPI)        (Redis for WebSocket fan-out)
-                      │
-                      ▼
-                 Next.js Dashboard
+┌─────────────────┐     ┌──────────────────┐     ┌─────────────┐
+│  Android App    │────▶│  Magneetar API   │────▶│  PostgreSQL │
+│  (Kotlin)       │     │  (FastAPI)       │     │  (Neon)     │
+│                 │◀────│                  │◀────│             │
+│  - Tracking     │     │  - Auth (JWT)    │     └─────────────┘
+│  - Commands     │     │  - Device mgmt   │
+│  - Sentinel     │     │  - WebSocket     │     ┌─────────────┐
+│  - Evidence     │     │  - Alerts        │────▶│  Redis      │
+└─────────────────┘     └──────────────────┘     │  (cache +   │
+                           │                     │  pub/sub)   │
+                           ▼                     └─────────────┘
+                    ┌──────────────────┐
+                    │  Next.js Dashboard│
+                    │  (TypeScript)     │
+                    │                   │
+                    │  - Live map       │
+                    │  - Device cards   │
+                    │  - Alert feed     │
+                    │  - Remote commands│
+                    └──────────────────┘
 ```
 
-- **Server:** Python 3.12, FastAPI, SQLite with WAL mode, Redis for multi-worker WebSocket
-- **Dashboard:** Next.js 14, TypeScript, Tailwind CSS, Leaflet maps
-- **Android:** Kotlin, Jetpack, Firebase Cloud Messaging, Camera2 API
+| Component | Technology | Status |
+|-----------|-----------|--------|
+| Server | Python 3.12, FastAPI, SQLAlchemy | ✅ Deployed at api.magneetar.me |
+| Database | PostgreSQL (Neon) + Redis | ✅ Live |
+| Dashboard | Next.js 14, TypeScript, Tailwind, Leaflet | ✅ Live |
+| Android | Kotlin, Jetpack, Material Design 3 | 🔧 Working, UI needs polish |
+| CI/CD | GitHub Actions (7 workflows) | ✅ Automated |
 
-## Quick start
+## Quick Start
 
-### For testers
+### For Testers
 
-1. Download the APK (link sent by developer)
-2. Enable "Install from unknown sources"
+1. Download the APK from the releases page
+2. Enable "Install from unknown sources" on your Android device
 3. Open Magneetar → Sign Up → grant permissions
-4. Done — the app runs silently in the background
+4. The app runs silently in the background
 
-### For developers
+### For Developers
 
 ```bash
-# Clone and setup
+# Clone
 git clone <repo-url> && cd magneetar
-bash scripts/generate-env.sh   # Generate secrets
-make setup                      # Install dependencies
 
-# Run locally
-make server      # API on :8000
-make dashboard   # Dashboard on :3000
+# Server
+cd server
+python -m venv venv && source venv/bin/activate
+pip install -r requirements.txt
+pytest  # Run 556 tests
 
-# Run tests
-make test        # 535 backend + 209 dashboard tests
+# Dashboard
+cd ../dashboard
+npm install
+npm run dev
 
-# Deploy (Docker)
-bash scripts/deploy-mvp.sh
+# Android
+# Open android-app/ in Android Studio
 ```
 
-## Project structure
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed setup and coding conventions.
+
+## Project Structure
 
 ```
-server/                  # Python FastAPI backend
-├── main.py              # App setup, middleware, WebSocket
-├── routes/devices.py    # Device API (register, location, commands)
-├── routes/dashboard.py  # Dashboard API (login, devices, evidence)
-├── routes/admin.py      # Admin stats (WebSocket only)
-├── routes/metrics.py    # Observability endpoints
-├── auth.py              # JWT + device key authentication
-├── database.py          # SQLite schema + helpers
-├── sentinel.py          # Theft detection scoring
-├── alerts.py            # SMS/WhatsApp/push alerts
-├── models.py            # Pydantic request/response models
-└── tests/               # 535 tests
-
-dashboard/               # Next.js web dashboard
-├── src/app/             # Pages (landing, login, dashboard)
-├── src/components/      # UI components
-├── src/lib/             # API client
-└── src/__tests__/       # 209 tests
-
-android-app/             # Android Kotlin app
-├── app/src/main/java/   # Services & activities
-└── app/build.gradle.kts # Build config
-
-scripts/                 # Deploy & utilities
-├── deploy-mvp.sh        # One-command Docker deploy
-├── backup-db.sh         # Database backup
-└── generate-env.sh      # Secret generation
+magneetar/
+├── server/                    # FastAPI backend (3,900+ Python files)
+│   ├── main.py               # Entry point, middleware, WebSocket
+│   ├── routes/               # API modules (auth, devices, dashboard, commands)
+│   ├── models.py             # SQLAlchemy + Pydantic models
+│   ├── config.py             # Environment configuration
+│   └── tests/                # 556 pytest tests
+│
+├── android-app/               # Android app (107 Kotlin files)
+│   └── app/src/main/java/com/magneetar/app/
+│       ├── MainActivity.kt           # Onboarding router
+│       ├── SignInActivity.kt         # Biometric auth (Opay-style)
+│       ├── PermissionsActivity.kt    # Step-by-step permission flow
+│       ├── DashboardActivity.kt      # Main dashboard
+│       ├── HomeFragment.kt           # Security score, quick actions
+│       ├── MapFragment.kt            # OSMDroid live map
+│       ├── DevicesFragment.kt        # Device cards with commands
+│       ├── AlertsFragment.kt         # Activity feed
+│       ├── SecurityFragment.kt       # IMEI vault, emergency actions
+│       ├── TrackingService.kt        # Foreground service, location, heartbeat
+│       ├── SentinelEngine.kt         # Theft detection scoring
+│       └── CommandExecutor.kt        # Remote command handling
+│
+├── dashboard/                 # Next.js web dashboard (140 TypeScript files)
+│   └── src/
+│       ├── app/              # Pages (landing, login, dashboard)
+│       ├── components/       # React components
+│       ├── hooks/            # Custom hooks
+│       └── lib/              # API client, utilities
+│
+├── tests/                     # Integration tests
+├── scripts/                   # Deployment and utilities
+├── docs/                      # Documentation
+└── .github/workflows/         # 7 CI/CD workflows
 ```
 
-## API endpoints
+## API Endpoints
 
 **Device-facing (phone → server):**
 - `POST /api/device/register` — register device, get JWT
@@ -115,18 +153,27 @@ scripts/                 # Deploy & utilities
 - `POST /api/dashboard/geofence` — create geofence
 - `GET /api/dashboard/locations/{id}/export/csv` — location export
 
-**System:**
-- `GET /health` — health check
-- `GET /metrics` — Prometheus metrics
-- `WS /ws/dashboard` — real-time updates
+## What We Need
+
+We're looking for contributors to help with:
+
+| Role | What you'd do | Priority |
+|------|--------------|----------|
+| **Android UI Designer** | Rebuild app layouts in Jetpack Compose matching Figma designs | 🔴 Critical |
+| **Android Developer** | Improve tracking reliability, add features, fix bugs | 🟡 High |
+| **Backend Developer** | API improvements, scaling, new endpoints | 🟡 High |
+| **Dashboard Developer** | UI improvements, new features | 🟢 Medium |
+| **QA Tester** | Test on different Android devices, report bugs | 🟢 Medium |
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for how to get started.
 
 ## Security
 
 - **Device key auth:** Each device generates its own 256-bit secret key
 - **JWT tokens:** Short-lived access tokens, long-lived refresh tokens
-- **Encrypted at rest:** AES-256-GCM for location data and TOTP secrets
+- **Encrypted at rest:** AES-256-GCM for sensitive data
 - **Rate limiting:** Per-endpoint rate limits prevent abuse
-- **No tracking:** Photos only captured when theft is detected
+- **Device Admin:** Prevents unauthorized app uninstallation
 
 ## License
 
@@ -135,4 +182,4 @@ Converts to Apache 2.0 on 2030-08-01.
 
 ## Author
 
-Oluwanifemi Tinubu — Electronic and Electrical Engineering, OAU
+Oluwanifemi Tinubu — Electronic and Electrical Engineering, Obafemi Awolowo University
