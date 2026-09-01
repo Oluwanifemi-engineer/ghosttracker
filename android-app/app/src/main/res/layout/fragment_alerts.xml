@@ -1,54 +1,100 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="#0D1117"
-    android:padding="16dp">
+    android:background="@color/background">
 
-    <!-- Alert list -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rv_alerts"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:clipToPadding="false"
-        android:paddingBottom="80dp" />
-
-    <!-- Empty state -->
     <LinearLayout
-        android:id="@+id/emptyState"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:gravity="center"
+        android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:visibility="gone">
+        android:padding="20dp">
 
-        <ImageView
-            android:layout_width="64dp"
-            android:layout_height="64dp"
-            android:layout_marginBottom="16dp"
-            android:src="@drawable/ic_nav_alerts"
-            android:contentDescription="No alerts"
-            android:alpha="0.3" />
-
-        <TextView
-            android:layout_width="wrap_content"
+        <!-- Header with critical count -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="No alerts"
-            android:textColor="#F0F6FC"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:fontFamily="sans-serif-medium"
-            android:layout_marginBottom="8dp" />
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
 
-        <TextView
-            android:layout_width="wrap_content"
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Activity"
+                android:textColor="@color/text_primary"
+                android:textSize="24sp"
+                android:textStyle="bold"/>
+
+            <TextView
+                android:id="@+id/tv_critical_count"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="1 critical"
+                android:textColor="@color/alert_critical"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:visibility="gone"/>
+        </LinearLayout>
+
+        <!-- Filter chips -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="You'll see theft, SIM change, and\noffline alerts here"
-            android:textColor="#8B949E"
-            android:textSize="13sp"
-            android:fontFamily="sans-serif"
-            android:gravity="center" />
+            android:orientation="horizontal"
+            android:layout_marginTop="12dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:gravity="center"
+                android:text="All"
+                android:textColor="@color/background"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:paddingHorizontal="16dp"
+                android:background="@drawable/filter_active"
+                android:layout_marginEnd="8dp"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:gravity="center"
+                android:text="Security"
+                android:textColor="@color/text_secondary"
+                android:textSize="13sp"
+                android:paddingHorizontal="16dp"
+                android:background="@drawable/filter_inactive"
+                android:layout_marginEnd="8dp"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:gravity="center"
+                android:text="Location"
+                android:textColor="@color/text_secondary"
+                android:textSize="13sp"
+                android:paddingHorizontal="16dp"
+                android:background="@drawable/filter_inactive"/>
+        </LinearLayout>
+
+        <!-- Alert list -->
+        <TextView
+            android:id="@+id/tv_empty"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="No alerts yet"
+            android:textColor="@color/text_secondary"
+            android:textSize="14sp"
+            android:gravity="center"
+            android:padding="40dp"
+            android:visibility="gone"/>
+
+        <LinearLayout
+            android:id="@+id/layout_alert_list"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginTop="16dp"/>
     </LinearLayout>
-
-</LinearLayout>
+</ScrollView>

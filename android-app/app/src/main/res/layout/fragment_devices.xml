@@ -1,79 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="#0D1117"
-    android:padding="16dp">
+    android:background="@color/background">
 
-    <!-- Header -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:layout_marginBottom="16dp">
-
-        <TextView
-            android:id="@+id/tv_device_count"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="0 devices linked"
-            android:textColor="#8B949E"
-            android:textSize="13sp"
-            android:fontFamily="sans-serif" />
-
-        <ProgressBar
-            android:id="@+id/progress_bar"
-            android:layout_width="20dp"
-            android:layout_height="20dp"
-            android:indeterminateTint="#8B949E"
-            android:visibility="gone" />
-    </LinearLayout>
-
-    <!-- Device list -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rv_devices"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:clipToPadding="false"
-        android:paddingBottom="80dp" />
-
-    <!-- Empty state -->
-    <LinearLayout
-        android:id="@+id/emptyState"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:gravity="center"
         android:orientation="vertical"
-        android:visibility="gone">
-
-        <ImageView
-            android:layout_width="64dp"
-            android:layout_height="64dp"
-            android:layout_marginBottom="16dp"
-            android:src="@drawable/ic_nav_devices"
-            android:contentDescription="No devices"
-            android:alpha="0.3" />
+        android:padding="20dp">
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="No devices linked"
-            android:textColor="#F0F6FC"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:fontFamily="sans-serif-medium"
-            android:layout_marginBottom="8dp" />
+            android:text="My Devices"
+            android:textColor="@color/text_primary"
+            android:textSize="24sp"
+            android:textStyle="bold"/>
 
         <TextView
-            android:layout_width="wrap_content"
+            android:id="@+id/tv_empty"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Sign in on another device to link it"
-            android:textColor="#8B949E"
-            android:textSize="13sp"
-            android:fontFamily="sans-serif" />
+            android:text="No devices linked yet"
+            android:textColor="@color/text_secondary"
+            android:textSize="14sp"
+            android:gravity="center"
+            android:padding="40dp"
+            android:visibility="gone"/>
+
+        <LinearLayout
+            android:id="@+id/layout_device_list"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginTop="16dp"/>
     </LinearLayout>
-
-</LinearLayout>
+</ScrollView>

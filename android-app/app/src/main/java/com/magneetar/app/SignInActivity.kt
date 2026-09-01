@@ -11,13 +11,21 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import kotlinx.coroutines.*
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
 import okhttp3.RequestBody.Companion.toRequestBody
+import java.util.concurrent.TimeUnit
 
 /**
  * Premium sign-in screen — Opay-style flow.
  * Server URL is hardcoded in BuildConfig; never shown to the user.
  * Supports two-factor authentication (TOTP) as a second step.
+ *
+ * Architecture:
+ * - Shared OkHttpClient (connection pool reused across requests)
+ * - Proper coroutine scope with SupervisorJob (one failure doesn't cancel siblings)
+ * - Token refresh on app restart (handled by MainActivity)
+ * - Session tracking starts after successful login
  */
 class SignInActivity : AppCompatActivity() {
 
@@ -34,6 +42,12 @@ class SignInActivity : AppCompatActivity() {
 
     private var twoFactorToken: String? = null
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+
+    // Shared HTTP client — connection pool reused across all requests
+    private val httpClient: OkHttpClient = OkHttpClient.Builder()
+        .connectTimeout(15, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
+        .build()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -60,6 +74,13 @@ class SignInActivity : AppCompatActivity() {
         btnSignIn.isEnabled = true
         progressBar.visibility = View.GONE
 
+        // Pre-fill email if coming from sign-up
+        val prefilledEmail = intent.getStringExtra("email")
+        if (prefilledEmail != null) {
+            etEmail.setText(prefilledEmail)
+            etPassword.requestFocus()
+        }
+
         findViewById<TextView>(R.id.tv_signup_link).setOnClickListener {
             startActivity(Intent(this, SignUpActivity::class.java))
             finish()
@@ -83,6 +104,7 @@ class SignInActivity : AppCompatActivity() {
         val email = etEmail.text.toString().trim()
         val password = etPassword.text.toString()
 
+        // Validation
         if (email.isEmpty()) {
             showError("Enter your email")
             etEmail.requestFocus()
@@ -99,6 +121,17 @@ class SignInActivity : AppCompatActivity() {
             return
         }
 
+        // Check for duress PIN
+        if (SecurityManager.isDuressPinConfigured(this) && SecurityManager.isDuressPin(this, password)) {
+            // Duress PIN entered — show fake dashboard + send silent beacon
+            SecurityManager.triggerDuressMode(this)
+            startActivity(Intent(this, FakeDashboardActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            })
+            finish()
+            return
+        }
+
         hideError()
         setLoading(true)
 
@@ -110,14 +143,13 @@ class SignInActivity : AppCompatActivity() {
                     put("password", password)
                 }
 
-                val client = buildHttpClient()
-                val response = client.newCall(
+                val response = httpClient.newCall(
                     okhttp3.Request.Builder()
                         .url("$serverUrl/api/auth/user/login")
-                        .post(json.toString().toRequestBody("application/json".toMediaTypeOrNull()!!))
-                        .addHeader("Content-Type", "application/json")
+                        .post(json.toString().toRequestBody("application/json".toMediaType()))
                         .build()
                 ).execute()
+
                 val body = response.body?.string()
                 val httpCode = response.code
 
@@ -135,27 +167,17 @@ class SignInActivity : AppCompatActivity() {
                     val token = jsonResponse.getString("token")
                     val refreshToken = jsonResponse.optString("refresh_token", "")
 
-                    // Save server URL (hardcoded) + email
-                    with(getSharedPreferences("mt", MODE_PRIVATE).edit()) {
-                        putString("server_url", serverUrl)
-                        putString("user_email", email)
-                        putString("auth_method", "user")
-                        apply()
-                    }
-                    TokenVault.save(this@SignInActivity, token, refreshToken)
-                    TokenVault.startSession(this@SignInActivity)
+                    // Save credentials
+                    saveSession(email, token, refreshToken)
 
-                    // Link device to account in background
+                    // Link device in background
                     scope.launch { DeviceLinker.linkToAccount(this@SignInActivity, serverUrl, token) }
 
                     // Start background services
                     startServicesSafe()
 
                     withContext(Dispatchers.Main) {
-                        startActivity(Intent(this@SignInActivity, DashboardActivity::class.java).apply {
-                            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                        })
-                        finish()
+                        navigateToDashboard()
                     }
                 } else {
                     val errorMsg = parseError(body, httpCode)
@@ -216,14 +238,13 @@ class SignInActivity : AppCompatActivity() {
                     put("code", code)
                 }
 
-                val client = buildHttpClient()
-                val response = client.newCall(
+                val response = httpClient.newCall(
                     okhttp3.Request.Builder()
                         .url("$serverUrl/api/auth/user/login/2fa")
-                        .post(json.toString().toRequestBody("application/json".toMediaTypeOrNull()!!))
-                        .addHeader("Content-Type", "application/json")
+                        .post(json.toString().toRequestBody("application/json".toMediaType()))
                         .build()
                 ).execute()
+
                 val body = response.body?.string()
 
                 if (response.isSuccessful && body != null) {
@@ -231,21 +252,11 @@ class SignInActivity : AppCompatActivity() {
                     val token = jsonResponse.getString("token")
                     val refreshToken = jsonResponse.optString("refresh_token", "")
 
-                    with(getSharedPreferences("mt", MODE_PRIVATE).edit()) {
-                        putString("server_url", serverUrl)
-                        putString("auth_method", "user")
-                        apply()
-                    }
-                    TokenVault.save(this@SignInActivity, token, refreshToken)
-                    TokenVault.startSession(this@SignInActivity)
-
+                    saveSession(email, token, refreshToken)
                     startServicesSafe()
 
                     withContext(Dispatchers.Main) {
-                        startActivity(Intent(this@SignInActivity, DashboardActivity::class.java).apply {
-                            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                        })
-                        finish()
+                        navigateToDashboard()
                     }
                 } else {
                     val errorMsg = parseError(body, response.code)
@@ -257,6 +268,31 @@ class SignInActivity : AppCompatActivity() {
                 withContext(Dispatchers.Main) { setLoading(false) }
             }
         }
+    }
+
+    private fun saveSession(email: String, token: String, refreshToken: String) {
+        with(getSharedPreferences("mt", MODE_PRIVATE).edit()) {
+            putString("server_url", BuildConfig.SERVER_URL)
+            putString("user_email", email)
+            putString("auth_method", "user")
+            apply()
+        }
+        TokenVault.save(this@SignInActivity, token, refreshToken)
+        TokenVault.startSession(this@SignInActivity)
+    }
+
+    private fun navigateToDashboard() {
+        // Check if permissions need to be requested
+        if (!PermissionHelper.hasLocation(this) || !PermissionHelper.hasNotifications(this)) {
+            startActivity(Intent(this, PermissionsActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            })
+        } else {
+            startActivity(Intent(this, DashboardActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            })
+        }
+        finish()
     }
 
     private fun parseError(body: String?, httpCode: Int): String {
@@ -300,10 +336,4 @@ class SignInActivity : AppCompatActivity() {
             try { HealthCheckWorker.schedule(this) } catch (_: Exception) {}
         } catch (_: Exception) {}
     }
-
-    private fun buildHttpClient(): okhttp3.OkHttpClient =
-        okhttp3.OkHttpClient.Builder()
-            .connectTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
-            .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
-            .build()
 }

@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
+        android:id="@+id/nav_home"
+        android:icon="@drawable/ic_nav_home"
+        android:title="Home" />
+    <item
         android:id="@+id/nav_map"
         android:icon="@drawable/ic_nav_map"
         android:title="Map" />
@@ -9,15 +13,11 @@
         android:icon="@drawable/ic_nav_devices"
         android:title="Devices" />
     <item
-        android:id="@+id/nav_commands"
-        android:icon="@drawable/ic_nav_commands"
-        android:title="Commands" />
-    <item
         android:id="@+id/nav_alerts"
         android:icon="@drawable/ic_nav_alerts"
         android:title="Alerts" />
     <item
-        android:id="@+id/nav_settings"
+        android:id="@+id/nav_security"
         android:icon="@drawable/ic_nav_settings"
-        android:title="Settings" />
+        android:title="Security" />
 </menu>

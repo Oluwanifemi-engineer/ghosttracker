@@ -470,6 +470,7 @@ class TrackingService : Service() {
     // ── Registration & Auth ───────────────────────────────────────────────────
 
     private suspend fun registerDevice() {
+        android.util.Log.i("TrackingService", "registerDevice() called, isRegistered=$isRegistered, isRegistering=$isRegistering")
         if (isRegistering) return  // one registration attempt at a time
         isRegistering = true
         try {
@@ -633,6 +634,7 @@ class TrackingService : Service() {
 
     /** One registration attempt. Returns true when a token pair was minted. */
     private suspend fun tryRegisterOnce(): Boolean {
+        android.util.Log.i("TrackingService", "tryRegisterOnce() starting...")
         return try {
             val body = JSONObject().apply {
                 put("device_id", deviceId)
@@ -670,23 +672,42 @@ class TrackingService : Service() {
             var (code, response) = postRaw(
                 "/api/device/register", body, useApiKey = true, extraHeaders = extraHeaders
             )
+            android.util.Log.i("TrackingService", "Registration attempt: code=$code, response=${response?.take(200)}")
 
-            // If account linking was rejected (e.g. device already claimed by a
-            // different account), fall back to a plain registration so tracking
-            // still works — the device just stays unlinked.
+            // If account linking was rejected (e.g. device limit hit or
+            // device already claimed by a different account), fall back to
+            // a plain registration so tracking still works.
             if (code !in 200..299 && extraHeaders.isNotEmpty()) {
-                // Surface the silent-degradation trap: when the LINKED attempt
-                // was rejected because the account hit its device limit, the
-                // plain fallback would leave the phone invisible on the
-                // dashboard with zero feedback. Tell the owner what to do
-                // (delete a stale device or upgrade) instead of failing dark.
                 val linkedBody = response ?: ""
                 if (code == 403 && linkedBody.contains("limit", ignoreCase = true)) {
-                    notifyDeviceLimitReached()
+                    // Device limit hit — try to claim an existing device
+                    // by its fingerprint (reinstall recovery)
+                    android.util.Log.w("TrackingService", "Device limit hit, attempting claim...")
+                    val claimSuccess = tryClaimExistingDevice(userToken)
+                    if (claimSuccess) {
+                        // Claim succeeded — try registration again
+                        val (retryCode, retryBody) = postRaw("/api/device/register", body, useApiKey = true, extraHeaders = extraHeaders)
+                        if (retryCode in 200..299) {
+                            code = retryCode
+                            response = retryBody
+                        } else {
+                            // Still failing — register without linking
+                            val (plainCode, plainBody) = postRaw("/api/device/register", body, useApiKey = true)
+                            code = plainCode
+                            response = plainBody
+                        }
+                    } else {
+                        // Claim failed — register without linking
+                        notifyDeviceLimitReached()
+                        val (plainCode, plainBody) = postRaw("/api/device/register", body, useApiKey = true)
+                        code = plainCode
+                        response = plainBody
+                    }
+                } else {
+                    val (plainCode, plainBody) = postRaw("/api/device/register", body, useApiKey = true)
+                    code = plainCode
+                    response = plainBody
                 }
-                val (plainCode, plainBody) = postRaw("/api/device/register", body, useApiKey = true)
-                code = plainCode
-                response = plainBody
             }
 
             if (code in 200..299 && response != null) {
@@ -846,6 +867,36 @@ class TrackingService : Service() {
             }
         } catch (e: Exception) {
             // Non-breaking by design.
+        }
+    }
+
+    /**
+     * Try to claim an existing device by its device key.
+     * Used when device limit is hit — the device may already exist from
+     * a previous registration (reinstall recovery).
+     */
+    private suspend fun tryClaimExistingDevice(userToken: String): Boolean {
+        return try {
+            val body = JSONObject().apply {
+                put("device_id", deviceId)
+            }.toString().toRequestBody(JSON)
+
+            val (code, _) = withContext(Dispatchers.IO) {
+                try {
+                    val request = Request.Builder()
+                        .url("$SERVER/api/device/claim")
+                        .post(body)
+                        .addHeader("Authorization", "Bearer $userToken")
+                        .addHeader("x-device-key", deviceKey)
+                        .build()
+                    val response = client.newCall(request).execute()
+                    response.code to response.body?.string()
+                } catch (e: Exception) { -1 to null }
+            }
+            android.util.Log.i("TrackingService", "Claim attempt: code=$code")
+            code in 200..299
+        } catch (e: Exception) {
+            false
         }
     }
 

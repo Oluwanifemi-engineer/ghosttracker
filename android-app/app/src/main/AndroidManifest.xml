@@ -183,11 +183,24 @@
             android:windowSoftInputMode="adjustResize" />
 
         <!-- ─── Permissions ─────────────────────────────────────────────── -->
-        <!-- PermissionsActivity archived — permissions now requested contextually in UI fragments -->
+        <activity
+            android:name=".PermissionsActivity"
+            android:exported="false"
+            android:theme="@style/AppTheme"
+            android:windowSoftInputMode="adjustResize" />
 
         <!-- ─── Dashboard (Full in-app experience) ──────────────────────── -->
         <activity
             android:name=".DashboardActivity"
+            android:exported="false"
+            android:theme="@style/AppTheme"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- ─── Fake Dashboard (Duress mode decoy) ────────────────────── -->
+        <!-- Shown when duress PIN is entered. Looks like normal dashboard
+             but silently sends emergency beacon + records audio. -->
+        <activity
+            android:name=".FakeDashboardActivity"
             android:exported="false"
             android:theme="@style/AppTheme"
             android:windowSoftInputMode="adjustResize" />

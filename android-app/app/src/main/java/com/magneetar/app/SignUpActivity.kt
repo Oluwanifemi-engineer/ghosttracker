@@ -11,12 +11,20 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import kotlinx.coroutines.*
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
 import okhttp3.RequestBody.Companion.toRequestBody
+import java.util.concurrent.TimeUnit
 
 /**
  * Premium sign-up screen — Opay-style flow.
  * Server URL is hardcoded in BuildConfig; never shown to the user.
+ *
+ * Architecture:
+ * - Shared OkHttpClient (connection pool reused)
+ * - Proper coroutine scope with SupervisorJob
+ * - Password validation matches server-side rules
+ * - After signup, navigates to sign-in (pre-filled email)
  */
 class SignUpActivity : AppCompatActivity() {
 
@@ -30,6 +38,12 @@ class SignUpActivity : AppCompatActivity() {
     private lateinit var btnBack: View
 
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+
+    // Shared HTTP client
+    private val httpClient: OkHttpClient = OkHttpClient.Builder()
+        .connectTimeout(15, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
+        .build()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -127,45 +141,22 @@ class SignUpActivity : AppCompatActivity() {
                     put("password", password)
                 }
 
-                val client = buildHttpClient()
-                val response = client.newCall(
+                val response = httpClient.newCall(
                     okhttp3.Request.Builder()
-                        .url("$serverUrl/api/auth/user/register")
-                        .post(json.toString().toRequestBody("application/json".toMediaTypeOrNull()!!))
-                        .addHeader("Content-Type", "application/json")
+                        .url("$serverUrl/api/auth/register")
+                        .post(json.toString().toRequestBody("application/json".toMediaType()))
                         .build()
                 ).execute()
+
                 val body = response.body?.string()
 
                 if (response.isSuccessful && body != null) {
-                    val jsonResponse = org.json.JSONObject(body)
-                    val token = jsonResponse.getString("token")
-                    val refreshToken = jsonResponse.optString("refresh_token", "")
-
-                    with(getSharedPreferences("mt", MODE_PRIVATE).edit()) {
-                        putString("server_url", serverUrl)
-                        putString("user_email", email)
-                        putString("user_name", name)
-                        putString("auth_method", "user")
-                        apply()
-                    }
-                    TokenVault.save(this@SignUpActivity, token, refreshToken)
-                    TokenVault.startSession(this@SignUpActivity)
-
-                    // Mark onboarding as complete
-                    with(getSharedPreferences("mt", MODE_PRIVATE).edit()) {
-                        putBoolean("onboarding_complete", true)
-                        apply()
-                    }
-
-                    // Link device and start services
-                    scope.launch { DeviceLinker.linkToAccount(this@SignUpActivity, serverUrl, token) }
-                    startServicesSafe()
-
+                    // Account created → navigate to sign-in with pre-filled email
                     withContext(Dispatchers.Main) {
-                        startActivity(Intent(this@SignUpActivity, DashboardActivity::class.java).apply {
-                            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                        })
+                        val intent = Intent(this@SignUpActivity, SignInActivity::class.java)
+                        intent.putExtra("email", email)
+                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        startActivity(intent)
                         finish()
                     }
                 } else {
@@ -208,23 +199,4 @@ class SignUpActivity : AppCompatActivity() {
         progressBar.visibility = if (loading) View.VISIBLE else View.GONE
         btnSignUp.text = if (loading) "" else "CREATE ACCOUNT"
     }
-
-    private fun startServicesSafe() {
-        try {
-            androidx.core.content.ContextCompat.startForegroundService(
-                this, Intent(this, TrackingService::class.java)
-            )
-            androidx.core.content.ContextCompat.startForegroundService(
-                this, Intent(this, PersistenceService::class.java)
-            )
-            try { WatchdogReceiver.scheduleWatchdog(this) } catch (_: Exception) {}
-            try { HealthCheckWorker.schedule(this) } catch (_: Exception) {}
-        } catch (_: Exception) {}
-    }
-
-    private fun buildHttpClient(): okhttp3.OkHttpClient =
-        okhttp3.OkHttpClient.Builder()
-            .connectTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
-            .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
-            .build()
 }

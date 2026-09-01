@@ -1,59 +1,67 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="8dp"
-    android:background="@drawable/card_surface"
-    android:orientation="vertical"
-    android:padding="16dp">
+    app:cardBackgroundColor="@color/md_theme_surface"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="0dp"
+    app:strokeWidth="1dp"
+    app:strokeColor="@color/md_theme_outlineVariant">
 
-    <!-- Top: type + time -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical">
+        android:orientation="vertical"
+        android:padding="14dp">
 
-        <TextView
-            android:id="@+id/tv_alert_type"
-            android:layout_width="0dp"
+        <!-- Top: type + time -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="ALERT"
-            android:textSize="12sp"
-            android:textStyle="bold"
-            android:letterSpacing="0.1"
-            android:fontFamily="sans-serif-medium" />
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
 
+            <TextView
+                android:id="@+id/tv_alert_type"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="ALERT"
+                android:textAppearance="@style/TextAppearance.Magneetar.Overline"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tv_alert_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text=""
+                android:textAppearance="@style/TextAppearance.Magneetar.Caption"
+                android:textColor="@color/md_theme_onSurfaceVariant"
+                android:alpha="0.5" />
+        </LinearLayout>
+
+        <!-- Message -->
         <TextView
-            android:id="@+id/tv_alert_time"
+            android:id="@+id/tv_alert_message"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Alert received"
+            android:textAppearance="@style/TextAppearance.Magneetar.Body2"
+            android:textColor="@color/md_theme_onSurface" />
+
+        <!-- Device -->
+        <TextView
+            android:id="@+id/tv_alert_device"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
             android:text=""
-            android:textColor="#484F58"
-            android:textSize="11sp"
-            android:fontFamily="sans-serif" />
+            android:textAppearance="@style/TextAppearance.Magneetar.Caption"
+            android:textColor="@color/md_theme_onSurfaceVariant" />
+
     </LinearLayout>
 
-    <!-- Message -->
-    <TextView
-        android:id="@+id/tv_alert_message"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:text="Alert received"
-        android:textColor="#F0F6FC"
-        android:textSize="14sp"
-        android:fontFamily="sans-serif" />
-
-    <!-- Device -->
-    <TextView
-        android:id="@+id/tv_alert_device"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:text=""
-        android:textColor="#8B949E"
-        android:textSize="12sp"
-        android:fontFamily="sans-serif" />
-</LinearLayout>
+</com.google.android.material.card.MaterialCardView>

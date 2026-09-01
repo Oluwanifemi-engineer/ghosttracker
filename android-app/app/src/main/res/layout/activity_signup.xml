@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#0D1117"
+    android:background="@color/md_theme_background"
     android:fillViewport="true">
 
     <LinearLayout
@@ -22,7 +22,7 @@
             android:src="@drawable/ic_arrow_back"
             android:contentDescription="Back"
             android:background="@drawable/btn_surface"
-            app:tint="#8B949E" />
+            app:tint="@color/md_theme_onSurfaceVariant" />
 
         <!-- Logo -->
         <ImageView
@@ -39,7 +39,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
             android:text="@string/signup_title"
-            android:textColor="#F0F6FC"
+            android:textColor="@color/md_theme_onSurface"
             android:textSize="28sp"
             android:textStyle="bold"
             android:fontFamily="sans-serif-medium" />
@@ -49,7 +49,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:text="@string/signup_subtitle"
-            android:textColor="#8B949E"
+            android:textColor="@color/md_theme_onSurfaceVariant"
             android:textSize="14sp"
             android:fontFamily="sans-serif" />
 
@@ -66,7 +66,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
                 android:text="FULL NAME"
-                android:textColor="#8B949E"
+                android:textColor="@color/md_theme_onSurfaceVariant"
                 android:textSize="11sp"
                 android:letterSpacing="0.15"
                 android:fontFamily="sans-serif-medium" />
@@ -79,8 +79,8 @@
                 android:background="@drawable/input_background"
                 android:paddingStart="16dp"
                 android:paddingEnd="16dp"
-                android:textColor="#F0F6FC"
-                android:textColorHint="#484F58"
+                android:textColor="@color/md_theme_onSurface"
+                android:textColorHint="@color/md_theme_onSurfaceVariant"
                 android:textSize="15sp"
                 android:hint="Your name"
                 android:inputType="textPersonName"
@@ -92,7 +92,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
                 android:text="EMAIL"
-                android:textColor="#8B949E"
+                android:textColor="@color/md_theme_onSurfaceVariant"
                 android:textSize="11sp"
                 android:letterSpacing="0.15"
                 android:fontFamily="sans-serif-medium" />
@@ -105,8 +105,8 @@
                 android:background="@drawable/input_background"
                 android:paddingStart="16dp"
                 android:paddingEnd="16dp"
-                android:textColor="#F0F6FC"
-                android:textColorHint="#484F58"
+                android:textColor="@color/md_theme_onSurface"
+                android:textColorHint="@color/md_theme_onSurfaceVariant"
                 android:textSize="15sp"
                 android:hint="you@example.com"
                 android:inputType="textEmailAddress"
@@ -118,7 +118,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
                 android:text="PASSWORD"
-                android:textColor="#8B949E"
+                android:textColor="@color/md_theme_onSurfaceVariant"
                 android:textSize="11sp"
                 android:letterSpacing="0.15"
                 android:fontFamily="sans-serif-medium" />
@@ -131,8 +131,8 @@
                 android:background="@drawable/input_background"
                 android:paddingStart="16dp"
                 android:paddingEnd="16dp"
-                android:textColor="#F0F6FC"
-                android:textColorHint="#484F58"
+                android:textColor="@color/md_theme_onSurface"
+                android:textColorHint="@color/md_theme_onSurfaceVariant"
                 android:textSize="15sp"
                 android:hint="8+ characters with uppercase, lowercase and digit"
                 android:inputType="textPassword"
@@ -144,7 +144,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
                 android:text="CONFIRM PASSWORD"
-                android:textColor="#8B949E"
+                android:textColor="@color/md_theme_onSurfaceVariant"
                 android:textSize="11sp"
                 android:letterSpacing="0.15"
                 android:fontFamily="sans-serif-medium" />
@@ -156,8 +156,8 @@
                 android:background="@drawable/input_background"
                 android:paddingStart="16dp"
                 android:paddingEnd="16dp"
-                android:textColor="#F0F6FC"
-                android:textColorHint="#484F58"
+                android:textColor="@color/md_theme_onSurface"
+                android:textColorHint="@color/md_theme_onSurfaceVariant"
                 android:textSize="15sp"
                 android:hint="Repeat password"
                 android:inputType="textPassword"
@@ -170,7 +170,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:visibility="gone"
-                android:textColor="#F85149"
+                android:textColor="@color/md_theme_error"
                 android:textSize="13sp"
                 android:gravity="center"
                 android:padding="12dp"
@@ -189,7 +189,7 @@
                     android:layout_height="match_parent"
                     android:background="@drawable/btn_primary"
                     android:text="CREATE ACCOUNT"
-                    android:textColor="#FFFFFF"
+                    android:textColor="@android:color/white"
                     android:textSize="14sp"
                     android:textStyle="bold"
                     android:letterSpacing="0.1"
@@ -201,7 +201,7 @@
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:layout_gravity="center"
-                    android:indeterminateTint="#FFFFFF"
+                    android:indeterminateTint="@android:color/white"
                     android:visibility="gone" />
             </FrameLayout>
 
@@ -214,7 +214,7 @@
             android:layout_marginTop="32dp"
             android:layout_gravity="center_horizontal"
             android:text="Already have an account?"
-            android:textColor="#8B949E"
+            android:textColor="@color/md_theme_onSurfaceVariant"
             android:textSize="14sp"
             android:fontFamily="sans-serif" />
 
@@ -225,7 +225,7 @@
             android:layout_gravity="center_horizontal"
             android:layout_marginTop="4dp"
             android:text="Sign In"
-            android:textColor="#58A6FF"
+            android:textColor="@color/md_theme_primary"
             android:textSize="14sp"
             android:textStyle="bold"
             android:fontFamily="sans-serif-medium"
