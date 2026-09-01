@@ -492,7 +492,12 @@ async def maintenance_mode_middleware(request: Request, call_next):
 
 # ─── API Version Middleware ───────────────────────────────────────────────────
 # Injects version headers, handles deprecated/sunset versions
-app.add_middleware(api_version_middleware)
+# NOTE: api_version_middleware is a function-based middleware (not a class),
+# so it must use @app.middleware decorator, not add_middleware().
+@app.middleware("http")
+async def api_version_mw(request: Request, call_next):
+    return await api_version_middleware(request, call_next)
+
 
 # ─── Include Route Modules ───────────────────────────────────────────────────
 
