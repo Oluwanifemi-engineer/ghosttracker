@@ -133,7 +133,7 @@ class Settings:
 
     # ── Limits ─────────────────────────────────────────────────────────────
     # Free-tier device allowance (default 1 — "free for one device").
-    MAX_DEVICES_PER_USER: int = int(os.environ.get("MT_MAX_DEVICES", "1"))
+    MAX_DEVICES_PER_USER: int = int(os.environ.get("MT_MAX_DEVICES", "3"))
     # Cap on UNOWNED (not linked to any account) devices. The low-privilege
     # device key ships inside every APK, so anyone can register a device; this
     # bounds the storage-pollution surface so an attacker can't flood the
