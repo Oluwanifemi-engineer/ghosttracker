@@ -422,6 +422,21 @@ class PostgresDatabase:
                         metadata TEXT,
                         created_at TIMESTAMPTZ DEFAULT NOW()
                     );
+
+                    -- Payments (Paystack)
+                    CREATE TABLE IF NOT EXISTS payments (
+                        id BIGSERIAL PRIMARY KEY,
+                        user_id TEXT NOT NULL REFERENCES users(id),
+                        reference TEXT UNIQUE NOT NULL,
+                        amount DOUBLE PRECISION NOT NULL,
+                        plan TEXT NOT NULL,
+                        status TEXT DEFAULT 'pending',
+                        paid_at TIMESTAMPTZ,
+                        created_at TIMESTAMPTZ DEFAULT NOW()
+                    );
+                    CREATE INDEX IF NOT EXISTS idx_payments_user ON payments(user_id);
+                    CREATE INDEX IF NOT EXISTS idx_payments_reference ON payments(reference);
+                    CREATE INDEX IF NOT EXISTS idx_payments_status ON payments(status);
                 """
                 )
 
@@ -510,6 +525,63 @@ class PostgresDatabase:
                     );
                     CREATE INDEX IF NOT EXISTS idx_circle_devices_circle ON circle_devices(circle_id);
                     CREATE INDEX IF NOT EXISTS idx_circle_devices_device ON circle_devices(device_id);
+
+                    -- Abuse prevention: explicit tracking consent records
+                    CREATE TABLE IF NOT EXISTS tracking_consents (
+                        id BIGSERIAL PRIMARY KEY,
+                        device_id TEXT NOT NULL REFERENCES devices(id),
+                        grantee_user_id TEXT NOT NULL,
+                        grantor_user_id TEXT NOT NULL,
+                        consent_given BOOLEAN NOT NULL DEFAULT TRUE,
+                        consent_timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                        consent_method TEXT NOT NULL DEFAULT 'explicit_grant',
+                        revoked BOOLEAN DEFAULT FALSE,
+                        revocation_timestamp TIMESTAMPTZ,
+                        revocation_method TEXT
+                    );
+                    CREATE INDEX IF NOT EXISTS idx_tracking_consents_device ON tracking_consents(device_id);
+                    CREATE INDEX IF NOT EXISTS idx_tracking_consents_grantee ON tracking_consents(grantee_user_id);
+
+                    -- Abuse prevention: unauthorized tracking reports
+                    CREATE TABLE IF NOT EXISTS abuse_reports (
+                        id TEXT PRIMARY KEY,
+                        reporter_user_id TEXT NOT NULL,
+                        reported_user_id TEXT NOT NULL,
+                        reason TEXT NOT NULL,
+                        evidence TEXT,
+                        status TEXT DEFAULT 'pending',
+                        created_at TIMESTAMPTZ DEFAULT NOW(),
+                        resolved_at TIMESTAMPTZ,
+                        resolved_by TEXT,
+                        resolution_notes TEXT
+                    );
+                    CREATE INDEX IF NOT EXISTS idx_abuse_reports_status ON abuse_reports(status);
+                    CREATE INDEX IF NOT EXISTS idx_abuse_reports_reported ON abuse_reports(reported_user_id);
+
+                    -- Privacy: NDPR/GDPR consent and data export records
+                    CREATE TABLE IF NOT EXISTS privacy_consents (
+                        id BIGSERIAL PRIMARY KEY,
+                        user_id TEXT NOT NULL,
+                        consent_type TEXT NOT NULL,
+                        consent_given BOOLEAN NOT NULL,
+                        consent_timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                        ip_address TEXT,
+                        user_agent TEXT,
+                        revoked BOOLEAN DEFAULT FALSE,
+                        revocation_timestamp TIMESTAMPTZ
+                    );
+                    CREATE INDEX IF NOT EXISTS idx_privacy_consents_user ON privacy_consents(user_id);
+
+                    -- Data export requests (GDPR right to portability)
+                    CREATE TABLE IF NOT EXISTS data_export_requests (
+                        id BIGSERIAL PRIMARY KEY,
+                        user_id TEXT NOT NULL,
+                        status TEXT DEFAULT 'pending',
+                        requested_at TIMESTAMPTZ DEFAULT NOW(),
+                        completed_at TIMESTAMPTZ,
+                        download_url TEXT,
+                        expires_at TIMESTAMPTZ
+                    );
                 """
                 )
             except Exception as e:

@@ -693,6 +693,62 @@ def init_db(db_path: str = None):
             reason TEXT
         );
 
+        -- ─── Abuse Prevention ────────────────────────────────────────────────
+        CREATE TABLE IF NOT EXISTS tracking_consents (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            device_id TEXT NOT NULL,
+            grantee_user_id TEXT NOT NULL,
+            grantor_user_id TEXT NOT NULL,
+            consent_given BOOLEAN NOT NULL DEFAULT 1,
+            consent_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            consent_method TEXT NOT NULL DEFAULT 'explicit_grant',
+            revoked BOOLEAN DEFAULT 0,
+            revocation_timestamp TIMESTAMP,
+            revocation_method TEXT,
+            FOREIGN KEY (device_id) REFERENCES devices(id)
+        );
+        CREATE INDEX IF NOT EXISTS idx_tracking_consents_device ON tracking_consents(device_id);
+        CREATE INDEX IF NOT EXISTS idx_tracking_consents_grantee ON tracking_consents(grantee_user_id);
+
+        CREATE TABLE IF NOT EXISTS abuse_reports (
+            id TEXT PRIMARY KEY,
+            reporter_user_id TEXT NOT NULL,
+            reported_user_id TEXT NOT NULL,
+            reason TEXT NOT NULL,
+            evidence TEXT,
+            status TEXT DEFAULT 'pending',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            resolved_at TIMESTAMP,
+            resolved_by TEXT,
+            resolution_notes TEXT
+        );
+        CREATE INDEX IF NOT EXISTS idx_abuse_reports_status ON abuse_reports(status);
+        CREATE INDEX IF NOT EXISTS idx_abuse_reports_reported ON abuse_reports(reported_user_id);
+
+        -- ─── Privacy Compliance (NDPR/GDPR) ─────────────────────────────────
+        CREATE TABLE IF NOT EXISTS privacy_consents (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            consent_type TEXT NOT NULL,
+            consent_given BOOLEAN NOT NULL,
+            consent_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            ip_address TEXT,
+            user_agent TEXT,
+            revoked BOOLEAN DEFAULT 0,
+            revocation_timestamp TIMESTAMP
+        );
+        CREATE INDEX IF NOT EXISTS idx_privacy_consents_user ON privacy_consents(user_id);
+
+        CREATE TABLE IF NOT EXISTS data_export_requests (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            status TEXT DEFAULT 'pending',
+            requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            completed_at TIMESTAMP,
+            download_url TEXT,
+            expires_at TIMESTAMP
+        );
+
         -- ─── Indexes ────────────────────────────────────────────────────────
         CREATE INDEX IF NOT EXISTS idx_devices_key_hash ON devices(device_key_hash);
         CREATE INDEX IF NOT EXISTS idx_locations_device ON locations(device_id);
@@ -728,6 +784,22 @@ def init_db(db_path: str = None):
         );
         CREATE INDEX IF NOT EXISTS idx_analytics_type_time ON analytics_events(event_type, created_at);
         CREATE INDEX IF NOT EXISTS idx_analytics_device ON analytics_events(device_id, created_at);
+
+        -- ─── Payments (Paystack) ─────────────────────────────────────────────
+        CREATE TABLE IF NOT EXISTS payments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            reference TEXT UNIQUE NOT NULL,
+            amount REAL NOT NULL,
+            plan TEXT NOT NULL,
+            status TEXT DEFAULT 'pending',
+            paid_at TIMESTAMP,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id)
+        );
+        CREATE INDEX IF NOT EXISTS idx_payments_user ON payments(user_id);
+        CREATE INDEX IF NOT EXISTS idx_payments_reference ON payments(reference);
+        CREATE INDEX IF NOT EXISTS idx_payments_status ON payments(status);
 
         -- ─── Error Log ───────────────────────────────────────────────────────
         CREATE TABLE IF NOT EXISTS error_log (

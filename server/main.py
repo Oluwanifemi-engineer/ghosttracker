@@ -546,6 +546,14 @@ from routes.circles import router as circles_router  # noqa: E402
 
 app.include_router(circles_router)
 
+from routes.consent import router as consent_router  # noqa: E402
+
+app.include_router(consent_router)
+
+from routes.payments import router as payments_router  # noqa: E402
+
+app.include_router(payments_router)
+
 
 # ─── Request Timeout Middleware ───────────────────────────────────────────
 
