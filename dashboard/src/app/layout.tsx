@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from 'next';
 import { Inter, JetBrains_Mono } from 'next/font/google';
 import 'leaflet/dist/leaflet.css';
 import './globals.css';
+import SkipNav from '@/components/ui/SkipNav';
+import FocusIndicator from '@/components/ui/FocusIndicator';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -67,14 +69,15 @@ export default function RootLayout({
 
       </head>
       <body className={`bg-mag-bg text-mag-text min-h-screen antialiased ${inter.variable} ${jetbrainsMono.variable}`}>
+        {/* WCAG 2.4.1: Skip navigation for keyboard users */}
+        <SkipNav />
+        {/* WCAG 2.4.7/2.4.11: Focus indicators + target size + reduced motion */}
+        <FocusIndicator />
         <script
           dangerouslySetInnerHTML={{
             __html: `
               if ('serviceWorker' in navigator) {
                 window.addEventListener('load', () => {
-                  // updateViaCache 'none': the browser must always revalidate
-                  // sw.js from the network, so cache-version bumps (which purge
-                  // stale static caches) reach every client on their next visit.
                   navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).then((registration) => {
                     console.log('SW registered:', registration.scope);
                   }).catch((error) => {
@@ -85,7 +88,9 @@ export default function RootLayout({
             `,
           }}
         />
-        {children}
+        <main id="main-content" tabIndex={-1}>
+          {children}
+        </main>
       </body>
     </html>
   );

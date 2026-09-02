@@ -89,11 +89,17 @@ export function MobileBottomNav() {
       )}
 
       {/* Bottom navigation bar — Premium Dark Glass */}
-      <div className="fixed bottom-0 left-0 right-0 z-30 md:hidden bg-[#0a0a0f]/95 backdrop-blur-xl border-t border-white/[0.06] safe-area-bottom">
+      <nav
+        className="fixed bottom-0 left-0 right-0 z-30 md:hidden bg-[#0a0a0f]/95 backdrop-blur-xl border-t border-white/[0.06] safe-area-bottom"
+        aria-label="Main navigation"
+        role="navigation"
+      >
         <div className="flex items-center justify-around px-1 py-1.5">
           {/* Sidebar toggle (hamburger) */}
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
+            aria-label={sidebarOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={sidebarOpen}
             className={cn(
               'flex flex-col items-center justify-center gap-0.5 w-14 py-2.5 rounded-xl transition-all duration-200',
               'active:scale-[0.92]',
@@ -102,7 +108,7 @@ export function MobileBottomNav() {
                 : 'text-white/35 active:bg-white/[0.06]'
             )}
           >
-            <Menu size={18} />
+            <Menu size={18} aria-hidden="true" />
             <span className="text-[7px] font-bold">Menu</span>
           </button>
 
@@ -113,6 +119,8 @@ export function MobileBottomNav() {
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
+                aria-label={item.label}
+                aria-current={isActive ? 'page' : undefined}
                 className={cn(
                   'flex flex-col items-center justify-center gap-0.5 w-14 py-2.5 rounded-xl transition-all duration-200',
                   'active:scale-[0.92]',
@@ -121,7 +129,7 @@ export function MobileBottomNav() {
                     : 'text-white/35 active:bg-white/[0.06]'
                 )}
               >
-                <Icon size={18} />
+                <Icon size={18} aria-hidden="true" />
                 <span className="text-[7px] font-bold">{item.shortLabel}</span>
               </button>
             );
@@ -130,6 +138,9 @@ export function MobileBottomNav() {
           {/* More button */}
           <button
             onClick={() => setShowMore(!showMore)}
+            aria-label="More features"
+            aria-expanded={showMore}
+            aria-haspopup="true"
             className={cn(
               'flex flex-col items-center justify-center gap-0.5 w-14 py-2.5 rounded-xl transition-all duration-200',
               'active:scale-[0.92]',
@@ -138,11 +149,11 @@ export function MobileBottomNav() {
                 : 'text-white/35 active:bg-white/[0.06]'
             )}
           >
-            <Settings size={18} />
+            <Settings size={18} aria-hidden="true" />
             <span className="text-[7px] font-bold">More</span>
           </button>
         </div>
-      </div>
+      </nav>
     </>
   );
 }
